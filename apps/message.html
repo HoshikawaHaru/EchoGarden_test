@@ -401,6 +401,18 @@
     </div>
 
     <script>
+
+        // 小浮层：手机端也能看到日志/错误
+(function(){
+  var box = document.createElement('div');
+  box.id = 'eg-debug';
+  box.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.6);color:#fff;padding:6px 8px;border-radius:8px;font-size:12px;max-height:30vh;overflow:auto;display:none';
+  window.egLog = function(s){ try{ box.style.display='block'; box.innerHTML+='<div>'+s+'</div>'; }catch(e){} };
+  window.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(box); });
+  window.onerror = function(msg,src,ln,col){ egLog('JS错误：'+msg+' @'+ln+':'+col); };
+})();
+function qs(name){var m=location.search.match(new RegExp('[?&]'+name+'=([^&]+)'));return m?decodeURIComponent(m[1]):null;}
+
         // 全局变量
         let msgCharacters = [];
         let touchStartX = 0;
@@ -422,8 +434,24 @@
   }));
 }
 
+// 旧数据归一化（ES5/ES6，避免可选链/空值合并）
+function normalizeCharacters(arr) {
+  if (!arr || !arr.length) return [];
+  return arr.map(function (c) {
+    c = c || {};
+    var id   = (c.id != null) ? String(c.id) : String(Date.now() + Math.random());
+    var name = (c.name || c.nickname) ? String(c.name || c.nickname) : '未命名';
+    var nick = (c.nickname || c.name) ? String(c.nickname || c.name) : '未命名';
+    var bio  = c.bio ? String(c.bio) : '';
+    var av   = (typeof c.avatar === 'string' && c.avatar) ? c.avatar : '👤';
+    var last = c.lastTime ? String(c.lastTime)
+              : new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    return { id: id, name: name, nickname: nick, bio: bio, avatar: av, lastTime: last };
+  });
+}
+
+// 预设（Nash）
 function seedPresets() {
-  // 你的预设（Nash）
   return [{
     id: 'nash',
     name: 'Nash',
@@ -434,11 +462,17 @@ function seedPresets() {
   }];
 }
 
+// 初始化（自愈 + 补齐 Nash + 回写）
 function initData() {
-  let parsed = null;
+  // 可选：加入 ?reset=1 参数强制清空一次损坏数据
+  if (location.search.indexOf('reset=1') >= 0) {
+    try { localStorage.removeItem('characters'); } catch (e) {}
+  }
+
+  var parsed = null;
   try {
-    const raw = localStorage.getItem('characters');
-    parsed = raw ? JSON.parse(raw) : null;
+    var raw = localStorage.getItem('characters');
+    parsed = raw ? JSON.parse(raw) : null;   // ← 注意是半角 ? :
   } catch (e) {
     console.warn('characters 解析失败，重置为预设：', e);
   }
@@ -448,13 +482,17 @@ function initData() {
   } else {
     msgCharacters = normalizeCharacters(parsed);
     // 确保包含 Nash
-    const hasNash = msgCharacters.some(c => c.id === 'nash' || (c.name === 'Nash' && c.nickname === 'Nash'));
-    if (!hasNash) msgCharacters.unshift(...seedPresets());
+    var hasNash = false;
+    for (var i = 0; i < msgCharacters.length; i++) {
+      var c = msgCharacters[i];
+      if (c.id === 'nash' || (c.name === 'Nash' && c.nickname === 'Nash')) { hasNash = true; break; }
+    }
+    if (!hasNash) { msgCharacters.unshift(seedPresets()[0]); }
   }
 
-  // 迁移回写，避免下次再出 undefined
-  localStorage.setItem('characters', JSON.stringify(msgCharacters));
+  try { localStorage.setItem('characters', JSON.stringify(msgCharacters)); } catch (e) {}
 }
+
 
         // 保存数据
         function saveData() {
