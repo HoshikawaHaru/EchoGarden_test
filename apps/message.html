@@ -408,23 +408,44 @@
         let isSwiping = false;
         let currentSwipedId = null;
 
-        // 初始化数据
-        function initData() {
-            const stored = localStorage.getItem('characters');
-            if (stored) {
-                msgCharacters = JSON.parse(stored);
-            } else {
-                msgCharacters = [{
-                    id: 'nash',
-                    name: 'Nash',
-                    nickname: 'Nash',
-                    bio: '天真开朗的小狐狸',
-                    avatar: '🦊',
-                    lastTime: '12:00'
-                }];
-                localStorage.setItem('characters', JSON.stringify(msgCharacters));
-            }
-        }
+       // 放到 /apps/message.html 现有 <script> 里，替换原来的 initData & （新增）seedPresets
+
+function seedPresets() {
+  // 你的预设（Nash）
+  return [{
+    id: 'nash',
+    name: 'Nash',
+    nickname: 'Nash',
+    bio: '天真开朗的小狐狸',
+    avatar: '🦊',
+    lastTime: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  }];
+}
+
+function initData() {
+  try {
+    const raw = localStorage.getItem('characters');
+    const parsed = raw ? JSON.parse(raw) : null;
+
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      msgCharacters = parsed;
+    } else {
+      msgCharacters = seedPresets();
+      localStorage.setItem('characters', JSON.stringify(msgCharacters));
+    }
+  } catch (e) {
+    console.warn('characters 解析失败，恢复默认：', e);
+    msgCharacters = seedPresets();
+    localStorage.setItem('characters', JSON.stringify(msgCharacters));
+  }
+
+  // 保险：确保包含 Nash（避免之前被误删或空数组）
+  const hasNash = msgCharacters.some(c => c.id === 'nash' || (c.name === 'Nash' && c.nickname === 'Nash'));
+  if (!hasNash) {
+    msgCharacters.unshift(...seedPresets());
+    localStorage.setItem('characters', JSON.stringify(msgCharacters));
+  }
+}
 
         // 保存数据
         function saveData() {
