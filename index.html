@@ -210,6 +210,15 @@
 
         #app-container {
             display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            overflow-y: auto;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+            padding-left: var(--safe-left);
+            padding-right: var(--safe-right);
+            z-index: 2000;
         }
     </style>
 </head>
@@ -367,18 +376,51 @@
                 const appName = icon.dataset.app;
                 console.log('打开应用:', appName);
                 
-                // 根据不同的app跳转
-                if (appName === 'message') {
-                    window.location.href = 'message.html';
-                } else if (appName === 'diary') {
-                    window.location.href = 'apps/diary.html';
-                } else if (appName === 'settings') {
-                    window.location.href = 'apps/settings.html';
-                } else if (appName === 'tarot') {
-                    window.location.href = 'apps/tarot.html';
-                }
+                // 动态加载app内容
+                loadApp(appName);
             });
         });
+
+        // 动态加载app
+        async function loadApp(appName) {
+            const appContainer = document.getElementById('app-container');
+            
+            try {
+                // 根据app名称加载对应的HTML片段
+                const response = await fetch(`apps/${appName}.html`);
+                if (!response.ok) throw new Error('加载失败');
+                
+                const html = await response.text();
+                appContainer.innerHTML = html;
+                appContainer.style.display = 'block';
+                
+                // 执行app内的脚本（如果有）
+                const scripts = appContainer.querySelectorAll('script');
+                scripts.forEach(script => {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = script.textContent;
+                    document.body.appendChild(newScript);
+                    document.body.removeChild(newScript);
+                });
+            } catch (error) {
+                console.error('加载app失败:', error);
+                appContainer.innerHTML = `
+                    <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;flex-direction:column;">
+                        <p style="font-size:48px;margin-bottom:16px;">⚠️</p>
+                        <p>加载失败</p>
+                        <button onclick="closeApp()" style="margin-top:20px;padding:10px 20px;background:#07c160;color:#fff;border:none;border-radius:8px;">返回</button>
+                    </div>
+                `;
+                appContainer.style.display = 'block';
+            }
+        }
+
+        // 关闭app
+        window.closeApp = function() {
+            const appContainer = document.getElementById('app-container');
+            appContainer.style.display = 'none';
+            appContainer.innerHTML = '';
+        };
     </script>
 </body>
 </html>
