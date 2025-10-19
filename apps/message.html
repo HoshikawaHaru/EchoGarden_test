@@ -410,6 +410,18 @@
 
        // 放到 /apps/message.html 现有 <script> 里，替换原来的 initData & （新增）seedPresets
 
+        function normalizeCharacters(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(c => ({
+    id: String(c?.id ?? Date.now() + Math.random()),
+    name: String(c?.name ?? c?.nickname ?? '未命名'),
+    nickname: String(c?.nickname ?? c?.name ?? '未命名'),
+    bio: String(c?.bio ?? ''),
+    avatar: (typeof c?.avatar === 'string' && c.avatar) ? c.avatar : '👤',
+    lastTime: String(c?.lastTime ?? new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }))
+  }));
+}
+
 function seedPresets() {
   // 你的预设（Nash）
   return [{
@@ -423,22 +435,26 @@ function seedPresets() {
 }
 
 function initData() {
+  let parsed = null;
   try {
     const raw = localStorage.getItem('characters');
-    const parsed = raw ? JSON.parse(raw) : null;
-
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      msgCharacters = parsed;
-    } else {
-      msgCharacters = seedPresets();
-      localStorage.setItem('characters', JSON.stringify(msgCharacters));
-    }
+    parsed = raw ? JSON.parse(raw) : null;
   } catch (e) {
-    console.warn('characters 解析失败，恢复默认：', e);
-    msgCharacters = seedPresets();
-    localStorage.setItem('characters', JSON.stringify(msgCharacters));
+    console.warn('characters 解析失败，重置为预设：', e);
   }
 
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    msgCharacters = seedPresets();
+  } else {
+    msgCharacters = normalizeCharacters(parsed);
+    // 确保包含 Nash
+    const hasNash = msgCharacters.some(c => c.id === 'nash' || (c.name === 'Nash' && c.nickname === 'Nash'));
+    if (!hasNash) msgCharacters.unshift(...seedPresets());
+  }
+
+  // 迁移回写，避免下次再出 undefined
+  localStorage.setItem('characters', JSON.stringify(msgCharacters));
+}
   // 保险：确保包含 Nash（避免之前被误删或空数组）
   const hasNash = msgCharacters.some(c => c.id === 'nash' || (c.name === 'Nash' && c.nickname === 'Nash'));
   if (!hasNash) {
@@ -455,40 +471,43 @@ function initData() {
 
         // 渲染聊天列表
         function renderChatList() {
-            const list = document.getElementById('msgChatList');
-            if (!list) {
-                console.error('msgChatList 元素不存在');
-                return;
-            }
-            
-            console.log('渲染角色列表:', msgCharacters);
-            
-            list.innerHTML = msgCharacters.map(char => `
-                <div class="msg-chat-item-wrapper" id="wrapper-${char.id}">
-                    <div class="msg-swipe-actions">
-                        <div class="msg-swipe-action reset" data-action="reset" data-id="${char.id}">重置</div>
-                        <div class="msg-swipe-action delete" data-action="delete" data-id="${char.id}">删除</div>
-                    </div>
-                    <div class="msg-chat-item" id="item-${char.id}" data-id="${char.id}">
-                        <div class="msg-chat-avatar">
-                            ${char.avatar.startsWith('data:') || char.avatar.startsWith('http') 
-                                ? `<img src="${char.avatar}">` 
-                                : char.avatar}
-                        </div>
-                        <div class="msg-chat-content">
-                            <div class="msg-chat-header">
-                                <div class="msg-chat-name">${char.nickname}</div>
-                                <div class="msg-chat-time">${char.lastTime}</div>
-                            </div>
-                            <div class="msg-chat-preview">${char.bio}</div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-            
-            // 重新绑定事件
-            bindChatItemEvents();
-        }
+  const list = document.getElementById('msgChatList');
+  if (!list) {
+    console.error('msgChatList 元素不存在');
+    return;
+  }
+
+  console.log('渲染角色列表:', msgCharacters);
+
+  list.innerHTML = msgCharacters.map(char => {
+    // —— 这里在 map 内部计算，char 才有值 ——
+    const av = (typeof char.avatar === 'string' && char.avatar) ? char.avatar : '👤';
+    const avatarHTML = (av.startsWith('data:') || av.startsWith('http')) ? `<img src="${av}">` : av;
+
+    return `
+      <div class="msg-chat-item-wrapper" id="wrapper-${char.id}">
+        <div class="msg-swipe-actions">
+          <div class="msg-swipe-action reset" data-action="reset" data-id="${char.id}">重置</div>
+          <div class="msg-swipe-action delete" data-action="delete" data-id="${char.id}">删除</div>
+        </div>
+        <div class="msg-chat-item" id="item-${char.id}" data-id="${char.id}">
+          <div class="msg-chat-avatar">${avatarHTML}</div>
+          <div class="msg-chat-content">
+            <div class="msg-chat-header">
+              <div class="msg-chat-name">${char.nickname}</div>
+              <div class="msg-chat-time">${char.lastTime}</div>
+            </div>
+            <div class="msg-chat-preview">${char.bio}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 重新绑定事件
+  bindChatItemEvents();
+}
+
 
         // 绑定聊天项事件
         function bindChatItemEvents() {
