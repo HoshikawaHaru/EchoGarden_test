@@ -462,9 +462,8 @@ function seedPresets() {
   }];
 }
 
-// 初始化（自愈 + 补齐 Nash + 回写）
 function initData() {
-  // 可选：加入 ?reset=1 参数强制清空一次损坏数据
+  // 支持 ?reset=1 一次性清空损坏数据
   if (location.search.indexOf('reset=1') >= 0) {
     try { localStorage.removeItem('characters'); } catch (e) {}
   }
@@ -472,7 +471,7 @@ function initData() {
   var parsed = null;
   try {
     var raw = localStorage.getItem('characters');
-    parsed = raw ? JSON.parse(raw) : null;   // ← 注意是半角 ? :
+    parsed = raw ? JSON.parse(raw) : null;   // ← 半角 ? :
   } catch (e) {
     console.warn('characters 解析失败，重置为预设：', e);
   }
@@ -492,7 +491,6 @@ function initData() {
 
   try { localStorage.setItem('characters', JSON.stringify(msgCharacters)); } catch (e) {}
 }
-
 
         // 保存数据
         function saveData() {
