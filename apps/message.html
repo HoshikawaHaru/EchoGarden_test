@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="rgba(0,0,0,0)">
+    <link rel="apple-touch-icon" sizes="512x512" href="assets/icons/icon512.png">
+    <link rel="icon" href="assets/icons/icon512.png" type="image/png">
+    <title>消息</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #ededed;
+            overflow-x: hidden;
+        }
+
+        /* 顶部导航栏 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: calc(44px + var(--safe-top));
+            padding-top: var(--safe-top);
+            background: #f7f7f7;
+            border-bottom: 0.5px solid #d9d9d9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-left: 16px;
+            padding-right: 16px;
+            z-index: 100;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            font-size: 20px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .navbar-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .navbar-right {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .navbar-icon {
+            font-size: 22px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* 聊天列表 */
+        .chat-list {
+            margin-top: calc(44px + var(--safe-top));
+            padding-bottom: calc(50px + var(--safe-bottom));
+        }
+
+        .chat-item {
+            background: #fff;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 0.5px solid #e5e5e5;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .chat-item:active {
+            background: #ececec;
+        }
+
+        .chat-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .chat-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        .chat-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .chat-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #000;
+        }
+
+        .chat-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .chat-preview {
+            font-size: 14px;
+            color: #999;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 底部标签栏 */
+        .tabbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(50px + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
+            background: #f7f7f7;
+            border-top: 0.5px solid #d9d9d9;
+            display: flex;
+            z-index: 100;
+        }
+
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .tab-icon {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+
+        .tab-label {
+            font-size: 10px;
+            color: #999;
+        }
+
+        .tab-item.active .tab-label {
+            color: #07c160;
+        }
+
+        .tab-badge {
+            position: absolute;
+            top: 6px;
+            right: calc(50% - 20px);
+            background: #fa5151;
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 10px;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        /* 添加角色弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #fff;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 16px;
+            border-bottom: 0.5px solid #e5e5e5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 16px;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .avatar-upload {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            border: 2px dashed #e5e5e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar-upload img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-upload input {
+            display: none;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: #07c160;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .btn-primary:active {
+            background: #06ad56;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #999;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+<style>
+    .message-app {
+        width: 100%;
+        height: 100%;
+        background: #ededed;
+        display: flex;
+        flex-direction: column;
+    }
+    .msg-navbar {
+        height: 44px;
+        background: #f7f7f7;
+        border-bottom: 0.5px solid #d9d9d9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        flex-shrink: 0;
+    }
+    .msg-navbar-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .msg-back-btn {
+        font-size: 20px;
+        cursor: pointer;
+    }
+    .msg-navbar-title {
+        font-size: 17px;
+        font-weight: 600;
+        color: #000;
+    }
+    .msg-navbar-icon {
+        font-size: 22px;
+        cursor: pointer;
+    }
+    .msg-chat-list {
+        flex: 1;
+        overflow-y: auto;
+    }
+    .msg-chat-item {
+        background: #fff;
+        padding: 12px 16px;
+        display: flex;
+        gap: 12px;
+        border-bottom: 0.5px solid #e5e5e5;
+        cursor: pointer;
+    }
+    .msg-chat-item:active {
+        background: #ececec;
+    }
+    .msg-chat-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 6px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    .msg-chat-content {
+        flex: 1;
+        min-width: 0;
+    }
+    .msg-chat-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+    .msg-chat-name {
+        font-size: 16px;
+        font-weight: 500;
+        color: #000;
+    }
+    .msg-chat-time {
+        font-size: 12px;
+        color: #999;
+    }
+    .msg-chat-preview {
+        font-size: 14px;
+        color: #999;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .msg-tabbar {
+        height: 50px;
+        background: #f7f7f7;
+        border-top: 0.5px solid #d9d9d9;
+        display: flex;
+        flex-shrink: 0;
+    }
+    .msg-tab-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    .msg-tab-icon {
+        font-size: 24px;
+        margin-bottom: 2px;
+    }
+    .msg-tab-label {
+        font-size: 10px;
+        color: #999;
+    }
+    .msg-tab-item.active .msg-tab-label {
+        color: #07c160;
+    }
+    .msg-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    .msg-modal.show {
+        display: flex;
+    }
+    .msg-modal-content {
+        background: #fff;
+        width: 90%;
+        max-width: 400px;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .msg-modal-header {
+        padding: 16px;
+        border-bottom: 0.5px solid #e5e5e5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .msg-modal-title {
+        font-size: 17px;
+        font-weight: 600;
+    }
+    .msg-modal-close {
+        font-size: 24px;
+        color: #999;
+        cursor: pointer;
+    }
+    .msg-modal-body {
+        padding: 20px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+    .msg-form-group {
+        margin-bottom: 20px;
+    }
+    .msg-form-label {
+        display: block;
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+    .msg-form-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        font-size: 16px;
+    }
+    .msg-form-textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        font-size: 16px;
+        min-height: 100px;
+        resize: vertical;
+    }
+    .msg-avatar-upload {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        border: 2px dashed #e5e5e5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    .msg-avatar-upload img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .msg-btn-primary {
+        width: 100%;
+        padding: 12px;
+        background: #07c160;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    .msg-btn-primary:active {
+        background: #06ad56;
+    }
+</style>
+
+<div class="message-app">
+    <div class="msg-navbar">
+        <div class="msg-navbar-left">
+            <div class="msg-back-btn" onclick="closeApp()">◀</div>
+            <div class="msg-navbar-title">消息</div>
+        </div>
+        <div class="msg-navbar-icon" onclick="showAddModal()">➕</div>
+    </div>
+    
+    <div class="msg-chat-list" id="msgChatList">
+        <div class="msg-chat-item" onclick="openChat('nash')">
+            <div class="msg-chat-avatar">🦊</div>
+            <div class="msg-chat-content">
+                <div class="msg-chat-header">
+                    <div class="msg-chat-name">Nash</div>
+                    <div class="msg-chat-time">12:00</div>
+                </div>
+                <div class="msg-chat-preview">天真开朗的小狐狸</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="msg-tabbar">
+        <div class="msg-tab-item active">
+            <div class="msg-tab-icon">💬</div>
+            <div class="msg-tab-label">聊天</div>
+        </div>
+        <div class="msg-tab-item" onclick="alert('功能开发中')">
+            <div class="msg-tab-icon">📅</div>
+            <div class="msg-tab-label">事件</div>
+        </div>
+        <div class="msg-tab-item" onclick="alert('功能开发中')">
+            <div class="msg-tab-icon">🌐</div>
+            <div class="msg-tab-label">朋友圈</div>
+        </div>
+        <div class="msg-tab-item" onclick="alert('功能开发中')">
+            <div class="msg-tab-icon">👤</div>
+            <div class="msg-tab-label">我</div>
+        </div>
+    </div>
+
+    <!-- 添加角色弹窗 -->
+    <div class="msg-modal" id="msgAddModal">
+        <div class="msg-modal-content">
+            <div class="msg-modal-header">
+                <div class="msg-modal-title">添加角色</div>
+                <div class="msg-modal-close" onclick="hideAddModal()">×</div>
+            </div>
+            <div class="msg-modal-body">
+                <form id="msgCharacterForm" onsubmit="addCharacter(event)">
+                    <div class="msg-form-group">
+                        <label class="msg-form-label">头像</label>
+                        <div class="msg-avatar-upload" id="msgAvatarUpload" onclick="document.getElementById('msgAvatarInput').click()">
+                            <span>📷</span>
+                        </div>
+                        <input type="file" id="msgAvatarInput" accept="image/*" style="display:none" onchange="previewAvatar(event)">
+                    </div>
+                    <div class="msg-form-group">
+                        <label class="msg-form-label">姓名</label>
+                        <input type="text" class="msg-form-input" id="msgCharacterName" placeholder="输入角色姓名" required>
+                    </div>
+                    <div class="msg-form-group">
+                        <label class="msg-form-label">昵称</label>
+                        <input type="text" class="msg-form-input" id="msgCharacterNickname" placeholder="输入角色昵称">
+                    </div>
+                    <div class="msg-form-group">
+                        <label class="msg-form-label">人设</label>
+                        <textarea class="msg-form-textarea" id="msgCharacterBio" placeholder="描述角色的性格、特点..." required></textarea>
+                    </div>
+                    <button type="submit" class="msg-btn-primary">添加</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 角色数据
+    let msgCharacters = JSON.parse(localStorage.getItem('characters') || '[{"id":"nash","name":"Nash","nickname":"Nash","bio":"天真开朗的小狐狸","avatar":"🦊","lastTime":"12:00"}]');
+
+    function showAddModal() {
+        document.getElementById('msgAddModal').classList.add('show');
+    }
+
+    function hideAddModal() {
+        document.getElementById('msgAddModal').classList.remove('show');
+    }
+
+    function previewAvatar(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('msgAvatarUpload').innerHTML = `<img src="${e.target.result}">`;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function addCharacter(e) {
+        e.preventDefault();
+        const name = document.getElementById('msgCharacterName').value;
+        const nickname = document.getElementById('msgCharacterNickname').value || name;
+        const bio = document.getElementById('msgCharacterBio').value;
+        const avatarUpload = document.getElementById('msgAvatarUpload');
+        const avatarImg = avatarUpload.querySelector('img');
+        const avatar = avatarImg ? avatarImg.src : '👤';
+
+        const newChar = {
+            id: Date.now().toString(),
+            name,
+            nickname,
+            bio,
+            avatar,
+            lastTime: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        };
+
+        msgCharacters.push(newChar);
+        localStorage.setItem('characters', JSON.stringify(msgCharacters));
+        renderChatList();
+        hideAddModal();
+        document.getElementById('msgCharacterForm').reset();
+        document.getElementById('msgAvatarUpload').innerHTML = '<span>📷</span>';
+    }
+
+    function renderChatList() {
+        const list = document.getElementById('msgChatList');
+        list.innerHTML = msgCharacters.map(char => `
+            <div class="msg-chat-item" onclick="openChat('${char.id}')">
+                <div class="msg-chat-avatar">
+                    ${char.avatar.startsWith('data:') || char.avatar.startsWith('http') 
+                        ? `<img src="${char.avatar}" style="width:100%;height:100%;border-radius:6px;object-fit:cover;">` 
+                        : char.avatar}
+                </div>
+                <div class="msg-chat-content">
+                    <div class="msg-chat-header">
+                        <div class="msg-chat-name">${char.nickname}</div>
+                        <div class="msg-chat-time">${char.lastTime}</div>
+                    </div>
+                    <div class="msg-chat-preview">${char.bio}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function openChat(characterId) {
+        alert('聊天功能开发中，角色ID: ' + characterId);
+        // 这里将来可以加载聊天页面
+    }
+
+    // 初始化
+    renderChatList();
+</script>
+</body>
+</html>
