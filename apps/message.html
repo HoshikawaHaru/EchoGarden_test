@@ -301,7 +301,7 @@
     <div class="message-app">
         <div class="msg-navbar">
             <div class="msg-navbar-left">
-                <div class="msg-back-btn" onclick="goBack()">◀</div>
+                <div class="msg-back-btn" onclick="window.closeApp ? window.closeApp() : goBack()">◀</div>
                 <div class="msg-navbar-title">消息</div>
             </div>
             <div class="msg-navbar-icon" onclick="showAddModal()">➕</div>
