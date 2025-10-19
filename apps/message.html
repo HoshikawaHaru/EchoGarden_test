@@ -338,10 +338,10 @@
     <div class="message-app">
         <div class="msg-navbar">
             <div class="msg-navbar-left">
-                <div class="msg-back-btn" onclick="goBack()">◀</div>
+                <div class="msg-back-btn" id="backBtn">◀</div>
                 <div class="msg-navbar-title">消息</div>
             </div>
-            <div class="msg-navbar-icon" onclick="showAddModal()">➕</div>
+            <div class="msg-navbar-icon" id="addBtn">➕</div>
         </div>
         
         <div class="msg-chat-list" id="msgChatList"></div>
@@ -351,15 +351,15 @@
                 <div class="msg-tab-icon">💬</div>
                 <div class="msg-tab-label">聊天</div>
             </div>
-            <div class="msg-tab-item" onclick="alert('功能开发中')">
+            <div class="msg-tab-item">
                 <div class="msg-tab-icon">📅</div>
                 <div class="msg-tab-label">事件</div>
             </div>
-            <div class="msg-tab-item" onclick="alert('功能开发中')">
+            <div class="msg-tab-item">
                 <div class="msg-tab-icon">🌐</div>
                 <div class="msg-tab-label">朋友圈</div>
             </div>
-            <div class="msg-tab-item" onclick="alert('功能开发中')">
+            <div class="msg-tab-item">
                 <div class="msg-tab-icon">👤</div>
                 <div class="msg-tab-label">我</div>
             </div>
@@ -370,16 +370,16 @@
             <div class="msg-modal-content">
                 <div class="msg-modal-header">
                     <div class="msg-modal-title">添加角色</div>
-                    <div class="msg-modal-close" onclick="hideAddModal()">×</div>
+                    <div class="msg-modal-close" id="closeModalBtn">×</div>
                 </div>
                 <div class="msg-modal-body">
-                    <form id="msgCharacterForm" onsubmit="addCharacter(event)">
+                    <form id="msgCharacterForm">
                         <div class="msg-form-group">
                             <label class="msg-form-label">头像</label>
-                            <div class="msg-avatar-upload" id="msgAvatarUpload" onclick="document.getElementById('msgAvatarInput').click()">
+                            <div class="msg-avatar-upload" id="msgAvatarUpload">
                                 <span>📷</span>
                             </div>
-                            <input type="file" id="msgAvatarInput" accept="image/*" style="display:none" onchange="previewAvatar(event)">
+                            <input type="file" id="msgAvatarInput" accept="image/*" style="display:none">
                         </div>
                         <div class="msg-form-group">
                             <label class="msg-form-label">姓名</label>
@@ -401,84 +401,54 @@
     </div>
 
     <script>
-        // 角色数据
-        let msgCharacters = JSON.parse(localStorage.getItem('characters') || '[{"id":"nash","name":"Nash","nickname":"Nash","bio":"天真开朗的小狐狸","avatar":"🦊","lastTime":"12:00"}]');
+        // 全局变量
+        let msgCharacters = [];
+        let touchStartX = 0;
+        let touchCurrentX = 0;
+        let isSwiping = false;
+        let currentSwipedId = null;
 
-        // 返回函数
-        function goBack() {
-            if (window.closeApp) {
-                window.closeApp();
-            } else if (document.referrer.includes('index.html') || window.history.length > 1) {
-                window.history.back();
+        // 初始化数据
+        function initData() {
+            const stored = localStorage.getItem('characters');
+            if (stored) {
+                msgCharacters = JSON.parse(stored);
             } else {
-                window.location.href = '../index.html';
+                msgCharacters = [{
+                    id: 'nash',
+                    name: 'Nash',
+                    nickname: 'Nash',
+                    bio: '天真开朗的小狐狸',
+                    avatar: '🦊',
+                    lastTime: '12:00'
+                }];
+                localStorage.setItem('characters', JSON.stringify(msgCharacters));
             }
         }
 
-        function showAddModal() {
-            const modal = document.getElementById('msgAddModal');
-            if (modal) modal.classList.add('show');
-        }
-
-        function hideAddModal() {
-            const modal = document.getElementById('msgAddModal');
-            if (modal) modal.classList.remove('show');
-            const form = document.getElementById('msgCharacterForm');
-            if (form) form.reset();
-            const avatarUpload = document.getElementById('msgAvatarUpload');
-            if (avatarUpload) avatarUpload.innerHTML = '<span>📷</span>';
-        }
-
-        function previewAvatar(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const upload = document.getElementById('msgAvatarUpload');
-                    if (upload) upload.innerHTML = `<img src="${e.target.result}">`;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function addCharacter(e) {
-            e.preventDefault();
-            const name = document.getElementById('msgCharacterName').value;
-            const nickname = document.getElementById('msgCharacterNickname').value || name;
-            const bio = document.getElementById('msgCharacterBio').value;
-            const avatarUpload = document.getElementById('msgAvatarUpload');
-            const avatarImg = avatarUpload ? avatarUpload.querySelector('img') : null;
-            const avatar = avatarImg ? avatarImg.src : '👤';
-
-            const newChar = {
-                id: Date.now().toString(),
-                name,
-                nickname,
-                bio,
-                avatar,
-                lastTime: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-            };
-
-            msgCharacters.push(newChar);
+        // 保存数据
+        function saveData() {
             localStorage.setItem('characters', JSON.stringify(msgCharacters));
-            renderChatList();
-            hideAddModal();
+            console.log('数据已保存:', msgCharacters);
         }
 
+        // 渲染聊天列表
         function renderChatList() {
             const list = document.getElementById('msgChatList');
             if (!list) {
-                setTimeout(renderChatList, 50);
+                console.error('msgChatList 元素不存在');
                 return;
             }
             
-            list.innerHTML = msgCharacters.map((char, index) => `
+            console.log('渲染角色列表:', msgCharacters);
+            
+            list.innerHTML = msgCharacters.map(char => `
                 <div class="msg-chat-item-wrapper" id="wrapper-${char.id}">
                     <div class="msg-swipe-actions">
-                        <div class="msg-swipe-action reset" onclick="resetChat('${char.id}')">重置</div>
-                        <div class="msg-swipe-action delete" onclick="deleteChat('${char.id}')">删除</div>
+                        <div class="msg-swipe-action reset" data-action="reset" data-id="${char.id}">重置</div>
+                        <div class="msg-swipe-action delete" data-action="delete" data-id="${char.id}">删除</div>
                     </div>
-                    <div class="msg-chat-item" id="item-${char.id}" ontouchstart="handleTouchStart(event, '${char.id}')" ontouchmove="handleTouchMove(event, '${char.id}')" ontouchend="handleTouchEnd(event, '${char.id}')" onclick="openChat('${char.id}')">
+                    <div class="msg-chat-item" id="item-${char.id}" data-id="${char.id}">
                         <div class="msg-chat-avatar">
                             ${char.avatar.startsWith('data:') || char.avatar.startsWith('http') 
                                 ? `<img src="${char.avatar}">` 
@@ -494,46 +464,77 @@
                     </div>
                 </div>
             `).join('');
+            
+            // 重新绑定事件
+            bindChatItemEvents();
         }
 
-        function openChat(characterId) {
-            alert('聊天功能开发中，角色ID: ' + characterId);
+        // 绑定聊天项事件
+        function bindChatItemEvents() {
+            // 绑定聊天项点击
+            document.querySelectorAll('.msg-chat-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // 如果正在滑动，不触发点击
+                    if (Math.abs(touchStartX - touchCurrentX) > 10) return;
+                    
+                    const id = this.dataset.id;
+                    openChat(id);
+                });
+                
+                // 绑定触摸事件
+                item.addEventListener('touchstart', handleTouchStart);
+                item.addEventListener('touchmove', handleTouchMove);
+                item.addEventListener('touchend', handleTouchEnd);
+            });
+            
+            // 绑定操作按钮
+            document.querySelectorAll('.msg-swipe-action').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const action = this.dataset.action;
+                    const id = this.dataset.id;
+                    
+                    if (action === 'reset') {
+                        resetChat(id);
+                    } else if (action === 'delete') {
+                        deleteChat(id);
+                    }
+                });
+            });
+        }
+
+        // 打开聊天
+        function openChat(id) {
+            alert('聊天功能开发中，角色ID: ' + id);
         }
 
         // 左滑功能
-        let touchStartX = 0;
-        let touchCurrentX = 0;
-        let isSwiping = false;
-        let currentSwipedId = null;
-
-        function handleTouchStart(e, id) {
+        function handleTouchStart(e) {
+            const item = e.currentTarget;
             touchStartX = e.touches[0].clientX;
-            isSwiping = true;
+            touchCurrentX = touchStartX;
+            isSwiping = false;
         }
 
-        function handleTouchMove(e, id) {
-            if (!isSwiping) return;
-            
+        function handleTouchMove(e) {
+            const item = e.currentTarget;
             touchCurrentX = e.touches[0].clientX;
             const diff = touchStartX - touchCurrentX;
             
+            if (Math.abs(diff) > 10) {
+                isSwiping = true;
+            }
+            
             if (diff > 0 && diff < 150) {
-                const item = document.getElementById('item-' + id);
-                if (item) {
-                    item.style.transform = `translateX(-${diff}px)`;
-                    item.style.transition = 'none';
-                }
+                item.style.transform = `translateX(-${diff}px)`;
+                item.style.transition = 'none';
             }
         }
 
-        function handleTouchEnd(e, id) {
-            if (!isSwiping) return;
-            isSwiping = false;
-            
+        function handleTouchEnd(e) {
+            const item = e.currentTarget;
+            const id = item.dataset.id;
             const diff = touchStartX - touchCurrentX;
-            const item = document.getElementById('item-' + id);
-            
-            if (!item) return;
             
             item.style.transition = 'transform 0.3s ease';
             
@@ -541,16 +542,22 @@
                 item.style.transform = 'translateX(-150px)';
                 currentSwipedId = id;
                 
+                // 关闭其他已打开的项
                 document.querySelectorAll('.msg-chat-item').forEach(el => {
-                    if (el.id !== 'item-' + id) {
+                    if (el.dataset.id !== id) {
                         el.style.transform = 'translateX(0)';
                     }
                 });
             } else {
                 item.style.transform = 'translateX(0)';
             }
+            
+            setTimeout(() => {
+                isSwiping = false;
+            }, 300);
         }
 
+        // 重置聊天
         function resetChat(id) {
             if (confirm('确定要重置与该角色的聊天记录吗？')) {
                 alert('聊天记录已重置');
@@ -558,14 +565,16 @@
             }
         }
 
+        // 删除角色
         function deleteChat(id) {
             if (confirm('确定要删除该角色吗？此操作无法恢复！')) {
                 msgCharacters = msgCharacters.filter(char => char.id !== id);
-                localStorage.setItem('characters', JSON.stringify(msgCharacters));
+                saveData();
                 renderChatList();
             }
         }
 
+        // 关闭滑动
         function closeSwipe(id) {
             const item = document.getElementById('item-' + id);
             if (item) {
@@ -574,18 +583,141 @@
             currentSwipedId = null;
         }
 
-        // 初始化
-        renderChatList();
-        
-        // 防止模态框背景滚动
-        const modal = document.getElementById('msgAddModal');
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target.id === 'msgAddModal') {
-                    hideAddModal();
+        // 模态框功能
+        function showAddModal() {
+            const modal = document.getElementById('msgAddModal');
+            if (modal) modal.classList.add('show');
+        }
+
+        function hideAddModal() {
+            const modal = document.getElementById('msgAddModal');
+            if (modal) modal.classList.remove('show');
+            
+            const form = document.getElementById('msgCharacterForm');
+            if (form) form.reset();
+            
+            const avatarUpload = document.getElementById('msgAvatarUpload');
+            if (avatarUpload) avatarUpload.innerHTML = '<span>📷</span>';
+        }
+
+        // 头像预览
+        function previewAvatar(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const upload = document.getElementById('msgAvatarUpload');
+                    if (upload) {
+                        upload.innerHTML = `<img src="${event.target.result}">`;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 添加角色
+        function addCharacter(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('msgCharacterName').value.trim();
+            const nickname = document.getElementById('msgCharacterNickname').value.trim() || name;
+            const bio = document.getElementById('msgCharacterBio').value.trim();
+            const avatarUpload = document.getElementById('msgAvatarUpload');
+            const avatarImg = avatarUpload ? avatarUpload.querySelector('img') : null;
+            const avatar = avatarImg ? avatarImg.src : '👤';
+
+            const newChar = {
+                id: Date.now().toString(),
+                name: name,
+                nickname: nickname,
+                bio: bio,
+                avatar: avatar,
+                lastTime: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+            };
+
+            console.log('添加新角色:', newChar);
+            msgCharacters.push(newChar);
+            saveData();
+            renderChatList();
+            hideAddModal();
+        }
+
+        // 返回功能
+        function goBack() {
+            if (window.closeApp) {
+                window.closeApp();
+            } else if (document.referrer.includes('index.html') || window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '../index.html';
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成，开始初始化');
+            
+            // 初始化数据
+            initData();
+            
+            // 渲染列表
+            renderChatList();
+            
+            // 绑定返回按钮
+            const backBtn = document.getElementById('backBtn');
+            if (backBtn) {
+                backBtn.addEventListener('click', goBack);
+            }
+            
+            // 绑定添加按钮
+            const addBtn = document.getElementById('addBtn');
+            if (addBtn) {
+                addBtn.addEventListener('click', showAddModal);
+            }
+            
+            // 绑定关闭模态框按钮
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', hideAddModal);
+            }
+            
+            // 绑定模态框背景点击
+            const modal = document.getElementById('msgAddModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target.id === 'msgAddModal') {
+                        hideAddModal();
+                    }
+                });
+            }
+            
+            // 绑定头像上传
+            const avatarUpload = document.getElementById('msgAvatarUpload');
+            const avatarInput = document.getElementById('msgAvatarInput');
+            if (avatarUpload && avatarInput) {
+                avatarUpload.addEventListener('click', function() {
+                    avatarInput.click();
+                });
+                avatarInput.addEventListener('change', previewAvatar);
+            }
+            
+            // 绑定表单提交
+            const form = document.getElementById('msgCharacterForm');
+            if (form) {
+                form.addEventListener('submit', addCharacter);
+            }
+            
+            // 绑定其他tab
+            document.querySelectorAll('.msg-tab-item').forEach((tab, index) => {
+                if (index !== 0) {
+                    tab.addEventListener('click', function() {
+                        alert('功能开发中');
+                    });
                 }
             });
-        }
+            
+            console.log('初始化完成');
+        });
     </script>
 </body>
 </html>
