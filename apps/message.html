@@ -455,13 +455,6 @@ function initData() {
   // 迁移回写，避免下次再出 undefined
   localStorage.setItem('characters', JSON.stringify(msgCharacters));
 }
-  // 保险：确保包含 Nash（避免之前被误删或空数组）
-  const hasNash = msgCharacters.some(c => c.id === 'nash' || (c.name === 'Nash' && c.nickname === 'Nash'));
-  if (!hasNash) {
-    msgCharacters.unshift(...seedPresets());
-    localStorage.setItem('characters', JSON.stringify(msgCharacters));
-  }
-}
 
         // 保存数据
         function saveData() {
