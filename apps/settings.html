@@ -2,207 +2,190 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
 <title>设置</title>
 <style>
   :root{
-    --vh:1vh;
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-left: env(safe-area-inset-left, 0px);
-    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-top: env(safe-area-inset-top,0px);
+    --safe-bottom: env(safe-area-inset-bottom,0px);
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#efeff4}
-  /* 整页容器：避免黑边 */
-  .page{position:fixed;inset:0;display:flex;flex-direction:column;background:#efeff4}
-  .navbar{
-    height:calc(44px + var(--safe-top));
-    padding-top:var(--safe-top);
-    background:#f8f8f8;border-bottom:.5px solid #d9d9d9;
-    display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;
+  html,body{height:100%;margin:0;}
+  body{background:#f2f2f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#111;}
+  /* 顶栏（预留 iOS 顶部“设置”标题位置） */
+  .nav{
+    position:sticky; top:0;
+    padding-top: calc(12px + var(--safe-top));
+    height: calc(44px + 12px + var(--safe-top));
+    background:#f2f2f7; z-index:10;
+    display:flex; align-items:flex-end; justify-content:center;
+    border-bottom:0.5px solid #ddd;
   }
-  .nav-back{position:absolute;left:8px;top:calc(var(--safe-top) + 8px);font-size:20px;padding:8px}
-  .nav-title{font-size:17px;font-weight:600}
-  .content{
-    min-height:calc(var(--vh)*100);
-    padding-bottom:var(--safe-bottom);
-    overflow:auto;-webkit-overflow-scrolling:touch;
+  .nav .back{position:absolute; left:12px; bottom:8px; padding:6px 8px; border-radius:10px;}
+  .nav .back:active{background:rgba(0,0,0,.06)}
+  .nav h1{font-size:17px; font-weight:600; margin:0 32px 8px; line-height:20px;}
+  /* 分组标题 */
+  .section-title{margin:16px 16px 8px; font-size:13px; color:#6d6d72}
+  /* 卡片 */
+  .card{background:#fff; border-radius:12px; margin:0 16px; overflow:hidden; box-shadow:0 1px 0 rgba(0,0,0,.06);}
+  .row{display:flex; align-items:center; padding:12px 16px; border-bottom:0.5px solid #eee;}
+  .row:last-child{border-bottom:none;}
+  .label{width:82px; font-size:15px; color:#111; flex:0 0 82px}
+  .ctrl{flex:1; display:flex; align-items:center; gap:12px}
+  input[type="text"]{
+    width:100%; border:0; background:#f2f2f7; border-radius:10px; padding:10px 12px; font-size:15px; color:#111;
   }
-
-  /* iOS 设置分组 */
-  .section{margin-top:32px}
-  .section-title{padding:0 16px 8px;color:#6d6d72;font-size:13px}
-  .group{background:#fff;border-top:.5px solid #d9d9d9;border-bottom:.5px solid #d9d9d9}
-  .cell{display:flex;align-items:center;padding:12px 16px;border-top:.5px solid #d9d9d9}
-  .cell:first-child{border-top:none}
-  .cell label{flex:0 0 110px;color:#000;font-size:16px}
-  .cell input[type="text"],
-  .cell input[type="password"],
-  .cell select{
-    flex:1;min-width:0;font-size:15px;padding:8px 10px;border:1px solid #e5e5ea;border-radius:8px;background:#f2f2f7;
+  select{
+    width:100%; border:0; background:#f2f2f7; border-radius:10px; padding:10px 12px; font-size:15px; color:#111; appearance:none;
   }
-  .row-actions{display:flex;gap:8px;padding:12px 16px}
+  /* iOS 风格小按钮（拉取/保存统一样式） */
   .btn{
-    appearance:none;border:none;border-radius:10px;padding:10px 14px;font-size:15px;cursor:pointer;
-    background:#f2f2f7;color:#000;
+    display:inline-flex; align-items:center; justify-content:center;
+    height:34px; padding:0 14px; border-radius:10px; border:0;
+    background:#e9f0ff; color:#1677ff; font-size:14px; font-weight:600; letter-spacing:.2px;
   }
-  .btn-primary{background:#007aff;color:#fff}
-  .footer-space{height:calc(16px + var(--safe-bottom))}
-  .hint{padding:10px 16px;color:#6d6d72;font-size:12px;line-height:1.4}
-  .status{padding:10px 16px;font-size:13px;color:#007aff}
+  .btn:active{filter:brightness(.95)}
+  .footer{
+    padding:16px; display:flex; gap:12px; position:sticky; bottom:0; background:linear-gradient(to top,#f2f2f7 70%,transparent);
+    padding-bottom: calc(16px + var(--safe-bottom));
+  }
+  .btn-secondary{background:#ededed; color:#222}
+  .btn-primary{background:#34c759; color:#fff}
+  .hint{font-size:13px; color:#6d6d72; margin:12px 16px}
 </style>
 </head>
 <body>
-<div class="page">
-  <div class="navbar">
-    <div class="nav-back" id="btnBack">◀</div>
-    <div class="nav-title">设置</div>
+  <div class="nav">
+    <button class="back" id="backBtn">◀</button>
+    <h1>设置</h1>
   </div>
 
-  <div class="content" id="scrollArea">
-
-    <!-- 主模型 -->
-    <div class="section">
-      <div class="section-title">主模型（用于聊天/日记/心声）</div>
-      <div class="group" id="groupMain">
-        <div class="cell">
-          <label>API Key</label>
-          <input id="mainKey" type="password" placeholder="sk-..." autocomplete="off">
-        </div>
-        <div class="cell">
-          <label>反代网址</label>
-          <input id="mainBase" type="text" placeholder="https://api.example.com/v1">
-        </div>
-        <div class="cell">
-          <label>模型</label>
-          <select id="mainModel"><option value="">（先拉取模型）</option></select>
-        </div>
-        <div class="row-actions">
-          <button class="btn" id="btnMainFetch">拉取模型</button>
-          <button class="btn-primary" id="btnMainSave">保存</button>
-        </div>
-      </div>
-      <div class="hint">如果你的网关遵循 OpenAI 兼容接口，点击“拉取模型”会尝试请求 <code>/models</code>；若跨域受限，会自动使用本地示例列表。</div>
-      <div class="status" id="statusMain"></div>
+  <!-- 主模型 -->
+  <div class="section-title">主模型（用于聊天/日记/心声）</div>
+  <div class="card">
+    <div class="row">
+      <div class="label">API Key</div>
+      <div class="ctrl"><input id="main_key" type="text" placeholder="sk-…" autocapitalize="off" autocomplete="off" /></div>
     </div>
-
-    <!-- 副模型 -->
-    <div class="section">
-      <div class="section-title">副模型（用于总结角色短/长期记忆）</div>
-      <div class="group" id="groupSub">
-        <div class="cell">
-          <label>API Key</label>
-          <input id="subKey" type="password" placeholder="sk-..." autocomplete="off">
-        </div>
-        <div class="cell">
-          <label>反代网址</label>
-          <input id="subBase" type="text" placeholder="https://api.example.com/v1">
-        </div>
-        <div class="cell">
-          <label>模型</label>
-          <select id="subModel"><option value="">（先拉取模型）</option></select>
-        </div>
-        <div class="row-actions">
-          <button class="btn" id="btnSubFetch">拉取模型</button>
-          <button class="btn-primary" id="btnSubSave">保存</button>
-        </div>
-      </div>
-      <div class="status" id="statusSub"></div>
+    <div class="row">
+      <div class="label">反代网址</div>
+      <div class="ctrl"><input id="main_base" type="text" placeholder="https://api.example.com/v1" /></div>
     </div>
-
-    <div class="section">
-      <div class="group">
-        <div class="row-actions">
-          <button class="btn" id="btnClear">清空本地配置</button>
-          <button class="btn" id="btnGoChat">去聊天测试</button>
-        </div>
+    <div class="row">
+      <div class="label">模型</div>
+      <div class="ctrl">
+        <select id="main_model"><option>(先拉取模型)</option></select>
+        <button class="btn" id="main_fetch">拉取模型</button>
+        <button class="btn" id="main_save">保存</button>
       </div>
     </div>
-
-    <div class="footer-space"></div>
   </div>
-</div>
+  <div class="hint">如你的网关兼容 OpenAI 接口，“拉取模型”会尝试请求 /models；若跨域受限，会自动使用本地示例列表。</div>
+
+  <!-- 副模型 -->
+  <div class="section-title">副模型（用于总结角色短/长期记忆）</div>
+  <div class="card">
+    <div class="row">
+      <div class="label">API Key</div>
+      <div class="ctrl"><input id="sub_key" type="text" placeholder="sk-…" autocapitalize="off" autocomplete="off" /></div>
+    </div>
+    <div class="row">
+      <div class="label">反代网址</div>
+      <div class="ctrl"><input id="sub_base" type="text" placeholder="https://api.example.com/v1" /></div>
+    </div>
+    <div class="row">
+      <div class="label">模型</div>
+      <div class="ctrl">
+        <select id="sub_model"><option>(先拉取模型)</option></select>
+        <button class="btn" id="sub_fetch">拉取模型</button>
+        <button class="btn" id="sub_save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <button class="btn btn-secondary" id="clearAll">清空本地配置</button>
+    <button class="btn" id="toChat">去聊天测试</button>
+  </div>
 
 <script>
-  // ===== iOS 视口修正，避免底部黑边 =====
-  function setVH(){ document.documentElement.style.setProperty('--vh', (window.innerHeight*0.01)+'px'); }
-  setVH(); window.addEventListener('resize', setVH);
-
-  // ===== 存储键 =====
-  const KEY_MAIN = 'eg_config_main';
-  const KEY_SUB  = 'eg_config_sub';
-
-  // ===== 读/写 =====
-  function read(key){ try{ return JSON.parse(localStorage.getItem(key)||'null'); }catch(e){ return null; } }
-  function write(key, val){ localStorage.setItem(key, JSON.stringify(val||{})); }
-
-  // ===== 绑定 =====
-  const mainKey  = document.getElementById('mainKey');
-  const mainBase = document.getElementById('mainBase');
-  const mainModel= document.getElementById('mainModel');
-  const subKey   = document.getElementById('subKey');
-  const subBase  = document.getElementById('subBase');
-  const subModel = document.getElementById('subModel');
-
-  // 载入已有配置
-  (function initForm(){
-    const m = read(KEY_MAIN) || {};
-    const s = read(KEY_SUB)  || {};
-    if (m.apiKey)  mainKey.value  = m.apiKey;
-    if (m.baseUrl) mainBase.value = m.baseUrl;
-    if (m.model)   mainModel.innerHTML = `<option value="${m.model}">${m.model}</option>`;
-    if (s.apiKey)  subKey.value   = s.apiKey;
-    if (s.baseUrl) subBase.value  = s.baseUrl;
-    if (s.model)   subModel.innerHTML = `<option value="${s.model}">${s.model}</option>`;
-  })();
-
-  // 保存
-  document.getElementById('btnMainSave').onclick = () => {
-    write(KEY_MAIN, { apiKey: mainKey.value.trim(), baseUrl: mainBase.value.trim(), model: mainModel.value });
-    document.getElementById('statusMain').textContent = '主模型配置已保存';
+(function(){
+  const LS = {
+    main: 'eg_main_model_cfg',
+    sub:  'eg_sub_model_cfg'
   };
-  document.getElementById('btnSubSave').onclick = () => {
-    write(KEY_SUB, { apiKey: subKey.value.trim(), baseUrl: subBase.value.trim(), model: subModel.value });
-    document.getElementById('statusSub').textContent = '副模型配置已保存';
-  };
+  const $ = s => document.querySelector(s);
 
-  // 拉取模型（真实请求失败则给一组本地示例）
-  async function fetchModelsTo(selectEl, statusEl, base, key){
-    statusEl.textContent = '拉取中…';
-    const fallback = ['gpt-4o-mini','gpt-4o','qwen2.5','claude-3.5-sonnet','glm-4-flash'];
-    if (!base){ selectEl.innerHTML = fallback.map(m=>`<option>${m}</option>`).join(''); statusEl.textContent='已加载示例列表'; return; }
+  // 填充/读取
+  function load(key, map){
     try{
-      const url = base.replace(/\/+$/,'') + '/models';
-      const resp = await fetch(url, { headers: key ? { 'Authorization':'Bearer '+key } : {}, mode: 'cors' });
-      if (!resp.ok) throw new Error(resp.status+' '+resp.statusText);
-      const data = await resp.json();
-      // 兼容 OpenAI 格式或扁平数组
-      const names = (data.data || data || []).map(it => it.id || it.name).filter(Boolean);
-      if (!names.length) throw new Error('空列表');
-      selectEl.innerHTML = names.map(m=>`<option>${m}</option>`).join('');
-      statusEl.textContent = '模型列表已更新（来自网关）';
+      const raw = localStorage.getItem(key);
+      if(!raw) return;
+      const cfg = JSON.parse(raw);
+      for(const k in map){ if(cfg[k] != null) map[k].value = cfg[k]; }
+    }catch(e){}
+  }
+  function save(key, map){
+    const cfg = {};
+    for(const k in map){ cfg[k] = map[k].value.trim(); }
+    localStorage.setItem(key, JSON.stringify(cfg));
+    alert('已保存');
+  }
+
+  // 绑定
+  const mainMap = { apiKey:$('#main_key'), base:$('#main_base'), model:$('#main_model') };
+  const subMap  = { apiKey:$('#sub_key'),  base:$('#sub_base'),  model:$('#sub_model')  };
+
+  load(LS.main, mainMap);
+  load(LS.sub,  subMap);
+
+  $('#main_save').onclick = () => save(LS.main, mainMap);
+  $('#sub_save').onclick  = () => save(LS.sub,  subMap);
+
+  // 拉取模型（优先 /models；失败用示例）
+  async function fetchModels(base, key){
+    const demo = ['gpt-4o-mini','gpt-4o','gpt-4.1','o3-mini','o3'];
+    try{
+      const url = (base.replace(/\/+$/,'') || '') + '/models';
+      const r = await fetch(url, {headers:{'Authorization':'Bearer '+key}});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const j = await r.json();
+      const list = (j.data||[]).map(x=>x.id).filter(Boolean);
+      return list.length ? list.sort() : demo;
     }catch(e){
-      selectEl.innerHTML = fallback.map(m=>`<option>${m}</option>`).join('');
-      statusEl.textContent = '跨域或接口不可达，已使用示例列表';
+      return demo;
     }
   }
-  document.getElementById('btnMainFetch').onclick = ()=>{
-    fetchModelsTo(mainModel, document.getElementById('statusMain'), mainBase.value.trim(), mainKey.value.trim());
+  function fillSelect(sel, arr){
+    sel.innerHTML = arr.map(m=>`<option value="${m}">${m}</option>`).join('');
+  }
+  $('#main_fetch').onclick = async ()=>{
+    const arr = await fetchModels(mainMap.base.value, mainMap.apiKey.value);
+    fillSelect(mainMap.model, arr);
   };
-  document.getElementById('btnSubFetch').onclick = ()=>{
-    fetchModelsTo(subModel, document.getElementById('statusSub'), subBase.value.trim(), subKey.value.trim());
+  $('#sub_fetch').onclick = async ()=>{
+    const arr = await fetchModels(subMap.base.value, subMap.apiKey.value);
+    fillSelect(subMap.model, arr);
   };
 
-  // 其它
-  document.getElementById('btnClear').onclick = ()=>{
-    localStorage.removeItem(KEY_MAIN);
-    localStorage.removeItem(KEY_SUB);
-    alert('已清空本地配置');
+  // 返回
+  $('#backBtn').onclick = function(){
+    if (history.length > 1) history.back();
+    else location.href = '../index.html';
+  };
+
+  // 清空
+  $('#clearAll').onclick = ()=>{
+    localStorage.removeItem(LS.main);
+    localStorage.removeItem(LS.sub);
+    alert('已清空');
     location.reload();
   };
-  document.getElementById('btnBack').onclick = ()=>history.length>1 ? history.back() : location.href='../index.html';
-  document.getElementById('btnGoChat').onclick = ()=> location.href='./message-chat.html?id=nash';
+
+  // 去聊天测试
+  $('#toChat').onclick = ()=>{
+    location.href = './message-detail.html#nash';
+  };
+})();
 </script>
 </body>
 </html>
