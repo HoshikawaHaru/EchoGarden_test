@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>聊天</title>
+<style>
+:root{ --safe-top: env(safe-area-inset-top,0px); --safe-bottom: env(safe-area-inset-bottom,0px);}
+html,body{height:100%;margin:0;background:#ededed;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+/* 顶栏 */
+.nav{position:sticky;top:0;z-index:5;background:#f7f7f7;border-bottom:.5px solid #d9d9d9;
+  height:calc(44px + var(--safe-top)); padding-top:var(--safe-top);
+  display:flex; align-items:center; justify-content:center;}
+.nav .back{position:absolute;left:8px;bottom:8px;padding:8px;border-radius:10px}
+.nav .back:active{background:rgba(0,0,0,.06)}
+.nav h1{margin:0 40px 6px;font-size:17px;font-weight:600}
+
+/* 列表 */
+.chat{padding:10px 12px 90px; overflow-y:auto; height:calc(100vh - 44px - var(--safe-top));}
+.item{display:flex; margin:10px 0; align-items:flex-end;}
+.item.me{justify-content:flex-end}
+.avatar{width:36px;height:36px;border-radius:6px;background:#ccc;flex:0 0 36px}
+.bubble{max-width:72%; padding:8px 10px; border-radius:6px; line-height:1.35; font-size:15px; box-shadow:0 1px 0 rgba(0,0,0,.05)}
+.item.me .bubble{background:#9fe86d}
+.item.you .bubble{background:#fff}
+
+/* 输入区 */
+.inputbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:6; background:#f7f7f7; border-top:.5px solid #d9d9d9;
+  padding:8px 8px calc(8px + var(--safe-bottom));
+  display:flex; gap:8px; align-items:center;
+}
+.inputbar input{
+  flex:1; border:0; background:#fff; border-radius:18px; padding:10px 14px; font-size:16px;
+}
+.send{border:0; background:#34c759; color:#fff; border-radius:14px; padding:8px 14px; font-weight:600}
+.send:active{filter:brightness(.95)}
+</style>
+</head>
+<body>
+  <div class="nav">
+    <button class="back" id="backBtn">◀</button>
+    <h1 id="title">Nash</h1>
+  </div>
+
+  <div class="chat" id="chatList"></div>
+
+  <div class="inputbar">
+    <input id="ipt" placeholder="发消息…"/>
+    <button class="send" id="btnSend">发送</button>
+  </div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const chat = $('#chatList');
+  const ipt  = $('#ipt');
+
+  function scrollBottom(){ chat.scrollTop = chat.scrollHeight; }
+  function push(type, text){
+    const el = document.createElement('div');
+    el.className = 'item '+ (type==='me'?'me':'you');
+    el.innerHTML = (type==='me'
+      ? `<div class="bubble">${text}</div><div class="avatar"></div>`
+      : `<div class="avatar"></div><div class="bubble">${text}</div>`);
+    chat.appendChild(el);
+    scrollBottom();
+  }
+
+  // 返回
+  $('#backBtn').onclick = function(){
+    if (history.length > 1) history.back();
+    else location.href = './message.html';
+  };
+
+  // 读取设置
+  const cfg = JSON.parse(localStorage.getItem('eg_main_model_cfg') || '{}');
+  const base = (cfg.base||'').replace(/\/+$/,'');
+  const key  = cfg.apiKey||'';
+  const model= cfg.model||'gpt-4o-mini';
+
+  async function callLLM(userText){
+    // 1) OpenAI 兼容
+    if(base && key){
+      try{
+        const r = await fetch(base + '/chat/completions',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+          body: JSON.stringify({
+            model,
+            messages:[{role:'system',content:'你是友好、有点活泼的聊天助理。'},{role:'user',content:userText}]
+          })
+        });
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const j = await r.json();
+        const txt = j.choices?.[0]?.message?.content?.trim();
+        if (txt) return txt;
+        throw new Error('空响应');
+      }catch(e){
+        // 继续走 mock
+      }
+    }
+    // 2) 本地 mock
+    const openings = ['呀到我啦！','我在呀～','收到～','在的在的！'];
+    return openings[Math.floor(Math.random()*openings.length)] + ' ' + userText.replace(/^(.{80}).*/,'$1');
+  }
+
+  async function send(){
+    const text = ipt.value.trim();
+    if(!text) return;
+    ipt.value = '';
+    push('me', text);
+    const reply = await callLLM(text);
+    push('you', reply);
+  }
+
+  $('#btnSend').onclick = send;
+  ipt.addEventListener('keydown', e=>{ if(e.key==='Enter') send(); });
+
+  // 欢迎一条
+  push('you', '嗨，我是 Nash～现在就可以直接聊天啦。');
+
+})();
+</script>
+</body>
+</html>
