@@ -112,13 +112,22 @@
     
     // 调试工具
     var debugBox = document.getElementById('debugBox');
+    if (!debugBox) {
+      debugBox = document.createElement('div');
+      debugBox.id = 'debugBox';
+      debugBox.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.8);color:#0f0;padding:8px;border-radius:6px;font-size:11px;max-height:25vh;overflow:auto;font-family:monospace;white-space:pre-wrap;word-break:break-all';
+      document.body.appendChild(debugBox);
+    }
+    
     function log(msg) {
       try {
         var time = new Date().toTimeString().slice(0,8);
         debugBox.innerHTML += time + ' ' + msg + '\n';
         debugBox.scrollTop = debugBox.scrollHeight;
         console.log(msg);
-      } catch(e) {}
+      } catch(e) {
+        console.log(msg);
+      }
     }
     
     window.onerror = function(msg, url, line) {
@@ -127,6 +136,7 @@
     };
     
     log('脚本开始执行');
+    log('document.readyState: ' + document.readyState);
     
     // 数据管理
     var STORAGE_KEY = 'eg_characters_v2';
@@ -310,9 +320,9 @@
       }
     }
     
-    // 初始化
-    document.addEventListener('DOMContentLoaded', function() {
-      log('DOM加载完成');
+    // 初始化函数
+    function init() {
+      log('init函数开始');
       
       try {
         loadData();
@@ -412,7 +422,19 @@
       } catch(e) {
         log('初始化错误: ' + e.message);
       }
-    });
+    }
+    
+    // 立即执行或等待DOM
+    if (document.readyState === 'loading') {
+      log('等待DOM加载');
+      document.addEventListener('DOMContentLoaded', function() {
+        log('DOM加载完成');
+        init();
+      });
+    } else {
+      log('DOM已就绪，立即初始化');
+      init();
+    }
     
   })();
   </script>
