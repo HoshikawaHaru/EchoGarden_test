@@ -110,46 +110,33 @@
   (function(){
     'use strict';
     
-    // ===== 调试开关 =====
-const DEBUG = false; // 需要看日志时改成 true
-
-
-// ===== 调试工具 =====
-var debugBox = document.getElementById('debugBox');
-if (debugBox) {
-  // 生产环境默认隐藏并清空
-  debugBox.style.display = DEBUG ? 'block' : 'none';
-  debugBox.innerHTML = '';
-} else if (DEBUG) {
-  // 只有在调试模式下才创建
-  debugBox = document.createElement('div');
-  debugBox.id = 'debugBox';
-  debugBox.style.cssText =
-    'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.8);color:#0f0;padding:8px;border-radius:6px;font-size:11px;max-height:25vh;overflow:auto;font-family:monospace;white-space:pre-wrap;word-break:break-all;display:block';
-  document.body.appendChild(debugBox);
-}
-
-// 日志函数：非调试模式直接 no-op
-function log(msg) {
-  if (!DEBUG) return;
-  try {
-    var time = new Date().toTimeString().slice(0, 8);
-    debugBox.innerHTML += time + ' ' + msg + '\n';
-    debugBox.scrollTop = debugBox.scrollHeight;
-    console.log(msg);
-  } catch(e) {
-    console.log(msg);
-  }
-}
-
-// 只有在 DEBUG 时才捕获并打印错误
-if (DEBUG) {
-  window.onerror = function(msg, url, line) {
-    log('ERROR: ' + msg + ' @' + line);
-    return true;
-  };
-}
-
+    // 调试工具
+    var debugBox = document.getElementById('debugBox');
+    if (!debugBox) {
+      debugBox = document.createElement('div');
+      debugBox.id = 'debugBox';
+      debugBox.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.8);color:#0f0;padding:8px;border-radius:6px;font-size:11px;max-height:25vh;overflow:auto;font-family:monospace;white-space:pre-wrap;word-break:break-all';
+      document.body.appendChild(debugBox);
+    }
+    
+    function log(msg) {
+      try {
+        var time = new Date().toTimeString().slice(0,8);
+        debugBox.innerHTML += time + ' ' + msg + '\n';
+        debugBox.scrollTop = debugBox.scrollHeight;
+        console.log(msg);
+      } catch(e) {
+        console.log(msg);
+      }
+    }
+    
+    window.onerror = function(msg, url, line) {
+      log('ERROR: ' + msg + ' @' + line);
+      return true;
+    };
+    
+    log('脚本开始执行');
+    log('document.readyState: ' + document.readyState);
     
     // 数据管理
     var STORAGE_KEY = 'eg_characters_v2';
@@ -243,7 +230,10 @@ if (DEBUG) {
       for (var i = 0; i < items.length; i++) {
         items[i].addEventListener('click', function() {
           if (Math.abs(touchStartX - touchCurrentX) < 10) {
-            alert('聊天功能开发中: ' + this.dataset.id);
+            var id = this.dataset.id;
+            log('打开聊天: ' + id);
+            // 跳转到聊天详情页
+            location.href = './message-detail.html?id=' + id;
           }
         });
         
