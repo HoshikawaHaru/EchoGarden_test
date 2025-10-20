@@ -11,7 +11,6 @@
   }
   html,body{height:100%;margin:0;}
   body{background:#f2f2f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#111;}
-  /* 顶栏（预留 iOS 顶部“设置”标题位置） */
   .nav{
     position:sticky; top:0;
     padding-top: calc(12px + var(--safe-top));
@@ -23,9 +22,7 @@
   .nav .back{position:absolute; left:12px; bottom:8px; padding:6px 8px; border-radius:10px;}
   .nav .back:active{background:rgba(0,0,0,.06)}
   .nav h1{font-size:17px; font-weight:600; margin:0 32px 8px; line-height:20px;}
-  /* 分组标题 */
   .section-title{margin:16px 16px 8px; font-size:13px; color:#6d6d72}
-  /* 卡片 */
   .card{background:#fff; border-radius:12px; margin:0 16px; overflow:hidden; box-shadow:0 1px 0 rgba(0,0,0,.06);}
   .row{display:flex; align-items:center; padding:12px 16px; border-bottom:0.5px solid #eee;}
   .row:last-child{border-bottom:none;}
@@ -37,7 +34,6 @@
   select{
     width:100%; border:0; background:#f2f2f7; border-radius:10px; padding:10px 12px; font-size:15px; color:#111; appearance:none;
   }
-  /* iOS 风格小按钮（拉取/保存统一样式） */
   .btn{
     display:inline-flex; align-items:center; justify-content:center;
     height:34px; padding:0 14px; border-radius:10px; border:0;
@@ -59,7 +55,6 @@
     <h1>设置</h1>
   </div>
 
-  <!-- 主模型 -->
   <div class="section-title">主模型（用于聊天/日记/心声）</div>
   <div class="card">
     <div class="row">
@@ -67,7 +62,7 @@
       <div class="ctrl"><input id="main_key" type="text" placeholder="sk-…" autocapitalize="off" autocomplete="off" /></div>
     </div>
     <div class="row">
-      <div class="label">反代网址</div>
+      <div class="label">代理网址</div>
       <div class="ctrl"><input id="main_base" type="text" placeholder="https://api.example.com/v1" /></div>
     </div>
     <div class="row">
@@ -79,9 +74,8 @@
       </div>
     </div>
   </div>
-  <div class="hint">如你的网关兼容 OpenAI 接口，“拉取模型”会尝试请求 /models；若跨域受限，会自动使用本地示例列表。</div>
+  <div class="hint">如你的网关兼容 OpenAI 接口，"拉取模型"会尝试请求 /models；若跨域受限，会自动使用本地示例列表。</div>
 
-  <!-- 副模型 -->
   <div class="section-title">副模型（用于总结角色短/长期记忆）</div>
   <div class="card">
     <div class="row">
@@ -89,7 +83,7 @@
       <div class="ctrl"><input id="sub_key" type="text" placeholder="sk-…" autocapitalize="off" autocomplete="off" /></div>
     </div>
     <div class="row">
-      <div class="label">反代网址</div>
+      <div class="label">代理网址</div>
       <div class="ctrl"><input id="sub_base" type="text" placeholder="https://api.example.com/v1" /></div>
     </div>
     <div class="row">
@@ -115,7 +109,6 @@
   };
   const $ = s => document.querySelector(s);
 
-  // 填充/读取
   function load(key, map){
     try{
       const raw = localStorage.getItem(key);
@@ -131,7 +124,6 @@
     alert('已保存');
   }
 
-  // 绑定
   const mainMap = { apiKey:$('#main_key'), base:$('#main_base'), model:$('#main_model') };
   const subMap  = { apiKey:$('#sub_key'),  base:$('#sub_base'),  model:$('#sub_model')  };
 
@@ -141,7 +133,6 @@
   $('#main_save').onclick = () => save(LS.main, mainMap);
   $('#sub_save').onclick  = () => save(LS.sub,  subMap);
 
-  // 拉取模型（优先 /models；失败用示例）
   async function fetchModels(base, key){
     const demo = ['gpt-4o-mini','gpt-4o','gpt-4.1','o3-mini','o3'];
     try{
@@ -167,13 +158,19 @@
     fillSelect(subMap.model, arr);
   };
 
-  // 返回
+  // 返回 - 修复：调用主页面的 closeApp
   $('#backBtn').onclick = function(){
-    if (history.length > 1) history.back();
-    else location.href = '../index.html';
+    if (window.closeApp) {
+      window.closeApp();
+    } else if (window.parent && window.parent.closeApp) {
+      window.parent.closeApp();
+    } else if (history.length > 1) {
+      history.back();
+    } else {
+      location.href = '../index.html';
+    }
   };
 
-  // 清空
   $('#clearAll').onclick = ()=>{
     localStorage.removeItem(LS.main);
     localStorage.removeItem(LS.sub);
@@ -181,9 +178,20 @@
     location.reload();
   };
 
-  // 去聊天测试
+  // 去聊天测试 - 修复：跳转到消息列表
   $('#toChat').onclick = ()=>{
-    location.href = './message-detail.html#nash';
+    if (window.closeApp) {
+      // 如果是通过 index 打开的，先关闭设置，再打开消息
+      window.closeApp();
+      setTimeout(() => {
+        if (window.parent && window.parent.loadApp) {
+          window.parent.loadApp('message');
+        }
+      }, 100);
+    } else {
+      // 独立打开的，直接跳转
+      location.href = './message.html';
+    }
   };
 })();
 </script>
