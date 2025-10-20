@@ -14,7 +14,7 @@
     :root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
     html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
     .message-app{position:fixed;inset:0;background:#ededed;display:flex;flex-direction:column}
-    .msg-navbar{height:calc(44px + env(safe-area-inset-top,20px));padding-top:env(safe-area-inset-top,20px);background:#f7f7f7;border-bottom:.5px solid #d9d9d9;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0}
+    .msg-navbar{height:calc(44px + env(safe-area-inset-top,20px));padding-top:env(safe-area-inset-top,20px);background:#f7f7f7;border-bottom:.5px solid #d9d9d9;display:flex;align-items:center;justify-content:space-between;padding-left:16px;padding-right:16px;flex-shrink:0}
     .msg-navbar-left{display:flex;align-items:center;gap:12px}
     .msg-back-btn{font-size:20px;cursor:pointer;user-select:none;padding:8px;margin:-8px}
     .msg-navbar-title{font-size:17px;font-weight:600;color:#000}
@@ -54,10 +54,7 @@
     .msg-swipe-action{width:75px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;cursor:pointer;user-select:none}
     .msg-swipe-action.reset{background:#ff9500}
     .msg-swipe-action.delete{background:#ff3b30}
-    /* 空状态卡片 */
-    .empty-card{margin:18px;color:#666;background:#fff;border-radius:12px;padding:16px;line-height:1.6;border:.5px solid #eee}
-    .empty-card button{margin-top:10px;margin-right:8px;padding:8px 12px;border-radius:8px;border:0;background:#07c160;color:#fff}
-    .empty-card button.secondary{background:#888}
+    #debugBox{position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.8);color:#0f0;padding:8px;border-radius:6px;font-size:11px;max-height:25vh;overflow:auto;font-family:monospace;white-space:pre-wrap;word-break:break-all}
   </style>
 </head>
 <body>
@@ -69,17 +66,13 @@
       </div>
       <div class="msg-navbar-icon" id="addBtn">➕</div>
     </div>
-
     <div class="msg-chat-list" id="msgChatList"></div>
-
     <div class="msg-tabbar">
       <div class="msg-tab-item active"><div class="msg-tab-icon">💬</div><div class="msg-tab-label">聊天</div></div>
       <div class="msg-tab-item"><div class="msg-tab-icon">📅</div><div class="msg-tab-label">事件</div></div>
       <div class="msg-tab-item"><div class="msg-tab-icon">🌐</div><div class="msg-tab-label">朋友圈</div></div>
       <div class="msg-tab-item"><div class="msg-tab-icon">👤</div><div class="msg-tab-label">我</div></div>
     </div>
-
-    <!-- 添加角色弹窗 -->
     <div class="msg-modal" id="msgAddModal">
       <div class="msg-modal-content">
         <div class="msg-modal-header">
@@ -111,148 +104,317 @@
       </div>
     </div>
   </div>
+  <div id="debugBox"></div>
 
   <script>
-  /* ===== 顶层补丁：破缓存/参数工具/日志 ===== */
-  var EG_BUILD = '20251019e';
   (function(){
-    var box = document.createElement('div');
-    box.id = 'eg-debug';
-    box.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.6);color:#fff;padding:6px 8px;border-radius:8px;font-size:12px;max-height:30vh;overflow:auto;display:none';
-    window.egLog = function(s){ try{ box.style.display='block'; box.innerHTML+='<div>'+s+'</div>'; }catch(e){} };
-    window.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(box); });
-    window.onerror = function(msg,src,ln,col){ egLog('JS错误：'+msg+' @'+ln+':'+col); };
-  })();
-  function qs(k){var m=location.search.match(new RegExp('[?&]'+k+'=([^&]+)'));return m?decodeURIComponent(m[1]):null;}
-
-  (function(){ if (location.search.indexOf('v=') === -1) {
-    var sp = new URLSearchParams(location.search); sp.set('v', EG_BUILD);
-    location.replace(location.pathname + '?' + sp.toString() + location.hash);
-  }})();
-
-  var LS_KEYS = ['characters','msgCharacters','eg_chars'];
-  if (qs('reset') === '1') { for (var i=0;i<LS_KEYS.length;i++) try{ localStorage.removeItem(LS_KEYS[i]); }catch(e){} egLog('reset=1 已清空历史数据'); }
-  var FORCE_MEMORY = (qs('force') === '1');
-
-  function readAny(){ if (FORCE_MEMORY) return {key:'memory', data:null};
-    for (var i=0;i<LS_KEYS.length;i++){ try{ var raw=localStorage.getItem(LS_KEYS[i]); if(raw){ var data=JSON.parse(raw); if(Array.isArray(data)) return {key:LS_KEYS[i], data:data}; } }catch(e){ egLog('读取 '+LS_KEYS[i]+' 失败:'+e); } }
-    return {key:LS_KEYS[0], data:null};
-  }
-  function writeToAll(list){ if (FORCE_MEMORY) return;
-    var s = JSON.stringify(list||[]); for (var i=0;i<LS_KEYS.length;i++){ try{ localStorage.setItem(LS_KEYS[i], s);}catch(e){ egLog('写入 '+LS_KEYS[i]+' 失败:'+e); } }
-  }
-
-  /* ===== 业务脚本 ===== */
-  var msgCharacters = [];
-  var touchStartX = 0, touchCurrentX = 0, isSwiping = false, currentSwipedId = null;
-
-  function normalizeCharacters(arr){
-    if (!arr || !arr.length) return [];
-    return arr.map(function(c){
-      c = c || {};
-      var id   = (c.id != null) ? String(c.id) : String(Date.now() + Math.random());
-      var name = (c.name || c.nickname) ? String(c.name || c.nickname) : '未命名';
-      var nick = (c.nickname || c.name) ? String(c.nickname || c.name) : '未命名';
-      var bio  = c.bio ? String(c.bio) : '';
-      var av   = (typeof c.avatar === 'string' && c.avatar) ? c.avatar : '👤';
-      var last = c.lastTime ? String(c.lastTime) : new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-      return { id:id, name:name, nickname:nick, bio:bio, avatar:av, lastTime:last };
-    });
-  }
-  function seedPresets(){
-    return [{ id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊',
-      lastTime:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}) }];
-  }
-  function initData(){
-    var got = readAny(), arr = got.data;
-    if (!arr || !arr.length) {
-      msgCharacters = seedPresets();
-    } else {
-      msgCharacters = normalizeCharacters(arr);
-      var has=false; for (var i=0;i<msgCharacters.length;i++){ var c=msgCharacters[i]; if (c.id==='nash'||(c.name==='Nash'&&c.nickname==='Nash')){has=true;break;} }
-      if (!has) msgCharacters.unshift(seedPresets()[0]);
+    'use strict';
+    
+    // 调试工具
+    var debugBox = document.getElementById('debugBox');
+    function log(msg) {
+      try {
+        var time = new Date().toTimeString().slice(0,8);
+        debugBox.innerHTML += time + ' ' + msg + '\n';
+        debugBox.scrollTop = debugBox.scrollHeight;
+        console.log(msg);
+      } catch(e) {}
     }
-    writeToAll(msgCharacters);
-    egLog('init 完成：'+msgCharacters.length+' 条；源key='+got.key+'；build='+EG_BUILD+(FORCE_MEMORY?'；force内存模式':'')); 
-  }
-  function saveData(){ writeToAll(msgCharacters); }
-
-  function renderChatList(){
-    var list = document.getElementById('msgChatList');
-    if (!list) return;
-
-    if (!msgCharacters || msgCharacters.length === 0) {
-      list.innerHTML = '<div class="empty-card">还没有会话～<br>可能是缓存里有旧数据或脚本未更新。你可以：<br>1）点下面“重新注入 Nash”<br>2）或清空一次数据<br><br><button id="btn-seed">重新注入 Nash</button><button class="secondary" id="btn-reset">清空数据</button></div>';
-      var seedBtn = document.getElementById('btn-seed');
-      var resetBtn = document.getElementById('btn-reset');
-      if (seedBtn) seedBtn.onclick = function(){ msgCharacters = seedPresets(); saveData(); renderChatList(); };
-      if (resetBtn) resetBtn.onclick = function(){ for (var i=0;i<LS_KEYS.length;i++) try{ localStorage.removeItem(LS_KEYS[i]); }catch(e){} msgCharacters = seedPresets(); saveData(); renderChatList(); };
-      return;
+    
+    window.onerror = function(msg, url, line) {
+      log('ERROR: ' + msg + ' @' + line);
+      return true;
+    };
+    
+    log('脚本开始执行');
+    
+    // 数据管理
+    var STORAGE_KEY = 'eg_characters_v2';
+    var msgCharacters = [];
+    var touchStartX = 0, touchCurrentX = 0, isSwiping = false;
+    
+    function loadData() {
+      try {
+        var stored = localStorage.getItem(STORAGE_KEY);
+        log('读取localStorage: ' + (stored ? stored.length + '字符' : 'null'));
+        
+        if (stored) {
+          msgCharacters = JSON.parse(stored);
+          log('解析成功: ' + msgCharacters.length + '个角色');
+        } else {
+          msgCharacters = [{
+            id: 'nash',
+            name: 'Nash',
+            nickname: 'Nash',
+            bio: '天真开朗的小狐狸',
+            avatar: '🦊',
+            lastTime: '12:00'
+          }];
+          saveData();
+          log('初始化Nash');
+        }
+      } catch(e) {
+        log('loadData错误: ' + e.message);
+        msgCharacters = [];
+      }
     }
-
-    list.innerHTML = msgCharacters.map(function(char){
-      var av = (typeof char.avatar === 'string' && char.avatar) ? char.avatar : '👤';
-      var avatarHTML = (av.indexOf('data:')===0 || av.indexOf('http')===0) ? '<img src="'+av+'">' : av;
-      return (
-        '<div class="msg-chat-item-wrapper" id="wrapper-'+char.id+'">'+
+    
+    function saveData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(msgCharacters));
+        log('保存成功: ' + msgCharacters.length + '个角色');
+      } catch(e) {
+        log('saveData错误: ' + e.message);
+      }
+    }
+    
+    function renderList() {
+      log('开始渲染列表');
+      var list = document.getElementById('msgChatList');
+      if (!list) {
+        log('ERROR: msgChatList不存在');
+        return;
+      }
+      
+      if (msgCharacters.length === 0) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:#999">暂无角色</div>';
+        return;
+      }
+      
+      var html = '';
+      for (var i = 0; i < msgCharacters.length; i++) {
+        var c = msgCharacters[i];
+        var av = c.avatar || '👤';
+        var avatarHTML = (av.indexOf('data:')===0 || av.indexOf('http')===0) 
+          ? '<img src="'+av+'">' 
+          : av;
+        
+        html += '<div class="msg-chat-item-wrapper">'+
           '<div class="msg-swipe-actions">'+
-            '<div class="msg-swipe-action reset" data-action="reset" data-id="'+char.id+'">重置</div>'+
-            '<div class="msg-swipe-action delete" data-action="delete" data-id="'+char.id+'">删除</div>'+
+            '<div class="msg-swipe-action reset" data-id="'+c.id+'">重置</div>'+
+            '<div class="msg-swipe-action delete" data-id="'+c.id+'">删除</div>'+
           '</div>'+
-          '<div class="msg-chat-item" id="item-'+char.id+'" data-id="'+char.id+'">'+
+          '<div class="msg-chat-item" data-id="'+c.id+'">'+
             '<div class="msg-chat-avatar">'+avatarHTML+'</div>'+
             '<div class="msg-chat-content">'+
               '<div class="msg-chat-header">'+
-                '<div class="msg-chat-name">'+char.nickname+'</div>'+
-                '<div class="msg-chat-time">'+char.lastTime+'</div>'+
+                '<div class="msg-chat-name">'+(c.nickname||c.name)+'</div>'+
+                '<div class="msg-chat-time">'+(c.lastTime||'')+'</div>'+
               '</div>'+
-              '<div class="msg-chat-preview">'+char.bio+'</div>'+
+              '<div class="msg-chat-preview">'+(c.bio||'')+'</div>'+
             '</div>'+
           '</div>'+
-        '</div>'
-      );
-    }).join('');
-    bindChatItemEvents();
-  }
-
-  function bindChatItemEvents(){
-    Array.prototype.forEach.call(document.querySelectorAll('.msg-chat-item'), function(item){
-      item.addEventListener('click', function(){ if (Math.abs(touchStartX - touchCurrentX) > 10) return; openChat(this.dataset.id); });
-      item.addEventListener('touchstart', handleTouchStart);
-      item.addEventListener('touchmove', handleTouchMove);
-      item.addEventListener('touchend', handleTouchEnd);
+        '</div>';
+      }
+      
+      list.innerHTML = html;
+      log('渲染完成: '+msgCharacters.length+'项');
+      bindEvents();
+    }
+    
+    function bindEvents() {
+      log('绑定事件');
+      
+      // 聊天项点击
+      var items = document.querySelectorAll('.msg-chat-item');
+      for (var i = 0; i < items.length; i++) {
+        items[i].addEventListener('click', function() {
+          if (Math.abs(touchStartX - touchCurrentX) < 10) {
+            alert('聊天功能开发中: ' + this.dataset.id);
+          }
+        });
+        
+        // 触摸事件
+        items[i].addEventListener('touchstart', function(e) {
+          touchStartX = e.touches[0].clientX;
+          touchCurrentX = touchStartX;
+          isSwiping = false;
+        });
+        
+        items[i].addEventListener('touchmove', function(e) {
+          touchCurrentX = e.touches[0].clientX;
+          var diff = touchStartX - touchCurrentX;
+          if (Math.abs(diff) > 10) isSwiping = true;
+          if (diff > 0 && diff < 150) {
+            this.style.transform = 'translateX(-' + diff + 'px)';
+            this.style.transition = 'none';
+          }
+        });
+        
+        items[i].addEventListener('touchend', function(e) {
+          var diff = touchStartX - touchCurrentX;
+          this.style.transition = 'transform 0.3s ease';
+          if (diff > 75) {
+            this.style.transform = 'translateX(-150px)';
+          } else {
+            this.style.transform = 'translateX(0)';
+          }
+          setTimeout(function(){ isSwiping = false; }, 300);
+        });
+      }
+      
+      // 删除/重置按钮
+      var actions = document.querySelectorAll('.msg-swipe-action');
+      for (var j = 0; j < actions.length; j++) {
+        actions[j].addEventListener('click', function(e) {
+          e.stopPropagation();
+          var id = this.dataset.id;
+          var isDelete = this.classList.contains('delete');
+          
+          if (isDelete) {
+            if (confirm('确定删除？')) {
+              log('删除角色: ' + id);
+              msgCharacters = msgCharacters.filter(function(c){ return c.id !== id; });
+              saveData();
+              renderList();
+            }
+          } else {
+            if (confirm('确定重置聊天记录？')) {
+              log('重置聊天: ' + id);
+              alert('聊天记录已重置');
+            }
+          }
+        });
+      }
+    }
+    
+    // 模态框
+    function showModal() {
+      log('显示模态框');
+      var m = document.getElementById('msgAddModal');
+      if (m) m.classList.add('show');
+    }
+    
+    function hideModal() {
+      log('隐藏模态框');
+      var m = document.getElementById('msgAddModal');
+      if (m) m.classList.remove('show');
+      var f = document.getElementById('msgCharacterForm');
+      if (f) f.reset();
+      var up = document.getElementById('msgAvatarUpload');
+      if (up) up.innerHTML = '<span>📷</span>';
+    }
+    
+    // 返回
+    function goBack() {
+      log('点击返回');
+      if (window.closeApp) {
+        log('调用closeApp');
+        window.closeApp();
+      } else if (history.length > 1) {
+        log('history.back');
+        history.back();
+      } else {
+        log('跳转index');
+        location.href = '../index.html';
+      }
+    }
+    
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      log('DOM加载完成');
+      
+      try {
+        loadData();
+        renderList();
+        
+        // 返回按钮
+        var backBtn = document.getElementById('backBtn');
+        if (backBtn) {
+          backBtn.addEventListener('click', goBack);
+          log('返回按钮已绑定');
+        } else {
+          log('ERROR: 返回按钮不存在');
+        }
+        
+        // 添加按钮
+        var addBtn = document.getElementById('addBtn');
+        if (addBtn) {
+          addBtn.addEventListener('click', showModal);
+          log('添加按钮已绑定');
+        } else {
+          log('ERROR: 添加按钮不存在');
+        }
+        
+        // 关闭模态框
+        var closeBtn = document.getElementById('closeModalBtn');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', hideModal);
+        }
+        
+        var modal = document.getElementById('msgAddModal');
+        if (modal) {
+          modal.addEventListener('click', function(e) {
+            if (e.target.id === 'msgAddModal') hideModal();
+          });
+        }
+        
+        // 头像上传
+        var avatarUpload = document.getElementById('msgAvatarUpload');
+        var avatarInput = document.getElementById('msgAvatarInput');
+        if (avatarUpload && avatarInput) {
+          avatarUpload.addEventListener('click', function() {
+            avatarInput.click();
+          });
+          avatarInput.addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (file) {
+              var reader = new FileReader();
+              reader.onload = function(ev) {
+                avatarUpload.innerHTML = '<img src="'+ev.target.result+'">';
+              };
+              reader.readAsDataURL(file);
+            }
+          });
+        }
+        
+        // 表单提交
+        var form = document.getElementById('msgCharacterForm');
+        if (form) {
+          form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            log('提交表单');
+            
+            var name = document.getElementById('msgCharacterName').value.trim();
+            var nickname = document.getElementById('msgCharacterNickname').value.trim() || name;
+            var bio = document.getElementById('msgCharacterBio').value.trim();
+            var up = document.getElementById('msgAvatarUpload');
+            var img = up ? up.querySelector('img') : null;
+            var avatar = img ? img.src : '👤';
+            
+            var newChar = {
+              id: String(Date.now()),
+              name: name,
+              nickname: nickname,
+              bio: bio,
+              avatar: avatar,
+              lastTime: new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'})
+            };
+            
+            log('新增角色: ' + newChar.nickname);
+            msgCharacters.push(newChar);
+            saveData();
+            renderList();
+            hideModal();
+          });
+        }
+        
+        // Tab切换
+        var tabs = document.querySelectorAll('.msg-tab-item');
+        for (var i = 1; i < tabs.length; i++) {
+          tabs[i].addEventListener('click', function() {
+            alert('功能开发中');
+          });
+        }
+        
+        log('初始化完成');
+        
+      } catch(e) {
+        log('初始化错误: ' + e.message);
+      }
     });
-    Array.prototype.forEach.call(document.querySelectorAll('.msg-swipe-action'), function(btn){
-      btn.addEventListener('click', function(e){ e.stopPropagation(); var act=this.dataset.action,id=this.dataset.id; if(act==='reset') resetChat(id); else if (act==='delete') deleteChat(id); });
-    });
-  }
-
-  function openChat(id){ alert('聊天功能开发中，角色ID: ' + id); }
-  function handleTouchStart(e){ touchStartX=e.touches[0].clientX; touchCurrentX=touchStartX; isSwiping=false; }
-  function handleTouchMove(e){ var item=e.currentTarget; touchCurrentX=e.touches[0].clientX; var diff=touchStartX-touchCurrentX; if (Math.abs(diff)>10) isSwiping=true; if (diff>0&&diff<150){ item.style.transform='translateX(-'+diff+'px)'; item.style.transition='none'; } }
-  function handleTouchEnd(e){ var item=e.currentTarget,id=item.dataset.id,diff=touchStartX-touchCurrentX; item.style.transition='transform .3s ease'; if (diff>75){ item.style.transform='translateX(-150px)'; currentSwipedId=id; Array.prototype.forEach.call(document.querySelectorAll('.msg-chat-item'), function(el){ if (el.dataset.id!==id) el.style.transform='translateX(0)'; }); } else { item.style.transform='translateX(0)'; } setTimeout(function(){ isSwiping=false; },300); }
-  function resetChat(id){ if (confirm('确定要重置与该角色的聊天记录吗？')){ alert('聊天记录已重置'); closeSwipe(id);} }
-  function deleteChat(id){ if (confirm('确定要删除该角色吗？此操作无法恢复！')){ msgCharacters = msgCharacters.filter(function(c){return c.id!==id}); saveData(); renderChatList(); } }
-  function closeSwipe(id){ var item=document.getElementById('item-'+id); if (item) item.style.transform='translateX(0)'; currentSwipedId=null; }
-
-  function showAddModal(){ var m=document.getElementById('msgAddModal'); if (m) m.classList.add('show'); }
-  function hideAddModal(){ var m=document.getElementById('msgAddModal'); if (m) m.classList.remove('show'); var f=document.getElementById('msgCharacterForm'); if (f) f.reset(); var up=document.getElementById('msgAvatarUpload'); if (up) up.innerHTML='<span>📷</span>'; }
-  function previewAvatar(e){ var file=e.target.files[0]; if (!file) return; var reader=new FileReader(); reader.onload=function(ev){ var up=document.getElementById('msgAvatarUpload'); if (up) up.innerHTML='<img src="'+ev.target.result+'">'; }; reader.readAsDataURL(file); }
-  function addCharacter(e){ e.preventDefault(); var name=document.getElementById('msgCharacterName').value.trim(); var nickname=(document.getElementById('msgCharacterNickname').value.trim())||name; var bio=document.getElementById('msgCharacterBio').value.trim(); var up=document.getElementById('msgAvatarUpload'); var img=up?up.querySelector('img'):null; var avatar=img?img.src:'👤'; var newChar={id:String(Date.now()),name:name,nickname:nickname,bio:bio,avatar:avatar,lastTime:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}; msgCharacters.push(newChar); saveData(); renderChatList(); hideAddModal(); }
-  function goBack(){ if (window.closeApp) window.closeApp(); else if ((document.referrer&&document.referrer.indexOf('index.html')>=0)||history.length>1) history.back(); else location.href='../index.html'; }
-
-  document.addEventListener('DOMContentLoaded', function(){
-    initData();
-    renderChatList();
-    var backBtn=document.getElementById('backBtn'); if (backBtn) backBtn.addEventListener('click', goBack);
-    var addBtn=document.getElementById('addBtn'); if (addBtn) addBtn.addEventListener('click', showAddModal);
-    var closeModalBtn=document.getElementById('closeModalBtn'); if (closeModalBtn) closeModalBtn.addEventListener('click', hideAddModal);
-    var modal=document.getElementById('msgAddModal'); if (modal) modal.addEventListener('click', function(e){ if (e.target.id==='msgAddModal') hideAddModal(); });
-    var avatarUpload=document.getElementById('msgAvatarUpload'); var avatarInput=document.getElementById('msgAvatarInput');
-    if (avatarUpload && avatarInput){ avatarUpload.addEventListener('click', function(){ avatarInput.click(); }); avatarInput.addEventListener('change', previewAvatar); }
-    var form=document.getElementById('msgCharacterForm'); if (form) form.addEventListener('submit', addCharacter);
-    Array.prototype.forEach.call(document.querySelectorAll('.msg-tab-item'), function(tab,idx){ if(idx!==0) tab.addEventListener('click', function(){ alert('功能开发中'); }); });
-  });
+    
+  })();
   </script>
 </body>
 </html>
