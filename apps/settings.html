@@ -1,5 +1,208 @@
-<div class="app settings">
-  <button onclick="goHome()">← 返回主屏</button>
-  <h2>⚙️ 设置</h2>
-  <p>这里可以配置角色、字体、背景等。</p>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>设置</title>
+<style>
+  :root{
+    --vh:1vh;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#efeff4}
+  /* 整页容器：避免黑边 */
+  .page{position:fixed;inset:0;display:flex;flex-direction:column;background:#efeff4}
+  .navbar{
+    height:calc(44px + var(--safe-top));
+    padding-top:var(--safe-top);
+    background:#f8f8f8;border-bottom:.5px solid #d9d9d9;
+    display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;
+  }
+  .nav-back{position:absolute;left:8px;top:calc(var(--safe-top) + 8px);font-size:20px;padding:8px}
+  .nav-title{font-size:17px;font-weight:600}
+  .content{
+    min-height:calc(var(--vh)*100);
+    padding-bottom:var(--safe-bottom);
+    overflow:auto;-webkit-overflow-scrolling:touch;
+  }
+
+  /* iOS 设置分组 */
+  .section{margin-top:32px}
+  .section-title{padding:0 16px 8px;color:#6d6d72;font-size:13px}
+  .group{background:#fff;border-top:.5px solid #d9d9d9;border-bottom:.5px solid #d9d9d9}
+  .cell{display:flex;align-items:center;padding:12px 16px;border-top:.5px solid #d9d9d9}
+  .cell:first-child{border-top:none}
+  .cell label{flex:0 0 110px;color:#000;font-size:16px}
+  .cell input[type="text"],
+  .cell input[type="password"],
+  .cell select{
+    flex:1;min-width:0;font-size:15px;padding:8px 10px;border:1px solid #e5e5ea;border-radius:8px;background:#f2f2f7;
+  }
+  .row-actions{display:flex;gap:8px;padding:12px 16px}
+  .btn{
+    appearance:none;border:none;border-radius:10px;padding:10px 14px;font-size:15px;cursor:pointer;
+    background:#f2f2f7;color:#000;
+  }
+  .btn-primary{background:#007aff;color:#fff}
+  .footer-space{height:calc(16px + var(--safe-bottom))}
+  .hint{padding:10px 16px;color:#6d6d72;font-size:12px;line-height:1.4}
+  .status{padding:10px 16px;font-size:13px;color:#007aff}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="navbar">
+    <div class="nav-back" id="btnBack">◀</div>
+    <div class="nav-title">设置</div>
+  </div>
+
+  <div class="content" id="scrollArea">
+
+    <!-- 主模型 -->
+    <div class="section">
+      <div class="section-title">主模型（用于聊天/日记/心声）</div>
+      <div class="group" id="groupMain">
+        <div class="cell">
+          <label>API Key</label>
+          <input id="mainKey" type="password" placeholder="sk-..." autocomplete="off">
+        </div>
+        <div class="cell">
+          <label>反代网址</label>
+          <input id="mainBase" type="text" placeholder="https://api.example.com/v1">
+        </div>
+        <div class="cell">
+          <label>模型</label>
+          <select id="mainModel"><option value="">（先拉取模型）</option></select>
+        </div>
+        <div class="row-actions">
+          <button class="btn" id="btnMainFetch">拉取模型</button>
+          <button class="btn-primary" id="btnMainSave">保存</button>
+        </div>
+      </div>
+      <div class="hint">如果你的网关遵循 OpenAI 兼容接口，点击“拉取模型”会尝试请求 <code>/models</code>；若跨域受限，会自动使用本地示例列表。</div>
+      <div class="status" id="statusMain"></div>
+    </div>
+
+    <!-- 副模型 -->
+    <div class="section">
+      <div class="section-title">副模型（用于总结角色短/长期记忆）</div>
+      <div class="group" id="groupSub">
+        <div class="cell">
+          <label>API Key</label>
+          <input id="subKey" type="password" placeholder="sk-..." autocomplete="off">
+        </div>
+        <div class="cell">
+          <label>反代网址</label>
+          <input id="subBase" type="text" placeholder="https://api.example.com/v1">
+        </div>
+        <div class="cell">
+          <label>模型</label>
+          <select id="subModel"><option value="">（先拉取模型）</option></select>
+        </div>
+        <div class="row-actions">
+          <button class="btn" id="btnSubFetch">拉取模型</button>
+          <button class="btn-primary" id="btnSubSave">保存</button>
+        </div>
+      </div>
+      <div class="status" id="statusSub"></div>
+    </div>
+
+    <div class="section">
+      <div class="group">
+        <div class="row-actions">
+          <button class="btn" id="btnClear">清空本地配置</button>
+          <button class="btn" id="btnGoChat">去聊天测试</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-space"></div>
+  </div>
 </div>
+
+<script>
+  // ===== iOS 视口修正，避免底部黑边 =====
+  function setVH(){ document.documentElement.style.setProperty('--vh', (window.innerHeight*0.01)+'px'); }
+  setVH(); window.addEventListener('resize', setVH);
+
+  // ===== 存储键 =====
+  const KEY_MAIN = 'eg_config_main';
+  const KEY_SUB  = 'eg_config_sub';
+
+  // ===== 读/写 =====
+  function read(key){ try{ return JSON.parse(localStorage.getItem(key)||'null'); }catch(e){ return null; } }
+  function write(key, val){ localStorage.setItem(key, JSON.stringify(val||{})); }
+
+  // ===== 绑定 =====
+  const mainKey  = document.getElementById('mainKey');
+  const mainBase = document.getElementById('mainBase');
+  const mainModel= document.getElementById('mainModel');
+  const subKey   = document.getElementById('subKey');
+  const subBase  = document.getElementById('subBase');
+  const subModel = document.getElementById('subModel');
+
+  // 载入已有配置
+  (function initForm(){
+    const m = read(KEY_MAIN) || {};
+    const s = read(KEY_SUB)  || {};
+    if (m.apiKey)  mainKey.value  = m.apiKey;
+    if (m.baseUrl) mainBase.value = m.baseUrl;
+    if (m.model)   mainModel.innerHTML = `<option value="${m.model}">${m.model}</option>`;
+    if (s.apiKey)  subKey.value   = s.apiKey;
+    if (s.baseUrl) subBase.value  = s.baseUrl;
+    if (s.model)   subModel.innerHTML = `<option value="${s.model}">${s.model}</option>`;
+  })();
+
+  // 保存
+  document.getElementById('btnMainSave').onclick = () => {
+    write(KEY_MAIN, { apiKey: mainKey.value.trim(), baseUrl: mainBase.value.trim(), model: mainModel.value });
+    document.getElementById('statusMain').textContent = '主模型配置已保存';
+  };
+  document.getElementById('btnSubSave').onclick = () => {
+    write(KEY_SUB, { apiKey: subKey.value.trim(), baseUrl: subBase.value.trim(), model: subModel.value });
+    document.getElementById('statusSub').textContent = '副模型配置已保存';
+  };
+
+  // 拉取模型（真实请求失败则给一组本地示例）
+  async function fetchModelsTo(selectEl, statusEl, base, key){
+    statusEl.textContent = '拉取中…';
+    const fallback = ['gpt-4o-mini','gpt-4o','qwen2.5','claude-3.5-sonnet','glm-4-flash'];
+    if (!base){ selectEl.innerHTML = fallback.map(m=>`<option>${m}</option>`).join(''); statusEl.textContent='已加载示例列表'; return; }
+    try{
+      const url = base.replace(/\/+$/,'') + '/models';
+      const resp = await fetch(url, { headers: key ? { 'Authorization':'Bearer '+key } : {}, mode: 'cors' });
+      if (!resp.ok) throw new Error(resp.status+' '+resp.statusText);
+      const data = await resp.json();
+      // 兼容 OpenAI 格式或扁平数组
+      const names = (data.data || data || []).map(it => it.id || it.name).filter(Boolean);
+      if (!names.length) throw new Error('空列表');
+      selectEl.innerHTML = names.map(m=>`<option>${m}</option>`).join('');
+      statusEl.textContent = '模型列表已更新（来自网关）';
+    }catch(e){
+      selectEl.innerHTML = fallback.map(m=>`<option>${m}</option>`).join('');
+      statusEl.textContent = '跨域或接口不可达，已使用示例列表';
+    }
+  }
+  document.getElementById('btnMainFetch').onclick = ()=>{
+    fetchModelsTo(mainModel, document.getElementById('statusMain'), mainBase.value.trim(), mainKey.value.trim());
+  };
+  document.getElementById('btnSubFetch').onclick = ()=>{
+    fetchModelsTo(subModel, document.getElementById('statusSub'), subBase.value.trim(), subKey.value.trim());
+  };
+
+  // 其它
+  document.getElementById('btnClear').onclick = ()=>{
+    localStorage.removeItem(KEY_MAIN);
+    localStorage.removeItem(KEY_SUB);
+    alert('已清空本地配置');
+    location.reload();
+  };
+  document.getElementById('btnBack').onclick = ()=>history.length>1 ? history.back() : location.href='../index.html';
+  document.getElementById('btnGoChat').onclick = ()=> location.href='./message-chat.html?id=nash';
+</script>
+</body>
+</html>
