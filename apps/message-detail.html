@@ -2,51 +2,84 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>聊天</title>
   <link rel="apple-touch-icon" sizes="512x512" href="../assets/icons/icon512.png">
   <link rel="icon" href="../assets/icons/icon512.png" type="image/png">
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    :root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
-    html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ededed}
+    :root{
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --kb: 0px;          /* 键盘高度（JS计算） */
+      --vh: 1vh;          /* 老设备兜底（JS首屏设定） */
+    }
 
-    /* 顶栏 */
-    .chat-app{position:fixed;inset:0;display:flex;flex-direction:column}
+    html,body{
+      height:100%;
+      background:#ededed;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      color:#111;
+      overflow:hidden;
+    }
+
+    /* 容器高度固定：优先使用 100svh，兜底用 JS 写入的 --vh */
+    .chat-app{
+      position:fixed; inset:0;
+      display:flex; flex-direction:column;
+      height:calc(var(--vh) * 100);
+    }
+    @supports (height: 100svh){
+      .chat-app{ height:100svh; }
+    }
+
+    /* 顶栏固定 */
     .chat-navbar{
+      position:sticky; top:0; z-index:10;
       height:calc(44px + var(--safe-top));
       padding-top:var(--safe-top);
       background:#f7f7f7;
       border-bottom:.5px solid #d9d9d9;
-      display:flex;align-items:center;justify-content:space-between;
-      padding-left:12px;padding-right:12px;flex-shrink:0
+      display:flex; align-items:center; justify-content:space-between;
+      padding-left:12px; padding-right:12px; flex-shrink:0;
     }
-    .chat-back,.chat-more{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#111;font-size:22px}
-    .chat-title{position:absolute;left:50%;transform:translateX(-50%);top:calc(10px + var(--safe-top));height:24px;display:flex;align-items:center;font-weight:600;color:#000}
+    .chat-back,.chat-more{
+      width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+      cursor:pointer;color:#111;font-size:22px
+    }
+    .chat-title{
+      position:absolute; left:50%; transform:translateX(-50%);
+      top:calc(10px + var(--safe-top)); height:24px; display:flex; align-items:center;
+      font-weight:600; color:#000;
+    }
 
-    /* 列表 */
-    .chat-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch; padding:10px 12px 0 12px}
+    /* 消息列表可滚动，底部留出输入栏和键盘腾挪空间 */
+    .chat-list{
+      flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
+      padding:10px 12px 12px 12px;
+      scroll-behavior:smooth;
+    }
+
     .row{display:flex;align-items:flex-end;margin:10px 0;gap:8px}
     .row.you{justify-content:flex-start}
     .row.me{justify-content:flex-end}
     .avatar{width:36px;height:36px;border-radius:6px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
     .avatar img{width:100%;height:100%;object-fit:cover;border-radius:6px}
-
     .bubble{
-      max-width:72vw;
-      padding:10px 12px;
-      border-radius:8px;
-      font-size:16px;line-height:1.4;word-break:break-word;
+      max-width:72vw; padding:10px 12px; border-radius:8px; font-size:16px; line-height:1.4; word-break:break-word;
       box-shadow:0 1px 0 rgba(0,0,0,.05)
     }
     .row.you .bubble{background:#fff;color:#111;border:1px solid #eaeaea}
     .row.me  .bubble{background:#95ec69;color:#111}
 
-    /* 输入区 */
+    /* 输入栏固定到底部，可抬升以避开键盘 */
     .input-bar{
-      background:#f7f7f7;border-top:.5px solid #d9d9d9;flex-shrink:0;
+      position:sticky; bottom:0; z-index:10;
+      background:#f7f7f7; border-top:.5px solid #d9d9d9; flex-shrink:0;
       padding:8px 10px calc(8px + var(--safe-bottom));
-      display:flex;gap:8px;align-items:center
+      display:flex; gap:8px; align-items:center;
+      transform: translateY(calc(-1 * var(--kb)));  /* 视觉上顶到键盘上沿 */
     }
     .ipt{
       flex:1;background:#fff;border:1px solid #e1e1e1;border-radius:18px;
@@ -58,8 +91,8 @@
     }
     .send:active{background:#06ad56}
 
-    /* 编辑弹窗（复刻“添加角色”的样式） */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:10}
+    /* 编辑弹窗（复刻创建角色） */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:20}
     .modal.show{display:flex}
     .modal-content{background:#fff;width:90%;max-width:420px;border-radius:12px;overflow:hidden}
     .modal-header{padding:16px;border-bottom:.5px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center}
@@ -133,93 +166,122 @@
 (function(){
   'use strict';
 
-  const $ = s => document.querySelector(s);
-  const chat   = $('#chatList');
-  const ipt    = $('#ipt');
-  const titleEl= $('#title');
+  /* ========== 视口高度兜底（防键盘重算顶部栏） ========== */
+  function setStableVh(){
+    const vh = window.innerHeight * 0.01; // 首屏高度
+    document.documentElement.style.setProperty('--vh', vh + 'px');
+  }
+  setStableVh();  // 不在键盘 resize 时更新
 
-  /* ========== 读取 id 和角色 ========== */
+  /* ========== iOS 可视视口监听：只抬输入栏，不动顶部 ========== */
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    const updateKB = () => {
+      const full = window.innerHeight;
+      const used = full - vv.height - vv.offsetTop; // 近似键盘占用
+      const kbh = Math.max(0, used);
+      document.documentElement.style.setProperty('--kb', kbh + 'px');
+      // 让列表底部空出键盘高度，避免最后一条被挡
+      const chatList = document.getElementById('chatList');
+      chatList.style.paddingBottom = (12 + kbh) + 'px';
+      chatList.scrollTop = chatList.scrollHeight;
+    };
+    vv.addEventListener('resize', updateKB);
+    vv.addEventListener('scroll', updateKB);
+  }
+
+  const $ = s => document.querySelector(s);
+  const chatEl  = $('#chatList');
+  const ipt     = $('#ipt');
+  const titleEl = $('#title');
+
+  /* === 读取 id 与角色 === */
   const urlParams   = new URLSearchParams(location.search);
   const characterId = urlParams.get('id') || sessionStorage.getItem('currentChatId') || 'nash';
 
+  const CHAR_KEY = 'eg_characters_v2';
+  const THREADS_KEY = 'eg_threads_v1';
+  const MAIN_CFG = 'eg_main_model_cfg';
+  const REPLY_DELAY_KEY = 'eg_llm_delay_ms';
+
   let characters = [];
   let current = null;
+  let pending = false;               // 正在请求 LLM
+  let typingTimer = null;            // 键盘空闲计时器
+  const DEFAULT_DELAY = 5000;        // 5s 可在设置里扩展
+  const SENTENCE_GAP = 500;          // 段与段之间的展示间隔（毫秒）
 
   function loadCharacters(){
-    try{
-      const stored = localStorage.getItem('eg_characters_v2');
-      characters = stored ? JSON.parse(stored) : [];
-    }catch(e){ characters = []; }
+    try { characters = JSON.parse(localStorage.getItem(CHAR_KEY) || '[]'); }
+    catch(e){ characters = []; }
 
     if (!characters.length){
-      characters = [{
-        id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊', lastTime:'12:00'
-      }];
-      localStorage.setItem('eg_characters_v2', JSON.stringify(characters));
+      characters = [{ id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊', lastTime:'12:00' }];
+      localStorage.setItem(CHAR_KEY, JSON.stringify(characters));
     }
-    current = characters.find(c => c.id === characterId) || characters[0];
+    current = characters.find(c=>c.id===characterId) || characters[0];
     titleEl.textContent = current.nickname || current.name || '聊天';
   }
 
-  /* ========== 线程存储（每个角色一条） ========== */
-  const THREADS_KEY = 'eg_threads_v1';
   function getThreads(){
-    try{
-      const raw = localStorage.getItem(THREADS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    }catch(e){ return {}; }
+    try{ return JSON.parse(localStorage.getItem(THREADS_KEY) || '{}'); }
+    catch(e){ return {}; }
   }
   function saveThreads(map){
     localStorage.setItem(THREADS_KEY, JSON.stringify(map));
   }
 
-  /* ========== 渲染历史 ========== */
-  function loadHistory(){
-    const threads = getThreads();
-    const msgs = (threads[characterId]?.messages) || [];
-    chat.innerHTML = '';
-    msgs.forEach(m => {
-      if (m.role === 'user') push('me', m.content);
-      else if (m.role === 'assistant') push('you', m.content);
-    });
-    chat.scrollTop = chat.scrollHeight;
-  }
-
+  /* === 渲染一条气泡 === */
   function avatarNode(from){
     const el = document.createElement('div');
     el.className = 'avatar';
-    if (from === 'me') { el.textContent = '🧑‍💻'; return el; }
-    const av = current.avatar || '👤';
-    if (av.startsWith('data:') || av.startsWith('http')){
-      const img = document.createElement('img'); img.src = av; el.appendChild(img);
-    }else{
-      el.textContent = av;
+    if (from === 'me'){ el.textContent = '🧑‍💻'; }
+    else{
+      const av = current.avatar || '👤';
+      if (av.startsWith('data:') || av.startsWith('http')){
+        const img = document.createElement('img'); img.src = av; el.appendChild(img);
+      }else{ el.textContent = av; }
     }
     return el;
   }
-
   function push(type, text){
     if (!text) return;
     const row = document.createElement('div');
-    row.className = 'row ' + (type === 'me' ? 'me' : 'you');
+    row.className = 'row ' + (type==='me'?'me':'you');
 
     const ava = avatarNode(type);
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.textContent = text;
 
-    if (type === 'me'){ row.appendChild(bubble); row.appendChild(ava); }
-    else { row.appendChild(ava); row.appendChild(bubble); }
+    if (type==='me'){ row.appendChild(bubble); row.appendChild(ava); }
+    else{ row.appendChild(ava); row.appendChild(bubble); }
 
-    chat.appendChild(row);
-    chat.scrollTop = chat.scrollHeight;
+    chatEl.appendChild(row);
+    chatEl.scrollTop = chatEl.scrollHeight;
   }
 
-  /* ========== 发送，仅保存与渲染我方；若配置了 LLM 才请求回复 ========== */
-  $('#sendBtn').addEventListener('click', onSend);
-  ipt.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); onSend(); }});
+  /* === 首次渲染历史 === */
+  function loadHistory(){
+    const threads = getThreads();
+    const msgs = (threads[characterId]?.messages) || [];
+    chatEl.innerHTML = '';
+    msgs.forEach(m => {
+      const t = m.role==='user' ? 'me' : 'you';
+      push(t, m.content);
+    });
+  }
 
-  async function onSend(){
+  /* === 发送 === */
+  $('#sendBtn').addEventListener('click', onSend);
+  ipt.addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); onSend(); return; }
+    scheduleLLM(); // 有键盘输入，重置空闲计时
+  });
+  ipt.addEventListener('focus', scheduleLLM);
+  ipt.addEventListener('blur', scheduleLLM);
+
+  function onSend(){
     const text = ipt.value.trim();
     if (!text) return;
 
@@ -229,158 +291,109 @@
 
     // 存储
     const threads = getThreads();
-    if (!threads[characterId]) threads[characterId] = { id: characterId, messages: [] };
-    threads[characterId].messages.push({ role:'user', content:text, ts: Date.now() });
+    if (!threads[characterId]) threads[characterId] = { id:characterId, messages:[] };
+    threads[characterId].messages.push({ role:'user', content:text, ts:Date.now() });
     saveThreads(threads);
 
-    // 更新角色时间与预览（可用于消息列表）
+    // 更新消息列表预览时间
     try{
-      const list = JSON.parse(localStorage.getItem('eg_characters_v2')||'[]');
-      const it = list.find(c => c.id === characterId);
+      const list = JSON.parse(localStorage.getItem(CHAR_KEY) || '[]');
+      const it = list.find(c=>c.id===characterId);
       if (it){
         it.lastTime = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit', minute:'2-digit'});
-        it.lastMsg  = text;
-        localStorage.setItem('eg_characters_v2', JSON.stringify(list));
+        localStorage.setItem(CHAR_KEY, JSON.stringify(list));
       }
     }catch(e){}
 
-    // 如果配置了 LLM，再请求回复；否则不自动回
-    const reply = await callLLMIfConfigured(threads[characterId].messages, current);
-    if (reply){
-      push('you', reply);
-      // 写入线程
-      const t2 = getThreads();
-      t2[characterId].messages.push({ role:'assistant', content: reply, ts: Date.now() });
-      saveThreads(t2);
-      // 更新列表预览
-      try{
-        const list = JSON.parse(localStorage.getItem('eg_characters_v2')||'[]');
-        const it = list.find(c => c.id === characterId);
-        if (it){
-          it.lastTime = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit', minute:'2-digit'});
-          it.lastMsg  = reply;
-          localStorage.setItem('eg_characters_v2', JSON.stringify(list));
-        }
-      }catch(e){}
-    }
+    // 安排“键盘空闲 n 秒后”再触发 LLM
+    scheduleLLM(true);
   }
 
-  /* ========== 返回键（容器/独立/历史 兜底） ========== */
-  function goBack(){
-    // 在 index 的 app-container 里（父级持有 openAppPage）
-    if (window.parent && window.parent.openAppPage){
-      window.parent.openAppPage('message.html');
-      return;
-    }
-    // 当前页自身有 openAppPage（极少）
-    if (window.openAppPage){
-      window.openAppPage('message.html');
-      return;
-    }
-    // 在 /apps/ 下独立打开
-    if (location.pathname.includes('/apps/')){
-      location.href = 'message.html';
-      return;
-    }
-    // 兜底：根目录去 apps/message.html
-    location.href = './apps/message.html';
+  /* === 键盘空闲计时：空闲 N 秒后触发 LLM === */
+  function scheduleLLM(forceStart=false){
+    const delay = parseInt(localStorage.getItem(REPLY_DELAY_KEY) || '', 10);
+    const WAIT = Number.isFinite(delay) ? Math.max(0, delay) : DEFAULT_DELAY;
+
+    if (typingTimer) clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+      triggerLLM();
+    }, forceStart ? WAIT : WAIT);
   }
-  $('#backBtn').addEventListener('click', goBack);
 
-  /* ========== 右上角 “···” 编辑 ========== */
-  const editModal    = $('#editModal');
-  const avatarUpload = $('#avatarUpload');
-  const avatarInput  = $('#avatarInput');
-  const nameInput    = $('#nameInput');
-  const nickInput    = $('#nickInput');
-  const bioInput     = $('#bioInput');
-
-  $('#moreBtn').addEventListener('click', () => {
-    nameInput.value = current.name || '';
-    nickInput.value = current.nickname || '';
-    bioInput.value  = current.bio || '';
-    if (current.avatar && (current.avatar.startsWith('data:') || current.avatar.startsWith('http'))) {
-      avatarUpload.innerHTML = '<img src="'+current.avatar+'">';
-    } else {
-      avatarUpload.innerHTML = current.avatar || '👤';
-    }
-    editModal.classList.add('show');
-  });
-
-  avatarUpload.addEventListener('click', ()=> avatarInput.click());
-  avatarInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      avatarUpload.innerHTML = '<img src="'+ev.target.result+'">';
-      current.avatar = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  $('#modalClose').addEventListener('click', ()=> editModal.classList.remove('show'));
-  $('#cancelEdit').addEventListener('click', ()=> editModal.classList.remove('show'));
-  editModal.addEventListener('click', e => { if (e.target.id === 'editModal') editModal.classList.remove('show'); });
-
-  $('#editForm').addEventListener('submit', e => {
-    e.preventDefault();
-    current.name     = nameInput.value.trim() || current.name;
-    current.nickname = nickInput.value.trim() || current.nickname || current.name;
-    current.bio      = bioInput.value.trim() || current.bio;
-
-    // 写回
-    const list = JSON.parse(localStorage.getItem('eg_characters_v2')||'[]');
-    const idx = list.findIndex(c => c.id === current.id);
-    if (idx >= 0) list[idx] = current;
-    localStorage.setItem('eg_characters_v2', JSON.stringify(list));
-
-    titleEl.textContent = current.nickname || current.name || '聊天';
-    editModal.classList.remove('show');
-  });
-
-  /* ========== LLM 调用（未配置则返回空字符串，不自动回） ========== */
-  async function callLLMIfConfigured(historyMsgs, character){
-    // 读取主模型配置
-    const cfg = JSON.parse(localStorage.getItem('eg_main_model_cfg') || '{}');
+  /* === 调 LLM，并“按句”分段显示 === */
+  async function triggerLLM(){
+    if (pending) return; // 避免并发
+    const cfg = JSON.parse(localStorage.getItem(MAIN_CFG) || '{}');
     const apiKey = (cfg.apiKey||'').trim();
     const base   = (cfg.base||'').trim().replace(/\/+$/,'');
     const model  = (cfg.model||'').trim();
-
-    if (!apiKey || !base || !model) return '';
-
-    // 组装 messages：系统提示 + 最近对话（限制条数）
-    const systemPrompt = buildPersonaSystemPrompt(character);
-    const messages = [{ role:'system', content: systemPrompt }];
-    historyMsgs.slice(-20).forEach(m=>{
-      messages.push({
-        role: m.role === 'user' ? 'user' : 'assistant',
-        content: m.content
-      });
-    });
+    if (!apiKey || !base || !model) return; // 未配置就不自动回
 
     try{
-      const res = await fetch(base + '/chat/completions', {
+      pending = true;
+
+      // 准备 messages：system + 最近 20 条
+      const threads = getThreads();
+      const msgs = (threads[characterId]?.messages) || [];
+      const history = msgs.slice(-20).map(m => ({
+        role: m.role==='user' ? 'user' : 'assistant',
+        content: m.content
+      }));
+
+      const system = buildPersonaSystemPrompt(current);
+
+      const body = {
+        model,
+        messages: [{role:'system', content:system}, ...history],
+        temperature: 0.7
+      };
+
+      const resp = await fetch(base + '/chat/completions', {
         method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'Authorization':'Bearer ' + apiKey
-        },
-        body: JSON.stringify({ model, messages, temperature: 0.7 })
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+apiKey },
+        body: JSON.stringify(body)
       });
-      if (!res.ok){
-        // 请求失败时，不影响本地 UI 与存储
-        return '';
+      if (!resp.ok){
+        const t = await resp.text().catch(()=>String(resp.status));
+        throw new Error(t || ('HTTP '+resp.status));
       }
-      const data = await res.json();
-      const reply = data?.choices?.[0]?.message?.content || '';
-      return reply.trim();
+      const data = await resp.json();
+      const full = (data?.choices?.[0]?.message?.content || '').trim();
+      if (!full) { pending = false; return; }
+
+      // 存储完整 assistant 消息
+      const tmap = getThreads();
+      if (!tmap[characterId]) tmap[characterId] = { id:characterId, messages:[] };
+      tmap[characterId].messages.push({ role:'assistant', content:full, ts:Date.now() });
+      saveThreads(tmap);
+
+      // 分句展示
+      await showReplyChunked(full);
+
     }catch(e){
-      return '';
+      // 失败时不阻塞后续
+      console.error('LLM 调用失败：', e);
+    }finally{
+      pending = false;
     }
   }
 
-  /* ========== Persona Prompt（新版） ========== */
+  function splitBySentence(text){
+    // 依据中英文终止符与换行分割
+    return text
+      .split(/(?<=[。！？!?…]|[\r\n])/)
+      .map(s=>s.trim())
+      .filter(Boolean);
+  }
+  async function showReplyChunked(text){
+    const parts = splitBySentence(text);
+    for (let i=0;i<parts.length;i++){
+      push('you', parts[i]);
+      await new Promise(r=>setTimeout(r, SENTENCE_GAP));
+    }
+  }
+
+  /* === 角色系统提示（新版） === */
   function buildPersonaSystemPrompt(c){
     const name = c.nickname || c.name || 'Ta';
     return `
@@ -402,11 +415,73 @@
 `.trim();
   }
 
-  /* ========== 初始化 ========== */
+  /* === 返回：容器内/独立页均可用 === */
+  $('#backBtn').addEventListener('click', () => {
+    if (window.openAppPage){ window.openAppPage('message.html'); return; }
+    if (history.length > 1){ history.back(); return; }
+    location.href = 'message.html';
+  });
+
+  /* === 更多 -> 编辑角色 === */
+  const editModal    = $('#editModal');
+  const avatarUpload = $('#avatarUpload');
+  const avatarInput  = $('#avatarInput');
+  const nameInput    = $('#nameInput');
+  const nickInput    = $('#nickInput');
+  const bioInput     = $('#bioInput');
+
+  $('#moreBtn').addEventListener('click', () => {
+    nameInput.value = current.name || '';
+    nickInput.value = current.nickname || '';
+    bioInput.value  = current.bio || '';
+    if (current.avatar && (current.avatar.startsWith('data:') || current.avatar.startsWith('http'))){
+      avatarUpload.innerHTML = '<img src="'+current.avatar+'">';
+    }else{
+      avatarUpload.innerHTML = current.avatar || '👤';
+    }
+    editModal.classList.add('show');
+  });
+
+  avatarUpload.addEventListener('click', ()=> avatarInput.click());
+  avatarInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { avatarUpload.innerHTML = '<img src="'+ev.target.result+'">'; };
+    reader.readAsDataURL(file);
+  });
+
+  $('#modalClose').addEventListener('click', ()=> editModal.classList.remove('show'));
+  $('#cancelEdit').addEventListener('click', ()=> editModal.classList.remove('show'));
+  editModal.addEventListener('click', e => { if (e.target.id === 'editModal') editModal.classList.remove('show'); });
+
+  $('#editForm').addEventListener('submit', e => {
+    e.preventDefault();
+    // 新头像
+    let newAvatar = current.avatar || '👤';
+    const img = avatarUpload.querySelector('img');
+    if (img) newAvatar = img.src; else newAvatar = avatarUpload.textContent || '👤';
+
+    current.name     = nameInput.value.trim() || current.name;
+    current.nickname = (nickInput.value.trim() || current.nickname || current.name);
+    current.bio      = bioInput.value.trim() || current.bio;
+    current.avatar   = newAvatar;
+
+    // 回写
+    const idx = characters.findIndex(c=>c.id===current.id);
+    if (idx>=0) characters[idx] = current;
+    localStorage.setItem(CHAR_KEY, JSON.stringify(characters));
+
+    titleEl.textContent = current.nickname || current.name || '聊天';
+    editModal.classList.remove('show');
+    alert('已保存');
+  });
+
+  // 初始化
   loadCharacters();
   loadHistory();
-})();
-</script>
 
+})();  
+</script>
 </body>
 </html>
