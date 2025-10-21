@@ -223,73 +223,80 @@
     }
     
     function bindEvents() {
-      log('绑定事件');
-      
-      // 聊天项点击
-      var items = document.querySelectorAll('.msg-chat-item');
-      for (var i = 0; i < items.length; i++) {
-        items[i].addEventListener('click', function() {
-          if (Math.abs(touchStartX - touchCurrentX) < 10) {
-            var id = this.dataset.id;
-            log('打开聊天: ' + id);
-            // 跳转到聊天详情页
-            location.href = './message-detail.html?id=' + id;
-          }
-        });
-        
-        // 触摸事件
-        items[i].addEventListener('touchstart', function(e) {
-          touchStartX = e.touches[0].clientX;
-          touchCurrentX = touchStartX;
-          isSwiping = false;
-        });
-        
-        items[i].addEventListener('touchmove', function(e) {
-          touchCurrentX = e.touches[0].clientX;
-          var diff = touchStartX - touchCurrentX;
-          if (Math.abs(diff) > 10) isSwiping = true;
-          if (diff > 0 && diff < 150) {
-            this.style.transform = 'translateX(-' + diff + 'px)';
-            this.style.transition = 'none';
-          }
-        });
-        
-        items[i].addEventListener('touchend', function(e) {
-          var diff = touchStartX - touchCurrentX;
-          this.style.transition = 'transform 0.3s ease';
-          if (diff > 75) {
-            this.style.transform = 'translateX(-150px)';
-          } else {
-            this.style.transform = 'translateX(0)';
-          }
-          setTimeout(function(){ isSwiping = false; }, 300);
-        });
+  log('绑定事件');
+
+  // 1) 选中每个会话项
+  var items = document.querySelectorAll('.msg-chat-item');
+
+  // 2) 点击进入聊天（带滑动容差，避免误触）
+  for (var i = 0; i < items.length; i++) {
+    items[i].addEventListener('click', function () {
+      if (Math.abs(touchStartX - touchCurrentX) < 10) {           // 没有滑动才触发点击
+        var id = this.dataset.id || 'nash';
+        sessionStorage.setItem('currentChatId', id);
+
+        if (window.openAppPage) {
+          window.openAppPage('message-detail.html?id=' + encodeURIComponent(id));
+        } else {
+          location.href = 'message-detail.html?id=' + encodeURIComponent(id);
+        }
       }
-      
-      // 删除/重置按钮
-      var actions = document.querySelectorAll('.msg-swipe-action');
-      for (var j = 0; j < actions.length; j++) {
-        actions[j].addEventListener('click', function(e) {
-          e.stopPropagation();
-          var id = this.dataset.id;
-          var isDelete = this.classList.contains('delete');
-          
-          if (isDelete) {
-            if (confirm('确定删除？')) {
-              log('删除角色: ' + id);
-              msgCharacters = msgCharacters.filter(function(c){ return c.id !== id; });
-              saveData();
-              renderList();
-            }
-          } else {
-            if (confirm('确定重置聊天记录？')) {
-              log('重置聊天: ' + id);
-              alert('聊天记录已重置');
-            }
-          }
-        });
+    });
+
+    // 3) 左滑露出操作按钮
+    items[i].addEventListener('touchstart', function (e) {
+      touchStartX = e.touches[0].clientX;
+      touchCurrentX = touchStartX;
+      isSwiping = false;
+    });
+
+    items[i].addEventListener('touchmove', function (e) {
+      touchCurrentX = e.touches[0].clientX;
+      var diff = touchStartX - touchCurrentX;
+      if (Math.abs(diff) > 10) isSwiping = true;
+      if (diff > 0 && diff < 150) {
+        this.style.transform = 'translateX(-' + diff + 'px)';
+        this.style.transition = 'none';
       }
-    }
+    });
+
+    items[i].addEventListener('touchend', function () {
+      var diff = touchStartX - touchCurrentX;
+      this.style.transition = 'transform 0.3s ease';
+      if (diff > 75) {
+        this.style.transform = 'translateX(-150px)';
+      } else {
+        this.style.transform = 'translateX(0)';
+      }
+      setTimeout(function(){ isSwiping = false; }, 300);
+    });
+  }
+
+  // 4) 删除/重置按钮
+  var actions = document.querySelectorAll('.msg-swipe-action');
+  for (var j = 0; j < actions.length; j++) {
+    actions[j].addEventListener('click', function (e) {
+      e.stopPropagation();
+      var id = this.dataset.id;
+      var isDelete = this.classList.contains('delete');
+
+      if (isDelete) {
+        if (confirm('确定删除？')) {
+          log('删除角色: ' + id);
+          msgCharacters = msgCharacters.filter(function (c) { return c.id !== id; });
+          saveData();
+          renderList(); // 重新渲染后会再次调用 bindEvents()
+        }
+      } else {
+        if (confirm('确定重置聊天记录？')) {
+          log('重置聊天: ' + id);
+          alert('聊天记录已重置');
+        }
+      }
+    });
+  }
+}
+
     
     // 模态框
     function showModal() {
