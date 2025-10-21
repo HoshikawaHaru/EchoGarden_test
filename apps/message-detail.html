@@ -129,7 +129,7 @@
     </div>
   </div>
 
-  <script>
+<script>
 (function(){
   'use strict';
 
@@ -245,27 +245,6 @@
   loadCharacters();
   loadHistory();
 })();
-
-  // —— 首次渲染历史 —— //
-  function renderHistory(){
-    chatEl.innerHTML = '';
-    historyArr.forEach(m => renderBubble(m.role, m.text));
-  }
-
-  // —— 发送（不含自动回复） —— //
-  const sendBtn = $('#sendBtn');
-  let pending = false;
-
-  async function onSend(){
-    const text = ipt.value.trim();
-    if (!text || pending) return;
-
-    // 本地显示 + 保存
-    renderBubble('me', text);
-    historyArr.push({role:'me', text});
-    saveHistory();
-    updateListPreview(text);
-    ipt.value = '';
 
     // 调用 LLM（如果已配置）
     const reply = await callLLM(historyArr, current).catch(err => `(请求失败：${err.message||err})`);
