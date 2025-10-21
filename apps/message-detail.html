@@ -15,12 +15,12 @@
     .chat-app{position:fixed;inset:0;overflow:hidden}
     /* 顶部固定 + 抗 iOS 键盘抖动 */
 .chat-navbar{
-  position:fixed;left:0;right:0;top:0;z-index:10;
+  position:fixed; left:0; right:0; top:0; z-index:10;
   height:calc(44px + var(--safe-top)); padding-top:var(--safe-top);
-  background:#f7f7f7;border-bottom:.5px solid #d9d9d9;
-  display:flex;align-items:center;justify-content:space-between;
-  padding-left:12px;padding-right:12px;
-  transform: translateZ(0);  /* 关键：固定在合成层，避免上浮 */
+  background:#f7f7f7; border-bottom:.5px solid #d9d9d9;
+  display:flex; align-items:center; justify-content:space-between;
+  padding-left:12px; padding-right:12px;
+  transform: translateZ(0);  /* 防止 iOS 键盘弹出时上浮 */
 }
     .chat-back,.chat-more{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px}
     .chat-title{position:absolute;left:50%;transform:translateX(-50%);top:calc(10px + var(--safe-top));height:24px;display:flex;align-items:center;font-weight:600;color:#000}
@@ -38,11 +38,11 @@
 
     /* 底部输入：不要再用 padding-bottom 叠加安全区 */
 .input-bar{
-  position:fixed;left:0;right:0;z-index:11;
-  bottom: env(safe-area-inset-bottom);   /* 没键盘时贴着安全区 */
-  background:#f7f7f7;border-top:.5px solid #d9d9d9;
-  padding:8px 10px 8px;                   /* 普通内边距即可 */
-  display:flex;gap:8px;align-items:center
+  position:fixed; left:0; right:0; z-index:11;
+  bottom: env(safe-area-inset-bottom);   /* 初始贴安全区 */
+  background:#f7f7f7; border-top:.5px solid #d9d9d9;
+  padding:8px 10px 8px;
+  display:flex; gap:8px; align-items:center;
 }
     .ipt{flex:1;background:#fff;border:1px solid #e1e1e1;border-radius:18px;padding:10px 14px;font-size:16px;outline:none}
     .send{background:#07c160;color:#fff;border:none;border-radius:18px;padding:10px 14px;font-size:15px;cursor:pointer}
@@ -148,11 +148,12 @@
     if (!window.visualViewport){ layout(); return; }
     const vv = window.visualViewport;
     const onVV = () => {
-      const unsafe = Math.max(0, (window.innerHeight - vv.height - vv.offsetTop)); // 键盘高度估计
-      inputBar.style.transform = `translateY(-${unsafe}px)`;
-      layout(unsafe);
-      chat.scrollTop = chat.scrollHeight;
-    };
+      const unsafe = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  // 关键：把输入栏“贴”在键盘上，而不是 transform
+  inputBar.style.bottom = `calc(${unsafe}px + env(safe-area-inset-bottom))`;
+  layout(unsafe);                 // 同时让 chat-list 的 bottom 跟着走
+  chat.scrollTop = chat.scrollHeight;
+};
     vv.addEventListener('resize', onVV);
     vv.addEventListener('scroll', onVV);
     onVV();
