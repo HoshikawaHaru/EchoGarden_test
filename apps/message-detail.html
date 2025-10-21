@@ -134,76 +134,117 @@
   'use strict';
 
   const $ = s => document.querySelector(s);
-  const chatEl = $('#chatList');
+  const chat   = $('#chatList');
   const ipt    = $('#ipt');
   const titleEl= $('#title');
 
-  // —— 角色 & 存储键 —— //
-  const urlParams   = new URLSearchParams(location.search);
-  const characterId = urlParams.get('id') || sessionStorage.getItem('currentChatId') || 'nash';
-  const CHAT_KEY = id => `eg_chat_${id}`;            // 每个角色一份聊天记录
-  const CHAR_KEY = 'eg_characters_v2';               // 会话列表
+  /* === 读取 id 和角色 === */
+  const urlParams  = new URLSearchParams(location.search);
+  const characterId= urlParams.get('id') || sessionStorage.getItem('currentChatId') || 'nash';
 
   let characters = [];
   let current = null;
-  let historyArr = [];                               // [{role:'me'|'you', text:'...'}]
 
   function loadCharacters(){
     try{
-      characters = JSON.parse(localStorage.getItem(CHAR_KEY) || '[]');
-    }catch{ characters = []; }
-    if (!characters.length){
-      characters = [{ id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊', lastTime:'', lastMsg:'' }];
-      localStorage.setItem(CHAR_KEY, JSON.stringify(characters));
-    }
-    current = characters.find(c=>c.id===characterId) || characters[0];
+      const stored = localStorage.getItem('eg_characters_v2');
+      characters = stored ? JSON.parse(stored) : [];
+    }catch(e){ characters = []; }
+    current = characters.find(c => c.id === characterId) || {
+      id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊'
+    };
     titleEl.textContent = current.nickname || current.name || '聊天';
   }
 
-  function loadHistory(){
+  /* === 线程存储：每个角色一条 thread === */
+  function getThreads(){
     try{
-      historyArr = JSON.parse(localStorage.getItem(CHAT_KEY(characterId)) || '[]');
-    }catch{ historyArr = []; }
+      const raw = localStorage.getItem('eg_threads_v1');
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveThreads(map){
+    localStorage.setItem('eg_threads_v1', JSON.stringify(map));
   }
 
-  function saveHistory(){
-    localStorage.setItem(CHAT_KEY(characterId), JSON.stringify(historyArr));
+  /* === 首次渲染历史消息（只渲染“我”的） === */
+  function loadHistory(){
+    const threads = getThreads();
+    const msgs = (threads[characterId]?.messages) || [];
+    chat.innerHTML = '';
+    msgs.forEach(m => {
+      if (m.role === 'user') push('me', m.content, m.ts);
+      else push('you', m.content, m.ts); // 有LLM时可显示对方；现在一般没有
+    });
+    chat.scrollTop = chat.scrollHeight;
   }
 
-  function updateListPreview(lastText){
-    const idx = characters.findIndex(c=>c.id===current.id);
-    if (idx >= 0){
-      characters[idx].lastMsg  = lastText || '';
-      characters[idx].lastTime = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-      localStorage.setItem(CHAR_KEY, JSON.stringify(characters));
+  function avatarNode(from){
+    const el = document.createElement('div');
+    el.className = 'avatar';
+    if (from === 'me') el.textContent = '🧑‍💻';
+    else {
+      // 角色头像：emoji 或图片
+      const av = current.avatar || '👤';
+      if (av.startsWith('data:') || av.startsWith('http')) {
+        const img = document.createElement('img');
+        img.src = av; el.appendChild(img);
+      } else el.textContent = av;
     }
+    return el;
   }
 
-  // —— 渲染一条消息到界面 —— //
-  function renderBubble(type, text){
-    if (!text) return;
+  /* === 渲染一个气泡 === */
+  function push(type, text){
     const row = document.createElement('div');
-    row.className = 'row ' + (type==='me'?'me':'you');
+    row.className = 'row ' + (type === 'me' ? 'me' : 'you');
 
-    const ava = document.createElement('div');
-    ava.className = 'avatar';
-    const av = (type==='me') ? '👤' : (current.avatar || '👤');
-    if (av.startsWith('data:') || av.startsWith('http')){
-      const img = document.createElement('img'); img.src = av; ava.appendChild(img);
-    }else{
-      ava.textContent = av;
-    }
-
+    const ava = avatarNode(type);
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.textContent = text;
 
-    if (type==='me'){ row.appendChild(bubble); row.appendChild(ava); }
-    else{ row.appendChild(ava); row.appendChild(bubble); }
+    if (type === 'me'){ row.appendChild(bubble); row.appendChild(ava); }
+    else { row.appendChild(ava); row.appendChild(bubble); }
 
-    chatEl.appendChild(row);
-    chatEl.scrollTop = chatEl.scrollHeight;
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
   }
+
+  /* === 发送：只渲染“我”的，并写入本地存储，暂无本地自动回复 === */
+  $('#sendBtn').addEventListener('click', send);
+  ipt.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); send(); }});
+
+  function send(){
+    const text = ipt.value.trim();
+    if (!text) return;
+
+    // 1) UI 追加
+    push('me', text);
+    ipt.value = '';
+
+    // 2) 写入线程存储
+    const threads = getThreads();
+    if (!threads[characterId]) threads[characterId] = { id: characterId, messages: [] };
+    threads[characterId].messages.push({ role:'user', content:text, ts: Date.now() });
+    saveThreads(threads);
+
+    // 3) 更新角色最后时间（用于消息列表显示）
+    try{
+      const stored = localStorage.getItem('eg_characters_v2');
+      const list = stored ? JSON.parse(stored) : [];
+      const it = list.find(c => c.id === characterId);
+      if (it){
+        it.lastTime = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit', minute:'2-digit'});
+        localStorage.setItem('eg_characters_v2', JSON.stringify(list));
+      }
+    }catch(e){}
+  }
+
+  // 初始化
+  loadCharacters();
+  loadHistory();
+})();
 
   // —— 首次渲染历史 —— //
   function renderHistory(){
