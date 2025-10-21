@@ -2,84 +2,57 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>聊天</title>
   <link rel="apple-touch-icon" sizes="512x512" href="../assets/icons/icon512.png">
   <link rel="icon" href="../assets/icons/icon512.png" type="image/png">
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    :root{
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --kb: 0px;          /* 键盘高度（JS计算） */
-      --vh: 1vh;          /* 老设备兜底（JS首屏设定） */
-    }
+    :root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+    html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ededed;color:#111}
 
-    html,body{
-      height:100%;
-      background:#ededed;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-      color:#111;
-      overflow:hidden;
-    }
+    /* 根容器固定，占满屏 */
+    .chat-app{position:fixed;inset:0;overflow:hidden}
 
-    /* 容器高度固定：优先使用 100svh，兜底用 JS 写入的 --vh */
-    .chat-app{
-      position:fixed; inset:0;
-      display:flex; flex-direction:column;
-      height:calc(var(--vh) * 100);
-    }
-    @supports (height: 100svh){
-      .chat-app{ height:100svh; }
-    }
-
-    /* 顶栏固定 */
+    /* 顶部导航：固定 */
     .chat-navbar{
-      position:sticky; top:0; z-index:10;
+      position:fixed;left:0;right:0;top:0;z-index:10;
       height:calc(44px + var(--safe-top));
       padding-top:var(--safe-top);
-      background:#f7f7f7;
-      border-bottom:.5px solid #d9d9d9;
-      display:flex; align-items:center; justify-content:space-between;
-      padding-left:12px; padding-right:12px; flex-shrink:0;
+      background:#f7f7f7;border-bottom:.5px solid #d9d9d9;
+      display:flex;align-items:center;justify-content:space-between;
+      padding-left:12px;padding-right:12px
     }
-    .chat-back,.chat-more{
-      width:40px;height:40px;display:flex;align-items:center;justify-content:center;
-      cursor:pointer;color:#111;font-size:22px
-    }
-    .chat-title{
-      position:absolute; left:50%; transform:translateX(-50%);
-      top:calc(10px + var(--safe-top)); height:24px; display:flex; align-items:center;
-      font-weight:600; color:#000;
-    }
+    .chat-back,.chat-more{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px}
+    .chat-title{position:absolute;left:50%;transform:translateX(-50%);top:calc(10px + var(--safe-top));height:24px;display:flex;align-items:center;font-weight:600}
 
-    /* 消息列表可滚动，底部留出输入栏和键盘腾挪空间 */
+    /* 聊天列表：占中间区域（顶部=导航高度，底部=输入条高度） */
     .chat-list{
-      flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
-      padding:10px 12px 12px 12px;
-      scroll-behavior:smooth;
+      position:absolute;left:0;right:0;
+      /* top/bottom 由 JS 动态算，确保不被覆盖 */
+      overflow-y:auto;-webkit-overflow-scrolling:touch;
+      padding:10px 12px 0 12px;
+      background:#ededed;
     }
-
     .row{display:flex;align-items:flex-end;margin:10px 0;gap:8px}
     .row.you{justify-content:flex-start}
     .row.me{justify-content:flex-end}
     .avatar{width:36px;height:36px;border-radius:6px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
     .avatar img{width:100%;height:100%;object-fit:cover;border-radius:6px}
     .bubble{
-      max-width:72vw; padding:10px 12px; border-radius:8px; font-size:16px; line-height:1.4; word-break:break-word;
+      max-width:72vw;padding:10px 12px;border-radius:8px;font-size:16px;line-height:1.4;word-break:break-word;
       box-shadow:0 1px 0 rgba(0,0,0,.05)
     }
-    .row.you .bubble{background:#fff;color:#111;border:1px solid #eaeaea}
-    .row.me  .bubble{background:#95ec69;color:#111}
+    .row.you .bubble{background:#fff;border:1px solid #eaeaea}
+    .row.me  .bubble{background:#95ec69}
+    .row .bubble, .chat-title, .chat-back, .chat-more{color:#111}
 
-    /* 输入栏固定到底部，可抬升以避开键盘 */
+    /* 底部输入条：固定，JS 会把它抬到键盘上方 */
     .input-bar{
-      position:sticky; bottom:0; z-index:10;
-      background:#f7f7f7; border-top:.5px solid #d9d9d9; flex-shrink:0;
+      position:fixed;left:0;right:0;bottom:0;z-index:11;
+      background:#f7f7f7;border-top:.5px solid #d9d9d9;
       padding:8px 10px calc(8px + var(--safe-bottom));
-      display:flex; gap:8px; align-items:center;
-      transform: translateY(calc(-1 * var(--kb)));  /* 视觉上顶到键盘上沿 */
+      display:flex;gap:8px;align-items:center
     }
     .ipt{
       flex:1;background:#fff;border:1px solid #e1e1e1;border-radius:18px;
@@ -91,7 +64,7 @@
     }
     .send:active{background:#06ad56}
 
-    /* 编辑弹窗（复刻创建角色） */
+    /* 编辑弹窗（与“添加角色”一致） */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:20}
     .modal.show{display:flex}
     .modal-content{background:#fff;width:90%;max-width:420px;border-radius:12px;overflow:hidden}
@@ -109,6 +82,12 @@
     .btn{flex:1;padding:12px;border:none;border-radius:8px;font-size:16px;cursor:pointer}
     .btn.primary{background:#07c160;color:#fff}
     .btn.ghost{background:#f2f2f2;color:#111}
+
+    /* “对方正在输入 …” 三点动画 */
+    .typing .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#bbb;margin:0 1px;opacity:.6;animation:blink 1.2s infinite}
+    .typing .dot:nth-child(2){animation-delay:.2s}
+    .typing .dot:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
   </style>
 </head>
 <body>
@@ -121,7 +100,7 @@
 
     <div class="chat-list" id="chatList"></div>
 
-    <div class="input-bar">
+    <div class="input-bar" id="inputBar">
       <input id="ipt" class="ipt" placeholder="发消息..." />
       <button id="sendBtn" class="send">发送</button>
     </div>
@@ -166,234 +145,267 @@
 (function(){
   'use strict';
 
-  /* ========== 视口高度兜底（防键盘重算顶部栏） ========== */
-  function setStableVh(){
-    const vh = window.innerHeight * 0.01; // 首屏高度
-    document.documentElement.style.setProperty('--vh', vh + 'px');
-  }
-  setStableVh();  // 不在键盘 resize 时更新
-
-  /* ========== iOS 可视视口监听：只抬输入栏，不动顶部 ========== */
-  if (window.visualViewport) {
-    const vv = window.visualViewport;
-    const updateKB = () => {
-      const full = window.innerHeight;
-      const used = full - vv.height - vv.offsetTop; // 近似键盘占用
-      const kbh = Math.max(0, used);
-      document.documentElement.style.setProperty('--kb', kbh + 'px');
-      // 让列表底部空出键盘高度，避免最后一条被挡
-      const chatList = document.getElementById('chatList');
-      chatList.style.paddingBottom = (12 + kbh) + 'px';
-      chatList.scrollTop = chatList.scrollHeight;
-    };
-    vv.addEventListener('resize', updateKB);
-    vv.addEventListener('scroll', updateKB);
-  }
-
   const $ = s => document.querySelector(s);
-  const chatEl  = $('#chatList');
-  const ipt     = $('#ipt');
-  const titleEl = $('#title');
+  const chat   = $('#chatList');
+  const ipt    = $('#ipt');
+  const titleEl= $('#title');
+  const nav    = document.querySelector('.chat-navbar');
+  const inputBar = $('#inputBar');
 
-  /* === 读取 id 与角色 === */
-  const urlParams   = new URLSearchParams(location.search);
-  const characterId = urlParams.get('id') || sessionStorage.getItem('currentChatId') || 'nash';
+  /* —— 顶/底固定后，动态设置聊天区上下边界 —— */
+  function layout(unsafeBottom=0){
+    const topPx = nav.offsetHeight;
+    const bottomPx = inputBar.offsetHeight + unsafeBottom;
+    chat.style.top = topPx + 'px';
+    chat.style.bottom = bottomPx + 'px';
+  }
+  // iOS 键盘适配：把输入条抬到键盘上方，同步缩小聊天区
+  function bindKeyboardFit(){
+    if (!window.visualViewport) { layout(); return; }
+    const vv = window.visualViewport;
+    function onVV(){
+      const unsafe = Math.max(0, (window.innerHeight - vv.height - vv.offsetTop));
+      inputBar.style.transform = `translateY(-${unsafe}px)`;
+      layout(unsafe);
+      // 保持在底部
+      chat.scrollTop = chat.scrollHeight;
+    }
+    vv.addEventListener('resize', onVV);
+    vv.addEventListener('scroll', onVV);
+    onVV();
+  }
 
-  const CHAR_KEY = 'eg_characters_v2';
-  const THREADS_KEY = 'eg_threads_v1';
-  const MAIN_CFG = 'eg_main_model_cfg';
-  const REPLY_DELAY_KEY = 'eg_llm_delay_ms';
+  /* === 读取 id 和角色 === */
+  const urlParams  = new URLSearchParams(location.search);
+  const characterId= urlParams.get('id') || sessionStorage.getItem('currentChatId') || 'nash';
 
   let characters = [];
   let current = null;
-  let pending = false;               // 正在请求 LLM
-  let typingTimer = null;            // 键盘空闲计时器
-  const DEFAULT_DELAY = 5000;        // 5s 可在设置里扩展
-  const SENTENCE_GAP = 500;          // 段与段之间的展示间隔（毫秒）
 
   function loadCharacters(){
-    try { characters = JSON.parse(localStorage.getItem(CHAR_KEY) || '[]'); }
-    catch(e){ characters = []; }
-
-    if (!characters.length){
-      characters = [{ id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊', lastTime:'12:00' }];
-      localStorage.setItem(CHAR_KEY, JSON.stringify(characters));
-    }
-    current = characters.find(c=>c.id===characterId) || characters[0];
+    try{
+      const stored = localStorage.getItem('eg_characters_v2');
+      characters = stored ? JSON.parse(stored) : [];
+    }catch(e){ characters = []; }
+    current = characters.find(c => c.id === characterId) || {
+      id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊'
+    };
     titleEl.textContent = current.nickname || current.name || '聊天';
   }
 
+  /* === 线程存储：每个角色一条 thread === */
   function getThreads(){
-    try{ return JSON.parse(localStorage.getItem(THREADS_KEY) || '{}'); }
-    catch(e){ return {}; }
+    try{
+      const raw = localStorage.getItem('eg_threads_v1');
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
   }
   function saveThreads(map){
-    localStorage.setItem(THREADS_KEY, JSON.stringify(map));
+    localStorage.setItem('eg_threads_v1', JSON.stringify(map));
   }
 
-  /* === 渲染一条气泡 === */
-  function avatarNode(from){
-    const el = document.createElement('div');
-    el.className = 'avatar';
-    if (from === 'me'){ el.textContent = '🧑‍💻'; }
-    else{
-      const av = current.avatar || '👤';
-      if (av.startsWith('data:') || av.startsWith('http')){
-        const img = document.createElement('img'); img.src = av; el.appendChild(img);
-      }else{ el.textContent = av; }
-    }
-    return el;
-  }
-  function push(type, text){
-    if (!text) return;
-    const row = document.createElement('div');
-    row.className = 'row ' + (type==='me'?'me':'you');
-
-    const ava = avatarNode(type);
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    bubble.textContent = text;
-
-    if (type==='me'){ row.appendChild(bubble); row.appendChild(ava); }
-    else{ row.appendChild(ava); row.appendChild(bubble); }
-
-    chatEl.appendChild(row);
-    chatEl.scrollTop = chatEl.scrollHeight;
-  }
-
-  /* === 首次渲染历史 === */
+  /* === 渲染历史消息 === */
   function loadHistory(){
     const threads = getThreads();
     const msgs = (threads[characterId]?.messages) || [];
-    chatEl.innerHTML = '';
+    chat.innerHTML = '';
     msgs.forEach(m => {
-      const t = m.role==='user' ? 'me' : 'you';
-      push(t, m.content);
+      push(m.role === 'user' ? 'me' : 'you', m.content);
     });
+    chat.scrollTop = chat.scrollHeight;
   }
 
-  /* === 发送 === */
-  $('#sendBtn').addEventListener('click', onSend);
-  ipt.addEventListener('keydown', e => {
-    if (e.key === 'Enter'){ e.preventDefault(); onSend(); return; }
-    scheduleLLM(); // 有键盘输入，重置空闲计时
-  });
-  ipt.addEventListener('focus', scheduleLLM);
-  ipt.addEventListener('blur', scheduleLLM);
+  function avatarNode(from){
+    const el = document.createElement('div');
+    el.className = 'avatar';
+    if (from === 'me') el.textContent = '🧑‍💻';
+    else {
+      const av = current.avatar || '👤';
+      if (av.startsWith('data:') || av.startsWith('http')) {
+        const img = document.createElement('img');
+        img.src = av; el.appendChild(img);
+      } else el.textContent = av;
+    }
+    return el;
+  }
 
-  function onSend(){
+  function push(type, text, extraClass){
+    const row = document.createElement('div');
+    row.className = 'row ' + (type === 'me' ? 'me' : 'you');
+
+    const ava = avatarNode(type);
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble' + (extraClass ? ' ' + extraClass : '');
+    bubble.textContent = text;
+
+    if (type === 'me'){ row.appendChild(bubble); row.appendChild(ava); }
+    else { row.appendChild(ava); row.appendChild(bubble); }
+
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+    return row; // 需要时可移除
+  }
+
+  /* === “对方正在输入…” === */
+  let typingRow = null, typingTimer = null;
+  function showTyping(){
+    if (typingRow) return;
+    typingRow = push('you', '对方正在输入…', 'typing');
+    const bubble = typingRow.querySelector('.bubble');
+    bubble.innerHTML = '对方正在输入&nbsp;<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+    // 简单动画已通过 CSS 完成，timer 只为兜底清理
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(hideTyping, 15000);
+  }
+  function hideTyping(){
+    if (typingRow && typingRow.parentNode){
+      typingRow.parentNode.removeChild(typingRow);
+    }
+    typingRow = null;
+    clearTimeout(typingTimer);
+    typingTimer = null;
+  }
+
+  /* === 发送：渲染“我”的、写入存储、触发 LLM（若已配置），并显示 typing === */
+  $('#sendBtn').addEventListener('click', send);
+  ipt.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); send(); }});
+
+  async function send(){
     const text = ipt.value.trim();
     if (!text) return;
 
-    // UI
+    // 1) UI
     push('me', text);
     ipt.value = '';
 
-    // 存储
+    // 2) 本地线程
     const threads = getThreads();
-    if (!threads[characterId]) threads[characterId] = { id:characterId, messages:[] };
-    threads[characterId].messages.push({ role:'user', content:text, ts:Date.now() });
+    if (!threads[characterId]) threads[characterId] = { id: characterId, messages: [] };
+    threads[characterId].messages.push({ role:'user', content:text, ts: Date.now() });
     saveThreads(threads);
 
-    // 更新消息列表预览时间
+    // 3) 更新列表预览时间
     try{
-      const list = JSON.parse(localStorage.getItem(CHAR_KEY) || '[]');
-      const it = list.find(c=>c.id===characterId);
+      const stored = localStorage.getItem('eg_characters_v2');
+      const list = stored ? JSON.parse(stored) : [];
+      const it = list.find(c => c.id === characterId);
       if (it){
         it.lastTime = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit', minute:'2-digit'});
-        localStorage.setItem(CHAR_KEY, JSON.stringify(list));
+        localStorage.setItem('eg_characters_v2', JSON.stringify(list));
       }
     }catch(e){}
 
-    // 安排“键盘空闲 n 秒后”再触发 LLM
-    scheduleLLM(true);
+    // 4) 显示“对方正在输入…”
+    showTyping();
+
+    // 5) 调 LLM（若设置完整）
+    const reply = await callLLM(threads[characterId].messages, current).catch(()=> '');
+    hideTyping();
+    if (reply){
+      push('you', reply);
+      // 存下 assistant 的话
+      const t2 = getThreads();
+      t2[characterId].messages.push({ role:'assistant', content:reply, ts: Date.now() });
+      saveThreads(t2);
+    }
   }
 
-  /* === 键盘空闲计时：空闲 N 秒后触发 LLM === */
-  function scheduleLLM(forceStart=false){
-    const delay = parseInt(localStorage.getItem(REPLY_DELAY_KEY) || '', 10);
-    const WAIT = Number.isFinite(delay) ? Math.max(0, delay) : DEFAULT_DELAY;
+  /* === 返回：容器内跳回 message.html；独立打开则相对跳转 === */
+  $('#backBtn').addEventListener('click', ()=>{
+    if (window.openAppPage){ window.openAppPage('message.html'); return; }
+    if (history.length > 1){ history.back(); return; }
+    location.href = 'message.html';
+  });
 
-    if (typingTimer) clearTimeout(typingTimer);
-    typingTimer = setTimeout(() => {
-      triggerLLM();
-    }, forceStart ? WAIT : WAIT);
-  }
+  /* === 右上角 “···” 编辑 === */
+  const editModal   = $('#editModal');
+  const avatarUpload= $('#avatarUpload');
+  const avatarInput = $('#avatarInput');
+  const nameInput   = $('#nameInput');
+  const nickInput   = $('#nickInput');
+  const bioInput    = $('#bioInput');
 
-  /* === 调 LLM，并“按句”分段显示 === */
-  async function triggerLLM(){
-    if (pending) return; // 避免并发
-    const cfg = JSON.parse(localStorage.getItem(MAIN_CFG) || '{}');
+  $('#moreBtn').addEventListener('click', () => {
+    nameInput.value = current.name || '';
+    nickInput.value = current.nickname || '';
+    bioInput.value  = current.bio || '';
+    if (current.avatar && (current.avatar.startsWith('data:') || current.avatar.startsWith('http'))) {
+      avatarUpload.innerHTML = '<img src="'+current.avatar+'">';
+    } else {
+      avatarUpload.innerHTML = current.avatar || '👤';
+    }
+    editModal.classList.add('show');
+  });
+
+  avatarUpload.addEventListener('click', ()=> avatarInput.click());
+  avatarInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      avatarUpload.innerHTML = '<img src="'+ev.target.result+'">';
+      current.avatar = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  $('#modalClose').addEventListener('click', ()=> editModal.classList.remove('show'));
+  $('#cancelEdit').addEventListener('click', ()=> editModal.classList.remove('show'));
+  editModal.addEventListener('click', e => { if (e.target.id === 'editModal') editModal.classList.remove('show'); });
+
+  $('#editForm').addEventListener('submit', e => {
+    e.preventDefault();
+    current.name     = nameInput.value.trim() || current.name;
+    current.nickname = nickInput.value.trim() || current.nickname || current.name;
+    current.bio      = bioInput.value.trim() || current.bio;
+    // 写回 localStorage
+    const stored = localStorage.getItem('eg_characters_v2');
+    const list = stored ? JSON.parse(stored) : [];
+    const idx = list.findIndex(c => c.id === current.id);
+    if (idx !== -1) list[idx] = current; else list.push(current);
+    localStorage.setItem('eg_characters_v2', JSON.stringify(list));
+    titleEl.textContent = current.nickname || current.name || '聊天';
+    editModal.classList.remove('show');
+  });
+
+  /* === 调 LLM（读取设置页配置；没配就返回空串） === */
+  async function callLLM(messages, character){
+    const cfg = JSON.parse(localStorage.getItem('eg_main_model_cfg') || '{}');
     const apiKey = (cfg.apiKey||'').trim();
     const base   = (cfg.base||'').trim().replace(/\/+$/,'');
     const model  = (cfg.model||'').trim();
-    if (!apiKey || !base || !model) return; // 未配置就不自动回
-
-    try{
-      pending = true;
-
-      // 准备 messages：system + 最近 20 条
-      const threads = getThreads();
-      const msgs = (threads[characterId]?.messages) || [];
-      const history = msgs.slice(-20).map(m => ({
-        role: m.role==='user' ? 'user' : 'assistant',
-        content: m.content
-      }));
-
-      const system = buildPersonaSystemPrompt(current);
-
-      const body = {
-        model,
-        messages: [{role:'system', content:system}, ...history],
-        temperature: 0.7
-      };
-
-      const resp = await fetch(base + '/chat/completions', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+apiKey },
-        body: JSON.stringify(body)
-      });
-      if (!resp.ok){
-        const t = await resp.text().catch(()=>String(resp.status));
-        throw new Error(t || ('HTTP '+resp.status));
-      }
-      const data = await resp.json();
-      const full = (data?.choices?.[0]?.message?.content || '').trim();
-      if (!full) { pending = false; return; }
-
-      // 存储完整 assistant 消息
-      const tmap = getThreads();
-      if (!tmap[characterId]) tmap[characterId] = { id:characterId, messages:[] };
-      tmap[characterId].messages.push({ role:'assistant', content:full, ts:Date.now() });
-      saveThreads(tmap);
-
-      // 分句展示
-      await showReplyChunked(full);
-
-    }catch(e){
-      // 失败时不阻塞后续
-      console.error('LLM 调用失败：', e);
-    }finally{
-      pending = false;
+    if (!apiKey || !base || !model){ 
+      // 未配置：简短延迟后不给回复
+      await new Promise(r=>setTimeout(r, 1500));
+      return '';
     }
-  }
 
-  function splitBySentence(text){
-    // 依据中英文终止符与换行分割
-    return text
-      .split(/(?<=[。！？!?…]|[\r\n])/)
-      .map(s=>s.trim())
-      .filter(Boolean);
-  }
-  async function showReplyChunked(text){
-    const parts = splitBySentence(text);
-    for (let i=0;i<parts.length;i++){
-      push('you', parts[i]);
-      await new Promise(r=>setTimeout(r, SENTENCE_GAP));
+    // 系统提示 + 最近20条
+    const systemPrompt = buildPersonaSystemPrompt(character);
+    const hist = messages.slice(-20).map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.content
+    }));
+    const body = {
+      model,
+      messages: [{role:'system', content: systemPrompt}, ...hist],
+      temperature: 0.7
+    };
+
+    const res = await fetch(base + '/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body: JSON.stringify(body)
+    });
+    if (!res.ok){
+      // 失败也不要本地回，只是快速隐藏 typing
+      return '';
     }
+    const data = await res.json();
+    const msg = data?.choices?.[0]?.message?.content || '';
+    return (msg || '').trim();
   }
 
-  /* === 角色系统提示（新版） === */
   function buildPersonaSystemPrompt(c){
     const name = c.nickname || c.name || 'Ta';
     return `
@@ -415,73 +427,14 @@
 `.trim();
   }
 
-  /* === 返回：容器内/独立页均可用 === */
-  $('#backBtn').addEventListener('click', () => {
-    if (window.openAppPage){ window.openAppPage('message.html'); return; }
-    if (history.length > 1){ history.back(); return; }
-    location.href = 'message.html';
-  });
-
-  /* === 更多 -> 编辑角色 === */
-  const editModal    = $('#editModal');
-  const avatarUpload = $('#avatarUpload');
-  const avatarInput  = $('#avatarInput');
-  const nameInput    = $('#nameInput');
-  const nickInput    = $('#nickInput');
-  const bioInput     = $('#bioInput');
-
-  $('#moreBtn').addEventListener('click', () => {
-    nameInput.value = current.name || '';
-    nickInput.value = current.nickname || '';
-    bioInput.value  = current.bio || '';
-    if (current.avatar && (current.avatar.startsWith('data:') || current.avatar.startsWith('http'))){
-      avatarUpload.innerHTML = '<img src="'+current.avatar+'">';
-    }else{
-      avatarUpload.innerHTML = current.avatar || '👤';
-    }
-    editModal.classList.add('show');
-  });
-
-  avatarUpload.addEventListener('click', ()=> avatarInput.click());
-  avatarInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => { avatarUpload.innerHTML = '<img src="'+ev.target.result+'">'; };
-    reader.readAsDataURL(file);
-  });
-
-  $('#modalClose').addEventListener('click', ()=> editModal.classList.remove('show'));
-  $('#cancelEdit').addEventListener('click', ()=> editModal.classList.remove('show'));
-  editModal.addEventListener('click', e => { if (e.target.id === 'editModal') editModal.classList.remove('show'); });
-
-  $('#editForm').addEventListener('submit', e => {
-    e.preventDefault();
-    // 新头像
-    let newAvatar = current.avatar || '👤';
-    const img = avatarUpload.querySelector('img');
-    if (img) newAvatar = img.src; else newAvatar = avatarUpload.textContent || '👤';
-
-    current.name     = nameInput.value.trim() || current.name;
-    current.nickname = (nickInput.value.trim() || current.nickname || current.name);
-    current.bio      = bioInput.value.trim() || current.bio;
-    current.avatar   = newAvatar;
-
-    // 回写
-    const idx = characters.findIndex(c=>c.id===current.id);
-    if (idx>=0) characters[idx] = current;
-    localStorage.setItem(CHAR_KEY, JSON.stringify(characters));
-
-    titleEl.textContent = current.nickname || current.name || '聊天';
-    editModal.classList.remove('show');
-    alert('已保存');
-  });
-
-  // 初始化
+  // —— 启动 —— //
   loadCharacters();
   loadHistory();
+  layout();            // 初始布局
+  bindKeyboardFit();   // 键盘适配
+  window.addEventListener('resize', ()=>layout()); // 旋转等
 
-})();  
+})();
 </script>
 </body>
 </html>
