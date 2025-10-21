@@ -46,7 +46,7 @@
     .send { background:#07c160; color:#fff; border:none; border-radius:18px; padding:10px 14px; font-size:15px; cursor:pointer; }
     .send:active { background:#06ad56; }
 
-    /* 编辑弹窗（复刻“添加角色”的样式） */
+    /* 编辑弹窗（复刻"添加角色"的样式） */
     .modal { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:10; }
     .modal.show { display:flex; }
     .modal-content { background:#fff; width:90%; max-width:420px; border-radius:12px; overflow:hidden; }
@@ -155,7 +155,7 @@
     localStorage.setItem('eg_threads_v1', JSON.stringify(map));
   }
 
-  /* === 首次渲染历史消息（只渲染“我”的） === */
+  /* === 首次渲染历史消息（只渲染"我"的） === */
   function loadHistory(){
     const threads = getThreads();
     const msgs = (threads[characterId]?.messages) || [];
@@ -199,7 +199,7 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
-  /* === 发送：只渲染“我”的，并写入本地存储，暂无本地自动回复 === */
+  /* === 发送：只渲染"我"的，并写入本地存储，暂无本地自动回复 === */
   $('#sendBtn').addEventListener('click', send);
   ipt.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); send(); }});
 
@@ -228,6 +228,80 @@
       }
     }catch(e){}
   }
+
+  /* === 返回键 === */
+  $('#backBtn').addEventListener('click', () => {
+    window.location.href = './message.html';
+  });
+
+  /* === 更多按钮：打开编辑弹窗 === */
+  $('#moreBtn').addEventListener('click', () => {
+    $('#editModal').classList.add('show');
+    // 填充当前角色信息
+    $('#nameInput').value = current.name || '';
+    $('#nickInput').value = current.nickname || '';
+    $('#bioInput').value = current.bio || '';
+    
+    const avatarUpload = $('#avatarUpload');
+    if (current.avatar && (current.avatar.startsWith('data:') || current.avatar.startsWith('http'))) {
+      avatarUpload.innerHTML = `<img src="${current.avatar}">`;
+    } else {
+      avatarUpload.innerHTML = `<span>${current.avatar || '📷'}</span>`;
+    }
+  });
+
+  /* === 关闭弹窗 === */
+  $('#modalClose').addEventListener('click', () => {
+    $('#editModal').classList.remove('show');
+  });
+  $('#cancelEdit').addEventListener('click', () => {
+    $('#editModal').classList.remove('show');
+  });
+
+  /* === 头像上传 === */
+  $('#avatarUpload').addEventListener('click', () => {
+    $('#avatarInput').click();
+  });
+  $('#avatarInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const avatarUpload = $('#avatarUpload');
+      avatarUpload.innerHTML = `<img src="${ev.target.result}">`;
+      current.avatar = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* === 保存编辑 === */
+  $('#editForm').addEventListener('submit', e => {
+    e.preventDefault();
+    
+    // 更新当前角色信息
+    current.name = $('#nameInput').value.trim();
+    current.nickname = $('#nickInput').value.trim();
+    current.bio = $('#bioInput').value.trim();
+    
+    // 保存到 localStorage
+    try {
+      const stored = localStorage.getItem('eg_characters_v2');
+      const list = stored ? JSON.parse(stored) : [];
+      const idx = list.findIndex(c => c.id === characterId);
+      if (idx !== -1) {
+        list[idx] = current;
+        localStorage.setItem('eg_characters_v2', JSON.stringify(list));
+      }
+    } catch(e) {
+      console.error('保存失败', e);
+    }
+    
+    // 更新标题
+    titleEl.textContent = current.nickname || current.name || '聊天';
+    
+    // 关闭弹窗
+    $('#editModal').classList.remove('show');
+  });
 
   // 初始化
   loadCharacters();
