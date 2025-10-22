@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalizable=no,viewport-fit=cover">
   <title>聊天</title>
   <link rel="apple-touch-icon" sizes="512x512" href="../assets/icons/icon512.png">
   <link rel="icon" href="../assets/icons/icon512.png" type="image/png">
@@ -11,32 +11,35 @@
     :root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
     html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ededed;color:#111}
 
-    /* 顶部导航：固定在顶部，使用 fixed 并锁定 */
-    .chat-app{position:fixed;inset:0;overflow:hidden;display:flex;flex-direction:column}
-    
-    .chat-navbar{
-      position:relative;
-      flex-shrink:0;
-      height:calc(44px + var(--safe-top)); 
-      padding-top:var(--safe-top);
-      background:#f7f7f7; 
-      border-bottom:.5px solid #d9d9d9;
-      display:flex; 
-      align-items:center; 
-      justify-content:space-between;
-      padding-left:12px; 
-      padding-right:12px;
-    }
-    .chat-back,.chat-more{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px}
-    .chat-title{position:absolute;left:50%;transform:translateX(-50%);top:calc(10px + var(--safe-top));height:24px;display:flex;align-items:center;font-weight:600;color:#000}
+    /* App 容器 */
+    .chat-app{position:fixed;inset:0;overflow:hidden}
 
-    /* 聊天列表：flex:1 自动填充中间区域 */
-    .chat-list{
-      flex:1;
-      overflow-y:auto;
-      -webkit-overflow-scrolling:touch;
-      padding:10px 12px 0 12px;
+    /* 顶部导航：固定 + 抗键盘抖动 */
+    .chat-navbar{
+      position:fixed;left:0;right:0;top:0;z-index:10;
+      height:calc(44px + var(--safe-top)); padding-top:var(--safe-top);
+      background:#f7f7f7;border-bottom:.5px solid #d9d9d9;
+      display:flex;align-items:center;justify-content:space-between;
+      padding-left:12px;padding-right:12px;
+      transform:translateZ(0);
     }
+    .chat-back,.chat-more{
+      width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+      cursor:pointer;font-size:22px;color:#111;
+    }
+    .chat-title{
+      position:absolute;left:50%;transform:translateX(-50%);
+      top:calc(10px + var(--safe-top));height:24px;display:flex;align-items:center;
+      font-weight:600;color:#000;white-space:nowrap;
+    }
+    /* 顶部“对方正在输入…” 动画 */
+    .title-typing .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#666;margin:0 1px;opacity:.5;animation:blink 1.2s infinite}
+    .title-typing .dot:nth-child(2){animation-delay:.2s}
+    .title-typing .dot:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+    /* 聊天列表：上下边界由 JS 实时计算（顶=navbar高；底=inputBar高+键盘高） */
+    .chat-list{position:absolute;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px 0 12px}
     .row{display:flex;align-items:flex-end;margin:10px 0;gap:8px}
     .row.you{justify-content:flex-start}
     .row.me{justify-content:flex-end}
@@ -46,28 +49,19 @@
     .row.you .bubble{background:#fff;border:1px solid #eaeaea}
     .row.me  .bubble{background:#95ec69}
 
-    /* 底部输入：相对定位在 flex 容器底部 */
+    /* 底部输入：固定，默认贴安全区；键盘时由 JS translateY 抬起 */
     .input-bar{
-      position:relative;
-      flex-shrink:0;
-      background:#f7f7f7; 
-      border-top:.5px solid #d9d9d9;
-      padding:8px 10px calc(8px + var(--safe-bottom));
-      display:flex; 
-      gap:8px; 
-      align-items:center;
+      position:fixed;left:0;right:0;z-index:11;
+      bottom:env(safe-area-inset-bottom);
+      background:#f7f7f7;border-top:.5px solid #d9d9d9;
+      padding:8px 10px 8px;display:flex;gap:8px;align-items:center;
+      transform:translateZ(0);
     }
     .ipt{flex:1;background:#fff;border:1px solid #e1e1e1;border-radius:18px;padding:10px 14px;font-size:16px;outline:none}
     .send{background:#07c160;color:#fff;border:none;border-radius:18px;padding:10px 14px;font-size:15px;cursor:pointer}
     .send:active{background:#06ad56}
 
-    /* 标题"对方正在输入…"三点动画 */
-    .title-typing .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#666;margin:0 1px;opacity:.5;animation:blink 1.2s infinite}
-    .title-typing .dot:nth-child(2){animation-delay:.2s}
-    .title-typing .dot:nth-child(3){animation-delay:.4s}
-    @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
-
-    /* 编辑弹窗（复刻"添加角色"的样式） */
+    /* 编辑角色弹窗（复刻创建角色 UI） */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:20}
     .modal.show{display:flex}
     .modal-content{background:#fff;width:90%;max-width:420px;border-radius:12px;overflow:hidden}
@@ -98,7 +92,7 @@
     <div class="chat-list" id="chatList"></div>
 
     <div class="input-bar" id="inputBar">
-      <input id="ipt" class="ipt" placeholder="发消息..." />
+      <input id="ipt" class="ipt" placeholder="发消息…" />
       <button id="sendBtn" class="send">发送</button>
     </div>
   </div>
@@ -141,12 +135,37 @@
 <script>
 (() => {
   'use strict';
-
   const $ = s => document.querySelector(s);
 
   const chat     = $('#chatList');
   const ipt      = $('#ipt');
+  const nav      = $('#navBar');
   const titleEl  = $('#title');
+  const inputBar = $('#inputBar');
+
+  /* ========== 布局：顶/底固定 + 键盘适配（iOS/Android） ========== */
+  function layout(unsafeBottom = 0){
+    const topPx    = nav.offsetHeight;
+    const bottomPx = inputBar.offsetHeight + unsafeBottom;
+    chat.style.top    = topPx + 'px';
+    chat.style.bottom = bottomPx + 'px';
+  }
+  function bindKeyboardFit(){
+    if (!window.visualViewport){ layout(); return; }
+    const vv = window.visualViewport;
+    const onVV = () => {
+      // 估算“不可用高度”（键盘高度）
+      const unsafe = Math.max(0, (window.innerHeight - vv.height - vv.offsetTop));
+      // 输入栏整体抬起
+      inputBar.style.transform = `translateY(-${unsafe}px)`;
+      layout(unsafe);
+      // 若输入框获取焦点，滚到底
+      if (document.activeElement === ipt) chat.scrollTop = chat.scrollHeight;
+    };
+    vv.addEventListener('resize', onVV);
+    vv.addEventListener('scroll', onVV);
+    onVV();
+  }
 
   /* ========== 读取 id 与角色 ========== */
   const urlParams   = new URLSearchParams(location.search);
@@ -160,7 +179,6 @@
       const stored = localStorage.getItem('eg_characters_v2');
       characters = stored ? JSON.parse(stored) : [];
     }catch(e){ characters = []; }
-
     if (!characters.length){
       characters = [{ id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊' }];
       localStorage.setItem('eg_characters_v2', JSON.stringify(characters));
@@ -218,25 +236,23 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
-  /* ========== 顶部"对方正在输入…" ========== */
-  let typingTicker = null;
+  /* ========== 顶部“对方正在输入…” ========== */
   function setTitleTyping(isTyping){
     if (isTyping){
       titleEl.classList.add('title-typing');
       titleEl.innerHTML = '对方正在输入&nbsp;<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-      if (typingTicker){ clearInterval(typingTicker); typingTicker = null; }
     }else{
       titleEl.classList.remove('title-typing');
       titleEl.textContent = current.nickname || current.name || '聊天';
     }
   }
 
-  /* ========== 发送聚合（收起键盘后 5s 发送，不累计；LLM 流时不打断） ========== */
+  /* ========== 发送聚合（收起键盘后 N 秒合并发送给 LLM；流式中不打断） ========== */
   const DELAY_MS = parseInt(localStorage.getItem('eg_reply_delay_ms') || '5000', 10);
-  let bufferMsgs = [];
-  let flushTimer = null;
-  let isStreaming = false;
-  let needsFlush  = false;
+  let bufferMsgs  = [];   // 用户短句缓冲
+  let flushTimer  = null; // 延迟计时器
+  let isStreaming = false;// LLM 是否在“输出中”
+  let needsFlush  = false;// 流式结束后是否需要立刻 flush
 
   function scheduleFlush(){
     if (isStreaming) { needsFlush = true; return; }
@@ -244,18 +260,20 @@
     flushTimer = setTimeout(tryFlush, DELAY_MS);
   }
   function clearFlush(){ clearTimeout(flushTimer); flushTimer = null; }
+
   async function tryFlush(){
     if (isStreaming || !bufferMsgs.length) return;
-    const threads = getThreads();
-    const mine    = threads[characterId] || (threads[characterId] = { id: characterId, messages: [] });
-    // 将 buffer 合并成一句发给 LLM（对外展示仍然保留原先多条"我"的气泡）
-    const merged = bufferMsgs.join(' ');
+    const mergedUserText = bufferMsgs.join(' '); // 合并给 LLM
     bufferMsgs = [];
+
+    // 取最近对话历史（已经写入线程）
+    const threads = getThreads();
+    const mine = threads[characterId] || (threads[characterId] = { id: characterId, messages: [] });
     saveThreads(threads);
-    await askLLM(mine.messages, merged); // 传已存消息 & 合并文本
+    await askLLM(mine.messages, mergedUserText);
   }
 
-  /* 输入框事件：发送、键盘 focus/blur 控制聚合 */
+  /* 输入事件：发送、focus/blur 控制聚合 */
   $('#sendBtn').addEventListener('click', onSend);
   ipt.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); onSend(); }});
   ipt.addEventListener('focus',  () => clearFlush());
@@ -266,26 +284,29 @@
     if (!text) return;
     ipt.value = '';
 
-    // UI & 本地存储
+    // 1) UI 与本地存储（每条都独立显示，符合“多短句组成对话”的体验）
     push('me', text);
     const threads = getThreads();
     const mine = threads[characterId] || (threads[characterId] = { id: characterId, messages: [] });
     mine.messages.push({ role:'user', content:text, ts: Date.now() });
     saveThreads(threads);
 
-    // 更新列表最近时间
+    // 2) 更新消息列表的最近时间
     try{
       const list = JSON.parse(localStorage.getItem('eg_characters_v2') || '[]');
       const it = list.find(c => c.id === characterId);
-      if (it){ it.lastTime = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); localStorage.setItem('eg_characters_v2', JSON.stringify(list)); }
+      if (it){
+        it.lastTime = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit', minute:'2-digit'});
+        localStorage.setItem('eg_characters_v2', JSON.stringify(list));
+      }
     }catch(e){}
 
-    // 放入聚合缓冲；如果当前没有键盘焦点，直接启动 5s 计时
+    // 3) 放入聚合缓冲；如当前无键盘焦点，则立即启动延迟计时
     bufferMsgs.push(text);
     if (document.activeElement !== ipt) scheduleFlush();
   }
 
-  /* ========== LLM 调用（按句拆分显示；进行中不被打断） ========== */
+  /* ========== LLM：系统提示 + 最近 20 条，按句截断显示；请求中显示“对方正在输入…” ========== */
   function buildPersonaSystemPrompt(c){
     const name = c.nickname || c.name || 'Ta';
     return `你是一名角色对话助手，请严格扮演以下人设进行简洁自然的中文回复。
@@ -302,29 +323,25 @@
 【对话规则】
 - 不要长篇大段；必要时可提出一个轻量反问推动话题。
 - 避免表情符号滥用（最多 1 个）。
-- 真正像 ${name} 在聊天，而不是"AI 助手"。`.trim();
+- 真正像 ${name} 在聊天，而不是“AI 助手”。`.trim();
   }
 
   function splitChunks(t){
-    // 按中文句号/问号/感叹号/省略号/换行切分；保留标点
+    // 先按句末标点/换行切分，保留标点；过长再二次切
     const arr = [];
     t.replace(/\s+/g,' ').split(/(?<=[。！？!?…\n])/).forEach(s=>{
       const ss = s.trim();
       if (ss) arr.push(ss);
     });
-    // 太长的片段再做一次宽松切分
     const final = [];
     arr.forEach(s=>{
-      if (s.length <= 60) { final.push(s); }
-      else {
-        s.match(/.{1,40}/g).forEach(x=>final.push(x));
-      }
+      if (s.length <= 60) final.push(s);
+      else (s.match(/.{1,40}/g) || [s]).forEach(x=>final.push(x));
     });
     return final;
   }
 
   async function askLLM(history, mergedUserText){
-    // 读取设置
     const cfg = JSON.parse(localStorage.getItem('eg_main_model_cfg') || '{}');
     const apiKey = (cfg.apiKey||'').trim();
     const base   = (cfg.base||'').trim().replace(/\/+$/,'');
@@ -334,8 +351,8 @@
     isStreaming = true;
     setTitleTyping(true);
 
-    // 组装 messages：系统 + 最近对话（最多 20 条）+ 合并用户文本（保证在末尾）
-    const sys = { role:'system', content:buildPersonaSystemPrompt(current) };
+    // messages：系统 + 最近 20 条 + 合并用户文本（若末尾不是 user 则补充）
+    const sys  = { role:'system', content: buildPersonaSystemPrompt(current) };
     const msgs = history.slice(-20).map(m => ({ role: m.role==='user' ? 'user' : 'assistant', content: m.content }));
     if (mergedUserText && (!msgs.length || msgs[msgs.length-1].role!=='user')){
       msgs.push({ role:'user', content: mergedUserText });
@@ -352,7 +369,6 @@
       const data = await res.json();
       const full = (data?.choices?.[0]?.message?.content || '').trim();
       if (full){
-        // 按句拆分，逐条气泡发送
         const chunks = splitChunks(full);
         const threads = getThreads();
         const mine = threads[characterId] || (threads[characterId] = { id: characterId, messages: [] });
@@ -361,12 +377,11 @@
           push('you', seg);
           mine.messages.push({ role:'assistant', content: seg, ts: Date.now() });
           saveThreads(threads);
-          await new Promise(r=>setTimeout(r, 350)); // 轻微节拍
+          await new Promise(r=>setTimeout(r, 320)); // 轻微节拍
         }
       }
     }catch(e){
-      // 失败也要恢复标题
-      console.error(e);
+      console.error('LLM error:', e);
     }finally{
       isStreaming = false;
       setTitleTyping(false);
@@ -374,53 +389,59 @@
     }
   }
 
-  /* ========== 返回、编辑 ========== */
+  /* ========== 返回到消息页（容器内/历史/兜底） ========== */
   $('#backBtn').addEventListener('click', () => {
     if (window.openAppPage){ window.openAppPage('message.html'); return; }
     if (history.length > 1){ history.back(); return; }
     location.href = 'message.html';
   });
 
-  // 打开编辑
+  /* ========== 右上角“⋯”编辑 ========== */
+  const editModal    = $('#editModal');
+  const avatarUpload = $('#avatarUpload');
+  const avatarInput  = $('#avatarInput');
+  const nameInput    = $('#nameInput');
+  const nickInput    = $('#nickInput');
+  const bioInput     = $('#bioInput');
+
   $('#moreBtn').addEventListener('click', () => {
-    $('#nameInput').value = current.name || '';
-    $('#nickInput').value = current.nickname || '';
-    $('#bioInput').value  = current.bio || '';
-    const up = $('#avatarUpload');
+    nameInput.value = current.name || '';
+    nickInput.value = current.nickname || '';
+    bioInput.value  = current.bio || '';
     if (current.avatar && (current.avatar.startsWith('data:') || current.avatar.startsWith('http'))){
-      up.innerHTML = '<img src="'+current.avatar+'">';
+      avatarUpload.innerHTML = '<img src="'+current.avatar+'">';
     }else{
-      up.innerHTML = current.avatar || '👤';
+      avatarUpload.innerHTML = current.avatar || '👤';
     }
-    $('#editModal').classList.add('show');
+    editModal.classList.add('show');
   });
-  // 头像
-  $('#avatarUpload').addEventListener('click', ()=> $('#avatarInput').click());
-  $('#avatarInput').addEventListener('change', e => {
+
+  avatarUpload.addEventListener('click', ()=> avatarInput.click());
+  avatarInput.addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     const rd = new FileReader();
-    rd.onload = ev => { $('#avatarUpload').innerHTML = '<img src="'+ev.target.result+'">'; current.avatar = ev.target.result; };
+    rd.onload = ev => { avatarUpload.innerHTML = '<img src="'+ev.target.result+'">'; current.avatar = ev.target.result; };
     rd.readAsDataURL(f);
   });
-  // 关闭
-  $('#modalClose').addEventListener('click', ()=> $('#editModal').classList.remove('show'));
-  $('#cancelEdit').addEventListener('click', ()=> $('#editModal').classList.remove('show'));
-  // 保存
+  $('#modalClose').addEventListener('click', ()=> editModal.classList.remove('show'));
+  $('#cancelEdit').addEventListener('click', ()=> editModal.classList.remove('show'));
+
   $('#editForm').addEventListener('submit', e => {
     e.preventDefault();
-    current.name     = $('#nameInput').value.trim() || current.name;
-    current.nickname = $('#nickInput').value.trim() || current.nickname || current.name;
-    current.bio      = $('#bioInput').value.trim() || current.bio;
+    current.name     = nameInput.value.trim() || current.name;
+    current.nickname = nickInput.value.trim() || current.nickname || current.name;
+    current.bio      = bioInput.value.trim() || current.bio;
     // 回写
     const list = JSON.parse(localStorage.getItem('eg_characters_v2') || '[]');
     const idx  = list.findIndex(c => c.id === current.id);
     if (idx >= 0) list[idx] = current;
     localStorage.setItem('eg_characters_v2', JSON.stringify(list));
     setTitleTyping(false);
-    $('#editModal').classList.remove('show');
+    editModal.classList.remove('show');
   });
 
-  /* ========== 启动 ========== */
+  /* ========== 启动：顺序很重要 ========== */
+  bindKeyboardFit();
   loadCharacters();
   loadHistory();
 })();
