@@ -69,9 +69,9 @@
     :root{ --bg:#f2f2f7; --card-bg:#fff; --muted:#666; --hair:#ddd; --tint:#1677ff; --ok:#34c759; }
     #tab-me{
       position:relative;
-      display:flex;      /* 纵向布局 */
-      flex:1;            /* ★ 占满内容区高度 */
-      min-height:0;      /* ★ 允许子容器正确滚动 */
+      display:flex;
+      flex:1;            /* 占满内容区高度 */
+      min-height:0;      /* 允许子容器正确滚动 */
       background:var(--bg);
     }
     .me-nav{ position:sticky; top:0; height:calc(44px + var(--safe-top)); padding:0 12px; padding-top:var(--safe-top);
@@ -81,8 +81,8 @@
     .i-btn{ height:32px; padding:0 12px; border:0; border-radius:10px; background:#eaeaea; }
     .i-btn.primary{ background:var(--ok); color:#fff; }
     .id-carousel{
-      flex:1;            /* ★ 伸展 */
-      min-height:0;      /* ★ 防塌陷 */
+      flex:1;
+      min-height:0;
       overflow-x:auto; scroll-snap-type:x mandatory; display:flex; gap:16px; padding:16px;
     }
     .id-card{ flex:0 0 calc(100% - 32px); scroll-snap-align:center; background:var(--card-bg); border-radius:16px; padding:16px; box-shadow:0 6px 18px rgba(0,0,0,.06);
@@ -243,7 +243,7 @@
           log('解析成功: '+msgCharacters.length+'个角色');
         }else{
           msgCharacters = [{
-            kind:'char',                 // ★ 标记为角色
+            kind:'char',
             id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊', lastTime:'12:00'
           }];
           saveData(); log('初始化Nash');
@@ -260,7 +260,7 @@
       var list = document.getElementById('msgChatList');
       if (!list){ log('ERROR: msgChatList不存在'); return; }
 
-      var listData = msgCharacters.filter(function(c){ return c && c.kind !== 'identity'; }); // ★ 只显示“角色”
+      var listData = msgCharacters.filter(function(c){ return c && c.kind !== 'identity'; }); // 只显示“角色”
       if (listData.length===0){
         list.innerHTML = '<div style="padding:20px;text-align:center;color:#999">暂无角色</div>';
         return;
@@ -405,15 +405,8 @@
         inp.click();
       });
 
-      // —— 新建身份 ——
+      // —— 新建身份 ——（绿色按钮）
       document.getElementById('btnAddIdentity')?.addEventListener('click', ()=> openEditor());
-
-      document.addEventListener('click', function(e){
-  if (e.target && e.target.id === 'btnAddIdentity') openEditor();
-});
-      
-      // 编辑器函数导出到全局
-      window.openIdentityEditor = function(id=null, opt={}){ openEditor(id, opt); };
 
       // 暴露 API
       window.EGIdentities = {
@@ -465,8 +458,8 @@
       function bindCardEvents(){
         idCarousel.querySelectorAll('.bind-tag').forEach(tag=>{
           tag.addEventListener('click', (e)=>{
-            const card = e.target.closest('.id-card'); const uid = card.dataset.id; const charId = tag.dataset.char;
-            const u = identities.find(x=>x.id===uid); u.boundCharIds = u.boundCharIds || [];
+            const card = e.target.closest('.id-card'); const identityId = card.dataset.id; const charId = tag.dataset.char;
+            const u = identities.find(x=>x.id===identityId); u.boundCharIds = u.boundCharIds || [];
             const i = u.boundCharIds.indexOf(charId);
             if (i>=0){ u.boundCharIds.splice(i,1); tag.classList.remove('active'); }
             else { u.boundCharIds.push(charId); tag.classList.add('active'); }
@@ -475,10 +468,10 @@
         });
         idCarousel.querySelectorAll('.id-card .btn').forEach(btn=>{
           btn.addEventListener('click', ()=>{
-            const card = btn.closest('.id-card'); const uid = card.dataset.id;
-            if (btn.dataset.act==='edit') openEditor(uid);
-            if (btn.dataset.act==='setDefault') setDefaultForAll(uid);
-            if (btn.dataset.act==='remove') removeIdentity(uid);
+            const card = btn.closest('.id-card'); const identityId = card.dataset.id;
+            if (btn.dataset.act==='edit') openEditor(identityId);
+            if (btn.dataset.act==='setDefault') setDefaultForAll(identityId);
+            if (btn.dataset.act==='remove') removeIdentity(identityId);
           });
         });
         idCarousel.querySelectorAll('.id-avatar').forEach(box=>{
@@ -492,9 +485,9 @@
 
       let editingId = null;
       function openEditor(identityId=null, opt={}){
-  editingId = identityId; let u;
-  if (identityId){ u = identities.find(x=>x.id===identityId); }
-  else { u = { kind:'identity', id: makemakeUid(), name:'', nickname:'', avatar:'👤', bio:'', boundCharIds:[] }; }
+        editingId = identityId; let u;
+        if (identityId){ u = identities.find(x=>x.id===identityId); }
+        else { u = { kind:'identity', id: makeUid(), name:'', nickname:'', avatar:'👤', bio:'', boundCharIds:[] }; }
         document.getElementById('edName').value = u.name||'';
         document.getElementById('edNick').value = u.nickname||'';
         document.getElementById('edBio').value  = u.bio||'';
@@ -514,15 +507,15 @@
         edAvatarBox.dataset.src = src;
         edAvatarBox.innerHTML = isImg(src) ? `<img src="${src}" alt="avatar">` : escapeHtml(src||'👤');
       }
-      function setDefaultForAll(uid){
-        const meta = load(LS_META) || {}; for (const c of (chars||[])) { meta[c.id] = meta[c.id]||{}; meta[c.id].activeIdentityId = uid; }
+      function setDefaultForAll(identityId){
+        const meta = load(LS_META) || {}; for (const c of (chars||[])) { meta[c.id] = meta[c.id]||{}; meta[c.id].activeIdentityId = identityId; }
         save(LS_META, meta); alert('已设为所有角色的默认身份'); broadcast();
       }
-      function removeIdentity(uid, opt={}){
+      function removeIdentity(identityId, opt={}){
         if (identities.length<=1){ alert('至少保留一张身份卡'); return; }
         if (!confirm('确认删除该身份卡？历史消息的标记不会被修改。')) return;
-        identities = identities.filter(x=>x.id!==uid); save(LS_ID, identities);
-        const meta = load(LS_META) || {}; for (const k in meta){ if (meta[k]?.activeIdentityId===uid) { meta[k].activeIdentityId = identities[0].id; } } save(LS_META, meta);
+        identities = identities.filter(x=>x.id!==identityId); save(LS_ID, identities);
+        const meta = load(LS_META) || {}; for (const k in meta){ if (meta[k]?.activeIdentityId===identityId) { meta[k].activeIdentityId = identities[0].id; } } save(LS_META, meta);
         if (opt.close) meEditor.close('del'); render(); broadcast();
       }
       function onScrollSnap(){
@@ -532,25 +525,28 @@
 
       function load(k){ try{ return JSON.parse(localStorage.getItem(k)||''); }catch(e){ return null; } }
       function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-      function makemakeUid(){ return 'u_' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
+      function makeUid(){ return 'u_' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
       function isImg(s){ return typeof s==='string' && (s.startsWith('data:') || s.startsWith('http')); }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
       function fileToDataURL(file){ return new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file); }); }
       function clone(v){ return JSON.parse(JSON.stringify(v)); }
       function broadcast(){ window.dispatchEvent(new CustomEvent('eg:identitiesUpdated')); localStorage.setItem('eg_evt_ping', String(Date.now())); }
+
+      // ★ 导出供全局加号调用
+      window.openIdentityEditor = function(id=null, opt={}){ openEditor(id, opt); };
     })();
 
+    /* ====== Tab 切换：聊天 / 我 ====== */
     var EG_CURRENT_TAB = 'chat';
-    /* ===== Tab 切换：聊天 / 我（先做这两个） ===== */
     function initTabs(){
       const items = document.querySelectorAll('.msg-tab-item');
       const viewChat = document.getElementById('msgChatList');
       const viewMe   = document.getElementById('tab-me');
       function show(name){
-        EG_CURRENT_TAB = name;            // ★ 记录当前 Tab
+        EG_CURRENT_TAB = name;
         if (viewChat) viewChat.style.display = (name==='chat') ? 'block' : 'none';
         if (viewMe)   viewMe.style.display   = (name==='me')   ? 'block' : 'none';
-        updateAddButtonForTab();          // ★ 同步右上角「＋」的行为/提示
+        updateAddButtonForTab();
         items.forEach(el=>el.classList.remove('active'));
         if (name==='chat') items[0]?.classList.add('active');
         if (name==='me')   items[3]?.classList.add('active');
@@ -563,38 +559,37 @@
       window.EGTab = Object.assign(window.EGTab||{}, { show });
     }
 
-// 确保 addBtn 已获取后再调用
-function onGlobalAdd(){
-  switch (EG_CURRENT_TAB) {
-    case 'chat':    showModal(); break;
-    case 'me':      if (typeof window.openIdentityEditor === 'function') window.openIdentityEditor();
-                    else alert('打开身份编辑器失败'); 
-                    break;
-    case 'moments': alert('发动态：开发中'); break;
-    case 'events':  alert('添加事件：开发中'); break;
-    default:        showModal();
-  }
-}
+    function onGlobalAdd(){
+      switch (EG_CURRENT_TAB) {
+        case 'chat':    showModal(); break;                          // 新建“角色”
+        case 'me':      if (typeof window.openIdentityEditor==='function') window.openIdentityEditor();
+                        else alert('打开身份编辑器失败'); break;      // 新建“身份”
+        case 'moments': alert('发动态：开发中'); break;
+        case 'events':  alert('添加事件：开发中'); break;
+        default:        showModal();
+      }
+    }
+    function updateAddButtonForTab(){
+      var addBtn = document.getElementById('addBtn');
+      if (!addBtn) return;
+      var map = { chat:'新建角色', me:'新建身份', moments:'发动态', events:'添加事件' };
+      addBtn.setAttribute('aria-label', map[EG_CURRENT_TAB] || '新建');
+    }
 
-function updateAddButtonForTab(){
-  var addBtn = document.getElementById('addBtn');
-  if (!addBtn) return;
-  var map = { chat:'新建角色', me:'新建身份', moments:'发动态', events:'添加事件' };
-  addBtn.setAttribute('aria-label', map[EG_CURRENT_TAB] || '新建');
-}
     /* ===== 初始化 ===== */
     function init(){
       try{
         loadData(); renderList();
         var backBtn = document.getElementById('backBtn'); if (backBtn) backBtn.addEventListener('click', goBack);
-        var addBtn = document.getElementById('addBtn');   
+
+        var addBtn = document.getElementById('addBtn');
         if (addBtn) {
-          // 防止之前绑定还在
-  addBtn.replaceWith(addBtn.cloneNode(true));
-  addBtn = document.getElementById('addBtn');
-  addBtn.addEventListener('click', onGlobalAdd); // ★ 根据当前 Tab 触发不同功能
-  updateAddButtonForTab();                       // ★ 初始化一次文案/无障碍提示
-        };
+          addBtn.replaceWith(addBtn.cloneNode(true));           // 清旧监听
+          addBtn = document.getElementById('addBtn');
+          addBtn.addEventListener('click', onGlobalAdd);        // 上下文“＋”
+          updateAddButtonForTab();
+        }
+
         var closeBtn = document.getElementById('closeModalBtn'); if (closeBtn) closeBtn.addEventListener('click', hideModal);
         var modal = document.getElementById('msgAddModal');
         if (modal){ modal.addEventListener('click', function(e){ if (e.target.id==='msgAddModal') hideModal(); }); }
@@ -616,7 +611,7 @@ function updateAddButtonForTab(){
             var bio = document.getElementById('msgCharacterBio').value.trim();
             var up = document.getElementById('msgAvatarUpload'); var img = up ? up.querySelector('img') : null; var avatar = img ? img.src : '👤';
             var newChar = {
-              kind:'char',                 // ★ 角色标记
+              kind:'char',
               id: String(Date.now()),
               name, nickname, bio, avatar,
               lastTime: new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})
