@@ -140,7 +140,7 @@
         <div class="me-actions">
           <button class="i-btn" id="btnImport">导入</button>
           <button class="i-btn" id="btnExport">导出</button>
-          <button class="i-btn primary" id="btnAdd">新建</button>
+          <button class="i-btn primary" id="btnAddIdentity">新建</button>
         </div>
       </div>
       <div class="id-carousel" id="idCarousel" aria-live="polite"></div>
@@ -406,7 +406,7 @@
       });
 
       // —— 新建身份 ——
-      $('#btnAdd')?.addEventListener('click', ()=> openEditor());
+      document.getElementById('btnAddIdentity')?.addEventListener('click', ()=> openEditor());
 
       // 暴露 API
       window.EGIdentities = {
@@ -532,14 +532,17 @@
       function broadcast(){ window.dispatchEvent(new CustomEvent('eg:identitiesUpdated')); localStorage.setItem('eg_evt_ping', String(Date.now())); }
     })();
 
+    var EG_CURRENT_TAB = 'chat';
     /* ===== Tab 切换：聊天 / 我（先做这两个） ===== */
     function initTabs(){
       const items = document.querySelectorAll('.msg-tab-item');
       const viewChat = document.getElementById('msgChatList');
       const viewMe   = document.getElementById('tab-me');
       function show(name){
+        EG_CURRENT_TAB = name;            // ★ 记录当前 Tab
         if (viewChat) viewChat.style.display = (name==='chat') ? 'block' : 'none';
         if (viewMe)   viewMe.style.display   = (name==='me')   ? 'block' : 'none';
+        updateAddButtonForTab();          // ★ 同步右上角「＋」的行为/提示
         items.forEach(el=>el.classList.remove('active'));
         if (name==='chat') items[0]?.classList.add('active');
         if (name==='me')   items[3]?.classList.add('active');
@@ -552,12 +555,36 @@
       window.EGTab = Object.assign(window.EGTab||{}, { show });
     }
 
+// 确保 addBtn 已获取后再调用
+function onGlobalAdd(){
+  switch (EG_CURRENT_TAB) {
+    case 'chat':    showModal(); break;                        // 新建“角色”
+    case 'me':      if (typeof openEditor==='function') openEditor(); else alert('打开身份编辑器失败'); break; // 新建“身份”
+    case 'moments': alert('发动态：开发中'); break;             // 预留
+    case 'events':  alert('添加事件：开发中'); break;           // 预留
+    default:        showModal();
+  }
+}
+
+function updateAddButtonForTab(){
+  var addBtn = document.getElementById('addBtn');
+  if (!addBtn) return;
+  var map = { chat:'新建角色', me:'新建身份', moments:'发动态', events:'添加事件' };
+  addBtn.setAttribute('aria-label', map[EG_CURRENT_TAB] || '新建');
+}
     /* ===== 初始化 ===== */
     function init(){
       try{
         loadData(); renderList();
         var backBtn = document.getElementById('backBtn'); if (backBtn) backBtn.addEventListener('click', goBack);
-        var addBtn = document.getElementById('addBtn');   if (addBtn) addBtn.addEventListener('click', showModal);
+        var addBtn = document.getElementById('addBtn');   
+        if (addBtn) {
+          // 防止之前绑定还在
+  addBtn.replaceWith(addBtn.cloneNode(true));
+  addBtn = document.getElementById('addBtn');
+  addBtn.addEventListener('click', onGlobalAdd); // ★ 根据当前 Tab 触发不同功能
+  updateAddButtonForTab();                       // ★ 初始化一次文案/无障碍提示
+        };
         var closeBtn = document.getElementById('closeModalBtn'); if (closeBtn) closeBtn.addEventListener('click', hideModal);
         var modal = document.getElementById('msgAddModal');
         if (modal){ modal.addEventListener('click', function(e){ if (e.target.id==='msgAddModal') hideModal(); }); }
