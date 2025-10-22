@@ -370,7 +370,7 @@
 
       if (!Array.isArray(identities) || identities.length===0){
         const firstBound = (Array.isArray(chars)&&chars[0]) ? [chars[0].id] : [];
-        identities = [{ kind:'identity', id: uid(), name:'User', nickname:'我', avatar:'👤', bio:'', boundCharIds:firstBound }];
+        identities = [{ kind:'identity', id: makeUid(), name:'User', nickname:'我', avatar:'👤', bio:'', boundCharIds:firstBound }];
         save(LS_ID, identities);
       }
 
@@ -398,7 +398,7 @@
         inp.onchange = async ()=>{ const f=inp.files[0]; if(!f) return; try{
             const txt = await f.text(); const arr = JSON.parse(txt);
             if(Array.isArray(arr)){
-              identities = arr.map(n=>({ kind:'identity', id:n.id||uid(), name:n.name||'', nickname:n.nickname||'', bio:n.bio||'', avatar:n.avatar||'👤', boundCharIds:Array.isArray(n.boundCharIds)?n.boundCharIds:[] }));
+              identities = arr.map(n=>({ kind:'identity', id:n.id||makeUid(), name:n.name||'', nickname:n.nickname||'', bio:n.bio||'', avatar:n.avatar||'👤', boundCharIds:Array.isArray(n.boundCharIds)?n.boundCharIds:[] }));
               save(LS_ID, identities); render(); broadcast();
             }
           }catch(e){ alert('导入失败：JSON 格式错误'); } };
@@ -407,6 +407,13 @@
 
       // —— 新建身份 ——
       document.getElementById('btnAddIdentity')?.addEventListener('click', ()=> openEditor());
+
+      document.addEventListener('click', function(e){
+  if (e.target && e.target.id === 'btnAddIdentity') openEditor();
+});
+      
+      // 编辑器函数导出到全局
+      window.openIdentityEditor = function(id=null, opt={}){ openEditor(id, opt); };
 
       // 暴露 API
       window.EGIdentities = {
@@ -484,9 +491,10 @@
       document.getElementById('btnSave')?.addEventListener('click', (e)=>{ e.preventDefault(); saveEditor(); meEditor.close('save'); });
 
       let editingId = null;
-      function openEditor(uid=null, opt={}){
-        editingId = uid; let u;
-        if (uid){ u = identities.find(x=>x.id===uid); } else { u = { kind:'identity', id: uid||uid(), name:'', nickname:'', avatar:'👤', bio:'', boundCharIds:[] }; }
+      function openEditor(identityId=null, opt={}){
+  editingId = identityId; let u;
+  if (identityId){ u = identities.find(x=>x.id===identityId); }
+  else { u = { kind:'identity', id: makemakeUid(), name:'', nickname:'', avatar:'👤', bio:'', boundCharIds:[] }; }
         document.getElementById('edName').value = u.name||'';
         document.getElementById('edNick').value = u.nickname||'';
         document.getElementById('edBio').value  = u.bio||'';
@@ -499,7 +507,7 @@
       function saveEditor(){
         const payload = { name: edName.value.trim(), nickname: edNick.value.trim(), bio: edBio.value.trim(), avatar: edAvatarBox.dataset.src||'👤' };
         if (editingId){ const u = identities.find(x=>x.id===editingId); Object.assign(u, payload); }
-        else { identities.push({ kind:'identity', id: uid(), ...payload, boundCharIds: [] }); }
+        else { identities.push({ kind:'identity', id: makeUid(), ...payload, boundCharIds: [] }); }
         save(LS_ID, identities); render(); broadcast();
       }
       function setEditorAvatar(src){
@@ -524,7 +532,7 @@
 
       function load(k){ try{ return JSON.parse(localStorage.getItem(k)||''); }catch(e){ return null; } }
       function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-      function uid(){ return 'u_' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
+      function makemakeUid(){ return 'u_' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
       function isImg(s){ return typeof s==='string' && (s.startsWith('data:') || s.startsWith('http')); }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
       function fileToDataURL(file){ return new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file); }); }
@@ -558,10 +566,12 @@
 // 确保 addBtn 已获取后再调用
 function onGlobalAdd(){
   switch (EG_CURRENT_TAB) {
-    case 'chat':    showModal(); break;                        // 新建“角色”
-    case 'me':      if (typeof openEditor==='function') openEditor(); else alert('打开身份编辑器失败'); break; // 新建“身份”
-    case 'moments': alert('发动态：开发中'); break;             // 预留
-    case 'events':  alert('添加事件：开发中'); break;           // 预留
+    case 'chat':    showModal(); break;
+    case 'me':      if (typeof window.openIdentityEditor === 'function') window.openIdentityEditor();
+                    else alert('打开身份编辑器失败'); 
+                    break;
+    case 'moments': alert('发动态：开发中'); break;
+    case 'events':  alert('添加事件：开发中'); break;
     default:        showModal();
   }
 }
