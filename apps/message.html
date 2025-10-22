@@ -65,58 +65,47 @@
 
     #debugBox{position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.8);color:#0f0;padding:8px;border-radius:6px;font-size:11px;max-height:25vh;overflow:auto;font-family:monospace;white-space:pre-wrap;word-break:break-all;display:none}
 
-    /* ===== 我（身份卡）Tab 样式（含伸展修正） ===== */
-    :root{ --bg:#f2f2f7; --card-bg:#fff; --muted:#666; --hair:#ddd; --tint:#1677ff; --ok:#34c759; }
-    #tab-me{
-      position:relative;
-      display:flex;
-      flex:1;            /* 占满内容区高度 */
-      min-height:0;      /* 允许子容器正确滚动 */
-      background:var(--bg);
-    }
+    /* ===== 我（身份卡）Tab 样式 ===== */
+    :root{ --bg:#f2f2f7; --card-bg:#fff; --muted:#666; --hair:#ddd; --tint:#1677ff; --ok:#34c759; --warn:#ff3b30; }
+    #tab-me{ position:relative; display:flex; flex:1; min-height:0; background:var(--bg); }
     .me-nav{ position:sticky; top:0; height:calc(44px + var(--safe-top)); padding:0 12px; padding-top:var(--safe-top);
-      display:flex; align-items:center; justify-content:space-between; background:var(--bg); z-index:10; border-bottom:0.5px solid var(--hair); }
+      display:flex; align-items:center; justify-content:center; background:var(--bg); z-index:10; border-bottom:0.5px solid var(--hair); }
     .me-title{ font-weight:600; }
-    .me-actions{ display:flex; gap:8px; }
-    .i-btn{ height:32px; padding:0 12px; border:0; border-radius:10px; background:#eaeaea; }
-    .i-btn.primary{ background:var(--ok); color:#fff; }
-    .id-carousel{
-      flex:1;
-      min-height:0;
-      overflow-x:auto; scroll-snap-type:x mandatory; display:flex; gap:16px; padding:16px;
-    }
-    .id-card{ flex:0 0 calc(100% - 32px); scroll-snap-align:center; background:var(--card-bg); border-radius:16px; padding:16px; box-shadow:0 6px 18px rgba(0,0,0,.06);
-      display:grid; grid-template-columns:92px 1fr; grid-auto-rows:min-content; gap:12px 16px; }
-    .id-avatar{ width:92px; height:92px; border-radius:14px; background:#eee; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:44px; cursor:pointer; }
+
+    .id-carousel{ flex:1; min-height:0; overflow-x:auto; scroll-snap-type:x mandatory; display:flex; gap:16px; padding:16px; }
+    .id-card{ flex:0 0 calc(100% - 32px); scroll-snap-align:center; background:var(--card-bg); border-radius:16px; padding:16px;
+      box-shadow:0 6px 18px rgba(0,0,0,.06); display:grid; grid-template-columns:92px 1fr; grid-auto-rows:min-content; gap:12px 16px; }
+    .id-avatar{ width:92px; height:92px; border-radius:14px; background:#eee; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:44px; cursor:pointer; user-select:none;}
     .id-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
-    .id-meta h3{ margin:0 0 6px; font-size:18px; }
-    .id-meta .nick{ color:var(--muted); font-size:13px; }
-    .id-bio{ grid-column:1 / -1; background:#f7f7f7; border-radius:12px; padding:12px; line-height:1.5; min-height:52px; white-space:pre-wrap; word-break:break-word; }
+    .id-meta{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .id-meta h3{ margin:0 0 4px; font-size:18px; color:#000;}
+    .badge{ font-size:11px; padding:2px 6px; border-radius:999px; background:#e8f5e9; color:#0a8f27; border:0.5px solid #bfe8c7; margin-left:6px; }
+    .meta-right{ display:flex; gap:6px; align-items:center; }
+    .mini{ height:28px; padding:0 10px; border:0; border-radius:8px; background:#efefef; font-size:12px; cursor:pointer; user-select:none;}
+    .mini:active{ filter:brightness(.95); }
+
+    .id-field{ grid-column:1 / -1; }
+    .label{ font-size:13px; color:#000; margin:4px 0; }
+    .input, .textarea{ width:100%; color:#000; background:#fff; border:1px solid #e5e5ea; border-radius:10px; padding:10px 12px; font:inherit; }
+    .textarea{ min-height:96px; resize:vertical; }
+    .input[readonly], .textarea[readonly]{ background:#f7f7f7; color:#000; }
+
     .bind-section{ grid-column:1 / -1; }
-    .bind-title{ font-size:13px; color:var(--muted); margin-bottom:8px; }
+    .bind-title{ font-size:13px; color:#000; margin-bottom:8px; }
     .bind-tags{ display:flex; flex-wrap:wrap; gap:8px; }
     .bind-tag{ padding:8px 10px; border-radius:999px; background:#f2f2f7; font-size:13px; cursor:pointer; user-select:none; border:0.5px solid transparent; display:flex; align-items:center; gap:6px; }
     .bind-tag.active{ background:#e9f0ff; color:var(--tint); border-color:#cfe0ff; }
     .bind-tag .av{ width:16px; height:16px; border-radius:50%; overflow:hidden; display:inline-flex; align-items:center; justify-content:center; font-size:12px; background:#eee; }
     .bind-tag .av img{ width:100%; height:100%; object-fit:cover; display:block; }
+
     .card-actions{ grid-column:1 / -1; display:flex; gap:10px; margin-top:2px; }
     .btn{ flex:1; height:36px; border:0; border-radius:10px; background:#ededed; }
     .btn.primary{ background:var(--ok); color:#fff; }
-    .btn.warn{ background:#ff3b30; color:#fff; }
+    .btn.warn{ background:var(--warn); color:#fff; }
+
     .dots{ height:42px; display:flex; align-items:center; justify-content:center; gap:6px; }
     .dot{ width:6px; height:6px; border-radius:50%; background:#ddd; }
     .dot.active{ width:16px; border-radius:4px; background:#999; transition:all .25s; }
-
-    dialog.me-editor{ width:min(560px, 92vw); border:0; border-radius:16px; padding:0; box-shadow:0 16px 40px rgba(0,0,0,.28); }
-    .ed-head{ padding:14px 16px; border-bottom:0.5px solid var(--hair); display:flex; justify-content:space-between; align-items:center; }
-    .ed-body{ padding:16px; display:grid; grid-template-columns:96px 1fr; gap:12px 16px; }
-    .ed-avatar{ width:96px; height:96px; border-radius:14px; background:#eee; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-    .ed-avatar img{ width:100%; height:100%; object-fit:cover; }
-    .ed-fields label{ display:block; font-size:12px; color:var(--muted); margin:8px 0 4px; }
-    .ed-fields input, .ed-fields textarea{ width:100%; border:1px solid #e5e5ea; border-radius:10px; padding:10px 12px; font:inherit; background:#fff; }
-    .ed-fields textarea{ min-height:96px; resize:vertical; }
-    .ed-foot{ padding:12px 16px 16px; display:flex; gap:10px; }
-    input[type=file]{ display:none; }
   </style>
 </head>
 <body>
@@ -127,7 +116,7 @@
         <div class="msg-back-btn" id="backBtn">◀</div>
         <div class="msg-navbar-title">消息</div>
       </div>
-      <div class="msg-navbar-icon" id="addBtn">➕</div>
+      <div class="msg-navbar-icon" id="addBtn" aria-label="新建">➕</div>
     </div>
 
     <!-- 聊天Tab 内容面板 -->
@@ -135,14 +124,7 @@
 
     <!-- 我（身份卡）Tab 内容面板 -->
     <section id="tab-me" role="tabpanel" aria-label="我的身份">
-      <div class="me-nav">
-        <div class="me-title">我的身份</div>
-        <div class="me-actions">
-          <button class="i-btn" id="btnImport">导入</button>
-          <button class="i-btn" id="btnExport">导出</button>
-          <button class="i-btn primary" id="btnAddIdentity">新建</button>
-        </div>
-      </div>
+      <div class="me-nav"><div class="me-title">我的身份卡</div></div>
       <div class="id-carousel" id="idCarousel" aria-live="polite"></div>
       <div class="dots" id="dots"></div>
     </section>
@@ -188,34 +170,6 @@
     </div>
   </div>
 
-  <!-- 编辑身份 弹窗 -->
-  <dialog class="me-editor" id="meEditor">
-    <form method="dialog">
-      <div class="ed-head">
-        <div style="font-weight:600">编辑身份</div>
-        <button class="i-btn" value="close">关闭</button>
-      </div>
-      <div class="ed-body">
-        <label class="ed-avatar" id="edAvatarPick" title="点击更换头像">
-          <input type="file" id="edAvatarFile" accept="image/*" />
-          <span id="edAvatarBox">👤</span>
-        </label>
-        <div class="ed-fields">
-          <label>姓名</label>
-          <input id="edName" placeholder="示例：夏之谣" />
-          <label>昵称（对外显示优先）</label>
-          <input id="edNick" placeholder="示例：Yoyo" />
-          <label>设定 / 人设</label>
-          <textarea id="edBio" placeholder="偏理性、喜欢用数据说话……"></textarea>
-        </div>
-      </div>
-      <div class="ed-foot">
-        <button class="i-btn" id="btnDelete" type="button">删除</button>
-        <button class="i-btn primary" id="btnSave" value="save">保存</button>
-      </div>
-    </form>
-  </dialog>
-
   <div id="debugBox"></div>
 
   <script>
@@ -227,40 +181,37 @@
       debugBox.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.8);color:#0f0;padding:8px;border-radius:6px;font-size:11px;max-height:25vh;overflow:auto;font-family:monospace;white-space:pre-wrap;word-break:break-all'; document.body.appendChild(debugBox); }
     function log(msg){ try{ var t=new Date().toTimeString().slice(0,8); debugBox.innerHTML += t+' '+msg+'\n'; debugBox.scrollTop = debugBox.scrollHeight; console.log(msg);}catch(e){console.log(msg);} }
     window.onerror = function(msg, url, line){ log('ERROR: '+msg+' @'+line); return true; };
-    log('脚本开始执行'); log('document.readyState: '+document.readyState);
 
     /* ===== 角色数据（仓库） ===== */
     var STORAGE_KEY = 'eg_characters_v2';
     var msgCharacters = [];
     var touchStartX=0, touchCurrentX=0;
 
+    function notifyCharsUpdated(){ // 通知“我”页刷新（同页 + 跨页）
+      window.dispatchEvent(new CustomEvent('eg:charsUpdated'));
+      try{ localStorage.setItem('eg_evt_chars', String(Date.now())); }catch(_){}
+    }
+
     function loadData(){
       try{
         var stored = localStorage.getItem(STORAGE_KEY);
-        log('读取localStorage: ' + (stored ? stored.length + '字符' : 'null'));
-        if (stored){
-          msgCharacters = JSON.parse(stored);
-          log('解析成功: '+msgCharacters.length+'个角色');
-        }else{
-          msgCharacters = [{
-            kind:'char',
-            id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊', lastTime:'12:00'
-          }];
-          saveData(); log('初始化Nash');
+        if (stored) msgCharacters = JSON.parse(stored);
+        else {
+          msgCharacters = [{ kind:'char', id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊', lastTime:'12:00' }];
+          saveData();
         }
-      }catch(e){ log('loadData错误: '+e.message); msgCharacters=[]; }
+      }catch(e){ msgCharacters=[]; }
     }
     function saveData(){
-      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(msgCharacters)); log('保存成功: '+msgCharacters.length+'个角色'); }
-      catch(e){ log('saveData错误: '+e.message); }
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(msgCharacters)); }
+      catch(e){}
+      notifyCharsUpdated();
     }
 
     function renderList(){
-      log('开始渲染列表');
       var list = document.getElementById('msgChatList');
-      if (!list){ log('ERROR: msgChatList不存在'); return; }
-
-      var listData = msgCharacters.filter(function(c){ return c && c.kind !== 'identity'; }); // 只显示“角色”
+      if (!list) return;
+      var listData = msgCharacters.filter(function(c){ return c && c.kind !== 'identity'; });
       if (listData.length===0){
         list.innerHTML = '<div style="padding:20px;text-align:center;color:#999">暂无角色</div>';
         return;
@@ -286,12 +237,11 @@
                   '</div>'+
                 '</div>';
       }
-      list.innerHTML = html; log('渲染完成: '+listData.length+'项');
+      list.innerHTML = html;
       bindEvents();
     }
 
     function bindEvents(){
-      log('绑定事件');
       var items = document.querySelectorAll('.msg-chat-item');
       for (var i=0;i<items.length;i++){
         items[i].addEventListener('click', function(){
@@ -321,25 +271,14 @@
           var id = this.dataset.id; var isDelete = this.classList.contains('delete');
           if (isDelete){
             if (confirm('确定删除？')){
-              log('删除角色: '+id);
               msgCharacters = msgCharacters.filter(function(c){ return c.id!==id; });
               saveData(); renderList();
             }
           }else{
-            if (confirm('确定重置聊天记录？')){
-              log('重置聊天: '+id); alert('聊天记录已重置');
-            }
+            if (confirm('确定重置聊天记录？')){ alert('聊天记录已重置'); }
           }
         });
       }
-    }
-
-    /* ===== 模态框 ===== */
-    function showModal(){ var m=document.getElementById('msgAddModal'); if(m) m.classList.add('show'); }
-    function hideModal(){
-      var m=document.getElementById('msgAddModal'); if(m) m.classList.remove('show');
-      var f=document.getElementById('msgCharacterForm'); if(f) f.reset();
-      var up=document.getElementById('msgAvatarUpload'); if(up) up.innerHTML='<span>📷</span>';
     }
 
     /* ===== 返回 ===== */
@@ -349,7 +288,7 @@
       else location.href='../index.html';
     }
 
-    /* ===== 我（身份卡）组件（含 kind 标记与 iOS 导出修复） ===== */
+    /* ===== 我（身份卡）组件（就地编辑 + 实时同步） ===== */
     (function(){
       const LS_ID   = 'eg_user_identities_v1';
       const LS_CHAR = 'eg_characters_v2';
@@ -358,70 +297,54 @@
       const $ = s => document.querySelector(s);
       const idCarousel = $('#idCarousel');
       const dots = $('#dots');
-      const meEditor = $('#meEditor');
-      const edAvatarBox = $('#edAvatarBox');
-      const edAvatarFile = $('#edAvatarFile');
-      const edName = $('#edName');
-      const edNick = $('#edNick');
-      const edBio  = $('#edBio');
 
       let identities = load(LS_ID) || [];
       let chars = load(LS_CHAR) || [];
 
       if (!Array.isArray(identities) || identities.length===0){
-        const firstBound = (Array.isArray(chars)&&chars[0]) ? [chars[0].id] : [];
-        identities = [{ kind:'identity', id: makeUid(), name:'User', nickname:'我', avatar:'👤', bio:'', boundCharIds:firstBound }];
+        identities = [{ kind:'identity', id: makeUid(), name:'User', nickname:'我', avatar:'👤', bio:'', boundCharIds:[] }];
         save(LS_ID, identities);
       }
 
+      ensureDefaultBindings(); // 首次确保默认绑定
       render();
 
-      // —— 导出（iOS 分享/复制兜底） ——
+      // ===== 导入/导出（页级） =====
       function isIOS(){ return /iP(hone|ad|od)/.test(navigator.userAgent); }
       async function copyText(t){ try{ await navigator.clipboard.writeText(t); return true; }catch(_){ return false; } }
-      $('#btnExport')?.addEventListener('click', async ()=>{
+      async function doExport(){
         const json = JSON.stringify(identities, null, 2);
         if (isIOS()){
-          if (navigator.share){ try{ await navigator.share({ title:'eg_user_identities.json', text: json }); return; }catch(_){ /* 用户取消 */ } }
+          if (navigator.share){ try{ await navigator.share({ title:'eg_user_identities.json', text: json }); return; }catch(_){ } }
           const ok = await copyText(json);
           alert(ok ? '已复制到剪贴板（iOS 独立窗口无法直接下载）' : '复制失败，请检查剪贴板权限');
           return;
         }
         const blob = new Blob([json], {type:'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='eg_user_identities.json';
-        document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
-      });
-
-      // —— 导入 ——
-      $('#btnImport')?.addEventListener('click', ()=>{
+        document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1200);
+      }
+      function doImport(){
         const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json';
         inp.onchange = async ()=>{ const f=inp.files[0]; if(!f) return; try{
             const txt = await f.text(); const arr = JSON.parse(txt);
             if(Array.isArray(arr)){
               identities = arr.map(n=>({ kind:'identity', id:n.id||makeUid(), name:n.name||'', nickname:n.nickname||'', bio:n.bio||'', avatar:n.avatar||'👤', boundCharIds:Array.isArray(n.boundCharIds)?n.boundCharIds:[] }));
-              save(LS_ID, identities); render(); broadcast();
+              save(LS_ID, identities); ensureDefaultBindings(); render(); broadcast();
             }
           }catch(e){ alert('导入失败：JSON 格式错误'); } };
         inp.click();
-      });
+      }
 
-      // —— 新建身份 ——（绿色按钮）
-      document.getElementById('btnAddIdentity')?.addEventListener('click', ()=> openEditor());
-
-      // 暴露 API
-      window.EGIdentities = {
-        getAll: ()=> clone(identities),
-        getById: id => clone(identities.find(x=>x.id===id)),
-        getActiveIdentityFor: (charId)=>{
-          const meta = load(LS_META) || {};
-          const id = meta[charId]?.activeIdentityId || (identities[0] && identities[0].id);
-          return identities.find(x=>x.id===id) || identities[0];
-        },
-        setActiveIdentityFor: (charId, identityId)=>{
-          const meta = load(LS_META) || {}; meta[charId] = meta[charId] || {}; meta[charId].activeIdentityId = identityId; save(LS_META, meta); broadcast();
-        }
+      // ===== 对外 API：新建并进入编辑态（右上角＋用） =====
+      window.openIdentityEditor = function(){
+        const u = { kind:'identity', id: makeUid(), name:'', nickname:'', avatar:'👤', bio:'', boundCharIds:[] };
+        identities.push(u); save(LS_ID, identities);
+        ensureDefaultBindings(); render();
+        setTimeout(()=> setCardEditing(u.id, true), 0);
       };
 
+      // ===== 渲染 =====
       function render(){
         if (!idCarousel) return;
         idCarousel.innerHTML = identities.map(renderCard).join('');
@@ -429,7 +352,9 @@
         bindCardEvents();
         idCarousel.addEventListener('scroll', onScrollSnap, {passive:true});
       }
+
       function renderCard(u){
+        const isDefault = identities[0] && identities[0].id === u.id;
         const avHTML = isImg(u.avatar) ? `<img src="${u.avatar}">` : escapeHtml(u.avatar || '👤');
         const tags = (Array.isArray(chars)?chars:[]).map(c=>{
           const active = u.boundCharIds?.includes(c.id);
@@ -440,100 +365,145 @@
           <article class="id-card" data-id="${u.id}">
             <div class="id-avatar" data-act="pick-avatar">${avHTML}</div>
             <div class="id-meta">
-              <h3>${escapeHtml(u.nickname||u.name||'未命名')}</h3>
-              <div class="nick">${escapeHtml(u.name||'')}</div>
+              <div>
+                <h3>${escapeHtml(u.nickname||u.name||'未命名')}${isDefault?'<span class="badge">默认</span>':''}</h3>
+                <div class="nick" style="font-size:12px;color:#666">${escapeHtml(u.name||'')}</div>
+              </div>
+              <div class="meta-right">
+                <button class="mini" data-act="import">导入</button>
+                <button class="mini" data-act="export">导出</button>
+              </div>
             </div>
-            <div class="id-bio">${u.bio ? escapeHtml(u.bio) : '（点击编辑，完善你的设定）'}</div>
+
+            <div class="id-field">
+              <div class="label">姓名</div>
+              <input class="input" data-k="name" value="${attr(u.name)}" readonly>
+            </div>
+            <div class="id-field">
+              <div class="label">昵称</div>
+              <input class="input" data-k="nickname" value="${attr(u.nickname)}" readonly>
+            </div>
+            <div class="id-field">
+              <div class="label">设定</div>
+              <textarea class="textarea" data-k="bio" readonly>${text(u.bio)}</textarea>
+            </div>
+
             <div class="bind-section">
               <div class="bind-title">绑定的角色（多选）</div>
               <div class="bind-tags">${tags || '（暂无角色，可在“消息”页添加）'}</div>
             </div>
+
             <div class="card-actions">
               <button class="btn" data-act="edit">编辑</button>
-              <button class="btn primary" data-act="setDefault">设为默认（对所有角色）</button>
-              <button class="btn warn" data-act="remove">删除</button>
+              <button class="btn primary" data-act="save" disabled>保存</button>
+              <button class="btn warn" data-act="remove"${isDefault?' disabled':''}>删除</button>
             </div>
           </article>`;
       }
+
+      function setCardEditing(id, on){
+        const card = idCarousel.querySelector(`.id-card[data-id="${id}"]`); if (!card) return;
+        const inputs = card.querySelectorAll('.input, .textarea');
+        inputs.forEach(el=>{ el.readOnly = !on; });
+        const saveBtn = card.querySelector('.btn.primary[data-act="save"]');
+        const editBtn = card.querySelector('.btn[data-act="edit"]');
+        if (saveBtn) saveBtn.disabled = !on;
+        if (editBtn) editBtn.disabled = on;
+      }
+
       function bindCardEvents(){
+        // 绑定切换
         idCarousel.querySelectorAll('.bind-tag').forEach(tag=>{
           tag.addEventListener('click', (e)=>{
-            const card = e.target.closest('.id-card'); const identityId = card.dataset.id; const charId = tag.dataset.char;
-            const u = identities.find(x=>x.id===identityId); u.boundCharIds = u.boundCharIds || [];
+            const card = e.currentTarget.closest('.id-card'); const uid = card.dataset.id; const charId = tag.dataset.char;
+            const u = identities.find(x=>x.id===uid); u.boundCharIds = u.boundCharIds || [];
             const i = u.boundCharIds.indexOf(charId);
             if (i>=0){ u.boundCharIds.splice(i,1); tag.classList.remove('active'); }
             else { u.boundCharIds.push(charId); tag.classList.add('active'); }
             save(LS_ID, identities); broadcast();
           });
         });
-        idCarousel.querySelectorAll('.id-card .btn').forEach(btn=>{
-          btn.addEventListener('click', ()=>{
-            const card = btn.closest('.id-card'); const identityId = card.dataset.id;
-            if (btn.dataset.act==='edit') openEditor(identityId);
-            if (btn.dataset.act==='setDefault') setDefaultForAll(identityId);
-            if (btn.dataset.act==='remove') removeIdentity(identityId);
+
+        // 卡片按钮
+        idCarousel.querySelectorAll('.id-card').forEach(card=>{
+          const uid = card.dataset.id;
+          card.querySelector('[data-act="edit"]').addEventListener('click', ()=> setCardEditing(uid, true));
+          card.querySelector('[data-act="save"]').addEventListener('click', ()=>{
+            const u = identities.find(x=>x.id===uid);
+            u.name = card.querySelector('[data-k="name"]').value.trim();
+            u.nickname = card.querySelector('[data-k="nickname"]').value.trim();
+            u.bio = card.querySelector('[data-k="bio"]').value.trim();
+            save(LS_ID, identities); render(); broadcast();
+          });
+          const rmBtn = card.querySelector('[data-act="remove"]');
+          rmBtn && rmBtn.addEventListener('click', ()=>{
+            if (identities[0] && identities[0].id === uid){ alert('默认身份卡不可删除'); return; }
+            if (!confirm('确认删除该身份卡？')) return;
+            identities = identities.filter(x=>x.id!==uid); save(LS_ID, identities);
+            ensureDefaultBindings(); render(); broadcast();
+          });
+
+          // 导入导出（页级）
+          card.querySelector('[data-act="import"]').addEventListener('click', doImport);
+          card.querySelector('[data-act="export"]').addEventListener('click', doExport);
+
+          // 头像
+          card.querySelector('.id-avatar').addEventListener('click', ()=>{
+            // 仅编辑态可换
+            const anyEditable = !card.querySelector('.input').readOnly;
+            if (!anyEditable) return;
+            const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*';
+            inp.onchange = async ()=>{ const f=inp.files[0]; if(!f) return; const b64 = await fileToDataURL(f);
+              card.querySelector('.id-avatar').innerHTML = `<img src="${b64}">`;
+              const u = identities.find(x=>x.id===uid); u.avatar = b64; save(LS_ID, identities); broadcast();
+            };
+            inp.click();
           });
         });
-        idCarousel.querySelectorAll('.id-avatar').forEach(box=>{
-          box.addEventListener('click', ()=>{ const card = box.closest('.id-card'); openEditor(card.dataset.id, {focus:'avatar'}); });
+
+        // 输入变更 → 启用“保存”
+        idCarousel.querySelectorAll('.input, .textarea').forEach(el=>{
+          el.addEventListener('input', ()=>{
+            const card = el.closest('.id-card');
+            const saveBtn = card.querySelector('[data-act="save"]');
+            if (saveBtn) saveBtn.disabled = false;
+          });
         });
       }
 
-      // 编辑弹窗
-      document.getElementById('btnDelete')?.addEventListener('click', ()=>{ if (editingId) removeIdentity(editingId, {close:true}); });
-      document.getElementById('btnSave')?.addEventListener('click', (e)=>{ e.preventDefault(); saveEditor(); meEditor.close('save'); });
-
-      let editingId = null;
-      function openEditor(identityId=null, opt={}){
-        editingId = identityId; let u;
-        if (identityId){ u = identities.find(x=>x.id===identityId); }
-        else { u = { kind:'identity', id: makeUid(), name:'', nickname:'', avatar:'👤', bio:'', boundCharIds:[] }; }
-        document.getElementById('edName').value = u.name||'';
-        document.getElementById('edNick').value = u.nickname||'';
-        document.getElementById('edBio').value  = u.bio||'';
-        setEditorAvatar(u.avatar);
-        meEditor.showModal(); if (opt.focus==='avatar') document.getElementById('edAvatarPick').focus();
-        edAvatarFile.onchange = async ()=>{ const f = edAvatarFile.files[0]; if(!f) return; const b64 = await fileToDataURL(f); setEditorAvatar(b64); };
-        meEditor.onclose = ()=>{ editingId=null; };
-        meEditor.querySelector('form').onsubmit = (ev)=>{ ev.preventDefault(); };
-      }
-      function saveEditor(){
-        const payload = { name: edName.value.trim(), nickname: edNick.value.trim(), bio: edBio.value.trim(), avatar: edAvatarBox.dataset.src||'👤' };
-        if (editingId){ const u = identities.find(x=>x.id===editingId); Object.assign(u, payload); }
-        else { identities.push({ kind:'identity', id: makeUid(), ...payload, boundCharIds: [] }); }
-        save(LS_ID, identities); render(); broadcast();
-      }
-      function setEditorAvatar(src){
-        edAvatarBox.dataset.src = src;
-        edAvatarBox.innerHTML = isImg(src) ? `<img src="${src}" alt="avatar">` : escapeHtml(src||'👤');
-      }
-      function setDefaultForAll(identityId){
-        const meta = load(LS_META) || {}; for (const c of (chars||[])) { meta[c.id] = meta[c.id]||{}; meta[c.id].activeIdentityId = identityId; }
-        save(LS_META, meta); alert('已设为所有角色的默认身份'); broadcast();
-      }
-      function removeIdentity(identityId, opt={}){
-        if (identities.length<=1){ alert('至少保留一张身份卡'); return; }
-        if (!confirm('确认删除该身份卡？历史消息的标记不会被修改。')) return;
-        identities = identities.filter(x=>x.id!==identityId); save(LS_ID, identities);
-        const meta = load(LS_META) || {}; for (const k in meta){ if (meta[k]?.activeIdentityId===identityId) { meta[k].activeIdentityId = identities[0].id; } } save(LS_META, meta);
-        if (opt.close) meEditor.close('del'); render(); broadcast();
-      }
       function onScrollSnap(){
         const w = idCarousel.clientWidth; const i = Math.round(idCarousel.scrollLeft / (w+16));
         dots.querySelectorAll('.dot').forEach((d,idx)=>d.classList.toggle('active', idx===i));
       }
+
+      // —— 数据工具 & 同步 —— //
+      function ensureDefaultBindings(){
+        if (!identities.length) return;
+        const defaultId = identities[0].id;
+        const bound = new Set();
+        identities.forEach(u=> (u.boundCharIds||[]).forEach(id=>bound.add(id)));
+        const allCharIds = (chars||[]).map(c=>c.id);
+        const add = allCharIds.filter(id=>!bound.has(id));
+        if (add.length){
+          const def = identities[0];
+          def.boundCharIds = Array.from(new Set([...(def.boundCharIds||[]), ...add]));
+          save(LS_ID, identities);
+        }
+      }
+
+      function syncChars(){ chars = load(LS_CHAR) || []; ensureDefaultBindings(); render(); }
+      window.addEventListener('eg:charsUpdated', syncChars);
+      window.addEventListener('storage', function(e){ if (e.key==='eg_evt_chars') syncChars(); });
 
       function load(k){ try{ return JSON.parse(localStorage.getItem(k)||''); }catch(e){ return null; } }
       function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
       function makeUid(){ return 'u_' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
       function isImg(s){ return typeof s==='string' && (s.startsWith('data:') || s.startsWith('http')); }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+      function attr(s){ return String(s||'').replace(/"/g,'&quot;'); }
+      function text(s){ return String(s||''); }
       function fileToDataURL(file){ return new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file); }); }
-      function clone(v){ return JSON.parse(JSON.stringify(v)); }
       function broadcast(){ window.dispatchEvent(new CustomEvent('eg:identitiesUpdated')); localStorage.setItem('eg_evt_ping', String(Date.now())); }
-
-      // ★ 导出供全局加号调用
-      window.openIdentityEditor = function(id=null, opt={}){ openEditor(id, opt); };
     })();
 
     /* ====== Tab 切换：聊天 / 我 ====== */
@@ -581,18 +551,17 @@
       try{
         loadData(); renderList();
         var backBtn = document.getElementById('backBtn'); if (backBtn) backBtn.addEventListener('click', goBack);
-
         var addBtn = document.getElementById('addBtn');
         if (addBtn) {
-          addBtn.replaceWith(addBtn.cloneNode(true));           // 清旧监听
+          addBtn.replaceWith(addBtn.cloneNode(true));
           addBtn = document.getElementById('addBtn');
-          addBtn.addEventListener('click', onGlobalAdd);        // 上下文“＋”
+          addBtn.addEventListener('click', onGlobalAdd);
           updateAddButtonForTab();
         }
-
-        var closeBtn = document.getElementById('closeModalBtn'); if (closeBtn) closeBtn.addEventListener('click', hideModal);
+        // 角色添加弹窗控件
+        var closeBtn = document.getElementById('closeModalBtn'); if (closeBtn) closeBtn.addEventListener('click', function(){ document.getElementById('msgAddModal').classList.remove('show'); });
         var modal = document.getElementById('msgAddModal');
-        if (modal){ modal.addEventListener('click', function(e){ if (e.target.id==='msgAddModal') hideModal(); }); }
+        if (modal){ modal.addEventListener('click', function(e){ if (e.target.id==='msgAddModal') modal.classList.remove('show'); }); }
         var avatarUpload = document.getElementById('msgAvatarUpload');
         var avatarInput  = document.getElementById('msgAvatarInput');
         if (avatarUpload && avatarInput){
@@ -610,23 +579,18 @@
             var nickname = document.getElementById('msgCharacterNickname').value.trim() || name;
             var bio = document.getElementById('msgCharacterBio').value.trim();
             var up = document.getElementById('msgAvatarUpload'); var img = up ? up.querySelector('img') : null; var avatar = img ? img.src : '👤';
-            var newChar = {
-              kind:'char',
-              id: String(Date.now()),
-              name, nickname, bio, avatar,
-              lastTime: new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})
-            };
-            msgCharacters.push(newChar); saveData(); renderList(); hideModal();
+            var newChar = { kind:'char', id: String(Date.now()), name, nickname, bio, avatar,
+              lastTime: new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}) };
+            msgCharacters.push(newChar); saveData(); renderList();
+            document.getElementById('msgAddModal').classList.remove('show');
           });
         }
         initTabs();
-        log('初始化完成');
       }catch(e){ log('初始化错误: '+e.message); }
     }
 
-    if (document.readyState === 'loading'){
-      document.addEventListener('DOMContentLoaded', function(){ init(); });
-    }else{ init(); }
+    if (document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', function(){ init(); }); }
+    else { init(); }
   })();
   </script>
 </body>
