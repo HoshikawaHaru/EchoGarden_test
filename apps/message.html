@@ -23,7 +23,7 @@
     .msg-navbar-icon{font-size:22px;cursor:pointer;user-select:none;padding:8px;margin:-8px}
 
     /* 聊天列表（聊天Tab内容面板） */
-    .msg-chat-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative}
+    .msg-chat-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;touch-action: pan-y;}
     .msg-chat-item-wrapper{position:relative;overflow:hidden}
     .msg-chat-item{background:#fff;padding:12px 16px;display:flex;gap:12px;border-bottom:.5px solid #e5e5e5;cursor:pointer;position:relative;transition:transform .3s ease;z-index:1}
     .msg-chat-item:active{background:#ececec}
@@ -65,16 +65,26 @@
 
     #debugBox{position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.8);color:#0f0;padding:8px;border-radius:6px;font-size:11px;max-height:25vh;overflow:auto;font-family:monospace;white-space:pre-wrap;word-break:break-all;display:none}
 
-    /* ===== 我（身份卡）Tab 样式（精简版） ===== */
+    /* ===== 我（身份卡）Tab 样式（含伸展修正） ===== */
     :root{ --bg:#f2f2f7; --card-bg:#fff; --muted:#666; --hair:#ddd; --tint:#1677ff; --ok:#34c759; }
-    #tab-me{ position:relative; height:100%; background:var(--bg); display:none; flex-direction:column; }
+    #tab-me{
+      position:relative;
+      display:flex;      /* 纵向布局 */
+      flex:1;            /* ★ 占满内容区高度 */
+      min-height:0;      /* ★ 允许子容器正确滚动 */
+      background:var(--bg);
+    }
     .me-nav{ position:sticky; top:0; height:calc(44px + var(--safe-top)); padding:0 12px; padding-top:var(--safe-top);
       display:flex; align-items:center; justify-content:space-between; background:var(--bg); z-index:10; border-bottom:0.5px solid var(--hair); }
     .me-title{ font-weight:600; }
     .me-actions{ display:flex; gap:8px; }
     .i-btn{ height:32px; padding:0 12px; border:0; border-radius:10px; background:#eaeaea; }
     .i-btn.primary{ background:var(--ok); color:#fff; }
-    .id-carousel{ flex:1; overflow-x:auto; scroll-snap-type:x mandatory; display:flex; gap:16px; padding:16px; }
+    .id-carousel{
+      flex:1;            /* ★ 伸展 */
+      min-height:0;      /* ★ 防塌陷 */
+      overflow-x:auto; scroll-snap-type:x mandatory; display:flex; gap:16px; padding:16px;
+    }
     .id-card{ flex:0 0 calc(100% - 32px); scroll-snap-align:center; background:var(--card-bg); border-radius:16px; padding:16px; box-shadow:0 6px 18px rgba(0,0,0,.06);
       display:grid; grid-template-columns:92px 1fr; grid-auto-rows:min-content; gap:12px 16px; }
     .id-avatar{ width:92px; height:92px; border-radius:14px; background:#eee; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:44px; cursor:pointer; }
@@ -123,7 +133,7 @@
     <!-- 聊天Tab 内容面板 -->
     <div class="msg-chat-list" id="msgChatList"></div>
 
-    <!-- 我（身份卡）Tab 内容面板：初始隐藏 -->
+    <!-- 我（身份卡）Tab 内容面板 -->
     <section id="tab-me" role="tabpanel" aria-label="我的身份">
       <div class="me-nav">
         <div class="me-title">我的身份</div>
@@ -211,26 +221,15 @@
   <script>
   (function(){
     'use strict';
-    /* ====== 调试工具 ====== */
+    /* ===== 调试工具 ===== */
     var debugBox = document.getElementById('debugBox');
-    if (!debugBox) {
-      debugBox = document.createElement('div');
-      debugBox.id = 'debugBox';
-      debugBox.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.8);color:#0f0;padding:8px;border-radius:6px;font-size:11px;max-height:25vh;overflow:auto;font-family:monospace;white-space:pre-wrap;word-break:break-all';
-      document.body.appendChild(debugBox);
-    }
-    function log(msg){
-      try{
-        var time = new Date().toTimeString().slice(0,8);
-        debugBox.innerHTML += time + ' ' + msg + '\n';
-        debugBox.scrollTop = debugBox.scrollHeight;
-        console.log(msg);
-      }catch(e){ console.log(msg); }
-    }
+    if (!debugBox) { debugBox = document.createElement('div'); debugBox.id = 'debugBox';
+      debugBox.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.8);color:#0f0;padding:8px;border-radius:6px;font-size:11px;max-height:25vh;overflow:auto;font-family:monospace;white-space:pre-wrap;word-break:break-all'; document.body.appendChild(debugBox); }
+    function log(msg){ try{ var t=new Date().toTimeString().slice(0,8); debugBox.innerHTML += t+' '+msg+'\n'; debugBox.scrollTop = debugBox.scrollHeight; console.log(msg);}catch(e){console.log(msg);} }
     window.onerror = function(msg, url, line){ log('ERROR: '+msg+' @'+line); return true; };
     log('脚本开始执行'); log('document.readyState: '+document.readyState);
 
-    /* ====== 角色数据（原有） ====== */
+    /* ===== 角色数据（仓库） ===== */
     var STORAGE_KEY = 'eg_characters_v2';
     var msgCharacters = [];
     var touchStartX=0, touchCurrentX=0;
@@ -244,6 +243,7 @@
           log('解析成功: '+msgCharacters.length+'个角色');
         }else{
           msgCharacters = [{
+            kind:'char',                 // ★ 标记为角色
             id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊', lastTime:'12:00'
           }];
           saveData(); log('初始化Nash');
@@ -259,13 +259,15 @@
       log('开始渲染列表');
       var list = document.getElementById('msgChatList');
       if (!list){ log('ERROR: msgChatList不存在'); return; }
-      if (msgCharacters.length===0){
+
+      var listData = msgCharacters.filter(function(c){ return c && c.kind !== 'identity'; }); // ★ 只显示“角色”
+      if (listData.length===0){
         list.innerHTML = '<div style="padding:20px;text-align:center;color:#999">暂无角色</div>';
         return;
       }
       var html='';
-      for (var i=0;i<msgCharacters.length;i++){
-        var c=msgCharacters[i]; var av=c.avatar||'👤';
+      for (var i=0;i<listData.length;i++){
+        var c=listData[i]; var av=c.avatar||'👤';
         var avatarHTML=(av.indexOf('data:')===0||av.indexOf('http')===0)?'<img src="'+av+'">':av;
         html += '<div class="msg-chat-item-wrapper">'+
                   '<div class="msg-swipe-actions">'+
@@ -284,7 +286,7 @@
                   '</div>'+
                 '</div>';
       }
-      list.innerHTML = html; log('渲染完成: '+msgCharacters.length+'项');
+      list.innerHTML = html; log('渲染完成: '+listData.length+'项');
       bindEvents();
     }
 
@@ -332,7 +334,7 @@
       }
     }
 
-    /* ====== 模态框 ====== */
+    /* ===== 模态框 ===== */
     function showModal(){ var m=document.getElementById('msgAddModal'); if(m) m.classList.add('show'); }
     function hideModal(){
       var m=document.getElementById('msgAddModal'); if(m) m.classList.remove('show');
@@ -340,14 +342,14 @@
       var up=document.getElementById('msgAvatarUpload'); if(up) up.innerHTML='<span>📷</span>';
     }
 
-    /* ====== 返回 ====== */
+    /* ===== 返回 ===== */
     function goBack(){
       if (window.closeApp) window.closeApp();
       else if (history.length>1) history.back();
       else location.href='../index.html';
     }
 
-    /* ====== “我”Tab · 身份卡 组件（极简版实现） ====== */
+    /* ===== 我（身份卡）组件（含 kind 标记与 iOS 导出修复） ===== */
     (function(){
       const LS_ID   = 'eg_user_identities_v1';
       const LS_CHAR = 'eg_characters_v2';
@@ -368,28 +370,45 @@
 
       if (!Array.isArray(identities) || identities.length===0){
         const firstBound = (Array.isArray(chars)&&chars[0]) ? [chars[0].id] : [];
-        identities = [{ id: uid(), name:'User', nickname:'我', avatar:'👤', bio:'', boundCharIds:firstBound }];
+        identities = [{ kind:'identity', id: uid(), name:'User', nickname:'我', avatar:'👤', bio:'', boundCharIds:firstBound }];
         save(LS_ID, identities);
       }
 
       render();
 
-      // 导出/导入/新增
-      $('#btnExport')?.addEventListener('click', ()=>{
-        const blob = new Blob([JSON.stringify(identities,null,2)], {type:'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='eg_user_identities.json'; a.click();
-        setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+      // —— 导出（iOS 分享/复制兜底） ——
+      function isIOS(){ return /iP(hone|ad|od)/.test(navigator.userAgent); }
+      async function copyText(t){ try{ await navigator.clipboard.writeText(t); return true; }catch(_){ return false; } }
+      $('#btnExport')?.addEventListener('click', async ()=>{
+        const json = JSON.stringify(identities, null, 2);
+        if (isIOS()){
+          if (navigator.share){ try{ await navigator.share({ title:'eg_user_identities.json', text: json }); return; }catch(_){ /* 用户取消 */ } }
+          const ok = await copyText(json);
+          alert(ok ? '已复制到剪贴板（iOS 独立窗口无法直接下载）' : '复制失败，请检查剪贴板权限');
+          return;
+        }
+        const blob = new Blob([json], {type:'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='eg_user_identities.json';
+        document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
       });
+
+      // —— 导入 ——
       $('#btnImport')?.addEventListener('click', ()=>{
         const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json';
         inp.onchange = async ()=>{ const f=inp.files[0]; if(!f) return; try{
-            const txt = await f.text(); const arr = JSON.parse(txt); if(Array.isArray(arr)){ identities = arr.map(n=>({ id:n.id||uid(), name:n.name||'', nickname:n.nickname||'', bio:n.bio||'', avatar:n.avatar||'👤', boundCharIds:Array.isArray(n.boundCharIds)?n.boundCharIds:[] })); save(LS_ID, identities); render(); broadcast(); }
+            const txt = await f.text(); const arr = JSON.parse(txt);
+            if(Array.isArray(arr)){
+              identities = arr.map(n=>({ kind:'identity', id:n.id||uid(), name:n.name||'', nickname:n.nickname||'', bio:n.bio||'', avatar:n.avatar||'👤', boundCharIds:Array.isArray(n.boundCharIds)?n.boundCharIds:[] }));
+              save(LS_ID, identities); render(); broadcast();
+            }
           }catch(e){ alert('导入失败：JSON 格式错误'); } };
         inp.click();
       });
+
+      // —— 新建身份 ——
       $('#btnAdd')?.addEventListener('click', ()=> openEditor());
 
-      // 暴露 API 给其它页面
+      // 暴露 API
       window.EGIdentities = {
         getAll: ()=> clone(identities),
         getById: id => clone(identities.find(x=>x.id===id)),
@@ -467,8 +486,11 @@
       let editingId = null;
       function openEditor(uid=null, opt={}){
         editingId = uid; let u;
-        if (uid){ u = identities.find(x=>x.id===uid); } else { u = { id: uid||uid(), name:'', nickname:'', avatar:'👤', bio:'', boundCharIds:[] }; }
-        edName.value = u.name||''; edNick.value = u.nickname||''; edBio.value = u.bio||''; setEditorAvatar(u.avatar);
+        if (uid){ u = identities.find(x=>x.id===uid); } else { u = { kind:'identity', id: uid||uid(), name:'', nickname:'', avatar:'👤', bio:'', boundCharIds:[] }; }
+        document.getElementById('edName').value = u.name||'';
+        document.getElementById('edNick').value = u.nickname||'';
+        document.getElementById('edBio').value  = u.bio||'';
+        setEditorAvatar(u.avatar);
         meEditor.showModal(); if (opt.focus==='avatar') document.getElementById('edAvatarPick').focus();
         edAvatarFile.onchange = async ()=>{ const f = edAvatarFile.files[0]; if(!f) return; const b64 = await fileToDataURL(f); setEditorAvatar(b64); };
         meEditor.onclose = ()=>{ editingId=null; };
@@ -477,7 +499,7 @@
       function saveEditor(){
         const payload = { name: edName.value.trim(), nickname: edNick.value.trim(), bio: edBio.value.trim(), avatar: edAvatarBox.dataset.src||'👤' };
         if (editingId){ const u = identities.find(x=>x.id===editingId); Object.assign(u, payload); }
-        else { identities.push({ id: uid(), ...payload, boundCharIds: [] }); }
+        else { identities.push({ kind:'identity', id: uid(), ...payload, boundCharIds: [] }); }
         save(LS_ID, identities); render(); broadcast();
       }
       function setEditorAvatar(src){
@@ -510,7 +532,7 @@
       function broadcast(){ window.dispatchEvent(new CustomEvent('eg:identitiesUpdated')); localStorage.setItem('eg_evt_ping', String(Date.now())); }
     })();
 
-    /* ====== Tab 切换：聊天 / 我（先做这两个） ====== */
+    /* ===== Tab 切换：聊天 / 我（先做这两个） ===== */
     function initTabs(){
       const items = document.querySelectorAll('.msg-tab-item');
       const viewChat = document.getElementById('msgChatList');
@@ -530,7 +552,7 @@
       window.EGTab = Object.assign(window.EGTab||{}, { show });
     }
 
-    /* ====== 初始化 ====== */
+    /* ===== 初始化 ===== */
     function init(){
       try{
         loadData(); renderList();
@@ -556,8 +578,12 @@
             var nickname = document.getElementById('msgCharacterNickname').value.trim() || name;
             var bio = document.getElementById('msgCharacterBio').value.trim();
             var up = document.getElementById('msgAvatarUpload'); var img = up ? up.querySelector('img') : null; var avatar = img ? img.src : '👤';
-            var newChar = { id: String(Date.now()), name, nickname, bio, avatar,
-              lastTime: new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}) };
+            var newChar = {
+              kind:'char',                 // ★ 角色标记
+              id: String(Date.now()),
+              name, nickname, bio, avatar,
+              lastTime: new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})
+            };
             msgCharacters.push(newChar); saveData(); renderList(); hideModal();
           });
         }
