@@ -77,17 +77,17 @@
     /* ===== 我（身份卡）Tab（垂直居中 + 下拉多选 + 指示点） ===== */
     :root{ --bg:#f2f2f7; --card-bg:#fff; --muted:#666; --hair:#ddd; --tint:#1677ff; --ok:#34c759; --warn:#ff3b30; }
 /* 我（身份卡）Tab：垂直居中显示"卡片 + 指示点"整体 */
+/* 我（身份卡）Tab：垂直居中显示"卡片 + 指示点"整体 */
 #tab-me{
   position:relative; display:flex; flex-direction:column; flex:1; min-height:0; 
   background:var(--bg);
-  padding-bottom:calc(50px + var(--safe-bottom)); /* 给底部 tabbar 留白 */
 }
 
 /* 这个容器负责把"卡片+指示点"整体在可用空间内垂直居中 */
 .id-wrap{
   flex:1; min-height:0;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:clamp(12px, 3vh, 24px) 0;   /* 顶底留白，左右不留白让滚动条控制 */
+  padding:0;   /* 移除内边距，让 justify-content 自动计算居中 */
 }
 
 /* 横向走马灯 */
@@ -97,7 +97,7 @@
   max-width:100%;
   overflow-x:auto; scroll-snap-type:x mandatory;
   display:flex; gap:18px; 
-  padding:0 clamp(16px, 5vw, 32px);   /* 左右内边距保证首尾卡片不被截断 */
+  padding:clamp(12px, 3vh, 24px) clamp(16px, 5vw, 32px);   /* 上下内边距 + 左右内边距保证首尾卡片不被截断 */
   align-items:flex-start;
 }
 
