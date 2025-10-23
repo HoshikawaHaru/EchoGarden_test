@@ -141,7 +141,7 @@
     chat.style.top = navHeight + 'px';
     chat.style.bottom = inputHeight + 'px';
   }
-function bindKeyboardFit(){
+  function bindKeyboardFit(){
     layout();
     if (!window.visualViewport) return;
     const vv = window.visualViewport;
@@ -149,6 +149,12 @@ function bindKeyboardFit(){
       const windowHeight = window.innerHeight;
       const viewportHeight = vv.height;
       const keyboardHeight = windowHeight - viewportHeight;
+      
+      // 防止页面整体滚动
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      
       if (keyboardHeight > 100) {
         // 键盘弹起
         inputBar.style.position = 'fixed';
