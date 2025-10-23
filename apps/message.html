@@ -51,7 +51,7 @@
     .msg-tab-label{font-size:10px;color:#999}
     .msg-tab-item.active .msg-tab-label{color:#07c160}
 
-    /* 添加角色 Modal（聊天Tab） */
+    /* Modal & 表单 */
     .msg-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:3000}
     .msg-modal.show{display:flex}
     .msg-modal-content{background:#fff;width:90%;max-width:400px;border-radius:12px;overflow:hidden}
@@ -77,61 +77,19 @@
     /* ===== 我（身份卡）Tab（垂直居中 + 下拉多选 + 指示点） ===== */
     :root{ --bg:#f2f2f7; --card-bg:#fff; --muted:#666; --hair:#ddd; --tint:#1677ff; --ok:#34c759; --warn:#ff3b30; }
 
-/* 我（身份卡）Tab：垂直居中显示"卡片 + 指示点"整体 */
-#tab-me{
-  flex:1;
-  min-height:0;
-  display:none;
-  background:var(--bg);
-  position:relative;
-}
-
-/* 这个容器负责把"卡片+指示点"整体在可用空间内垂直居中 */
-.id-wrap{
-  position:absolute;
-  top:50%;
-  left:0;
-  right:0;
-  transform:translateY(-50%);
-  display:flex; 
-  flex-direction:column; 
-  align-items:center;
-}
-
-/* 横向走马灯 */
-.id-carousel{
-  flex:0 0 auto;
-  width:100%;
-  max-width:100%;
-  overflow-x:auto; 
-  overflow-y:visible;
-  scroll-snap-type:x mandatory;
-  display:flex; 
-  gap:18px; 
-  padding:0 clamp(16px, 5vw, 32px);
-  align-items:flex-start;
-  -webkit-overflow-scrolling:touch;
-}
-
-/* 卡片 */
-.id-card{
-  flex:0 0 clamp(320px, 88vw, 680px);
-  scroll-snap-align:center;
-  background:var(--card-bg); border-radius:16px; padding:16px 16px 18px;
-  box-shadow:0 6px 18px rgba(0,0,0,.06);
-  display:grid; grid-template-columns:92px 1fr; grid-auto-rows:min-content; gap:12px 16px;
-}
-
-/* 指示点 */
-.dots{ height:30px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; }
-.dot{ width:6px; height:6px; border-radius:999px; background:#ddd; transition:all .25s; }
-.dot.active{ width:22px; height:6px; border-radius:4px; background:#999; }
+    #tab-me{ flex:1; min-height:0; display:none; background:var(--bg); position:relative; }
+    .id-wrap{ position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); display:flex; flex-direction:column; align-items:center; }
+    .id-carousel{ flex:0 0 auto; width:100%; max-width:100%; overflow-x:auto; overflow-y:visible; scroll-snap-type:x mandatory; display:flex; gap:18px; padding:0 clamp(16px,5vw,32px); align-items:flex-start; -webkit-overflow-scrolling:touch; }
+    .id-card{ flex:0 0 clamp(320px,88vw,680px); scroll-snap-align:center; background:var(--card-bg); border-radius:16px; padding:16px 16px 18px; box-shadow:0 6px 18px rgba(0,0,0,.06); display:grid; grid-template-columns:92px 1fr; grid-auto-rows:min-content; gap:12px 16px; }
+    .dots{ height:30px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; }
+    .dot{ width:6px; height:6px; border-radius:999px; background:#ddd; transition:all .25s; }
+    .dot.active{ width:22px; height:6px; border-radius:4px; background:#999; }
 
     .id-avatar{ width:92px; height:92px; border-radius:14px; background:#eee; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:44px; cursor:pointer; user-select:none;}
     .id-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
     .id-meta{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
     .id-meta h3{ margin:0 0 4px; font-size:18px; color:#000;}
-    .badge{ font-size:11px; padding:2px 6px; border-radius:999px; background:#e8f5e9; color:#0a8f27; border:0.5px solid #bfe8c7; margin-left:6px; }
+    .badge{ font-size:11px; padding:2px 6px; border-radius:999px; background:#e8f5e9; color:#0a8f27; border:.5px solid #bfe8c7; margin-left:6px; }
     .meta-right{ display:flex; gap:6px; align-items:center; }
     .mini{ height:28px; padding:0 10px; border:0; border-radius:8px; background:#efefef; font-size:12px; cursor:pointer; user-select:none;}
     .mini:active{ filter:brightness(.95); }
@@ -145,17 +103,9 @@
     .bind-section{ grid-column:1 / -1; }
     .bind-title{ font-size:13px; color:#000; margin:6px 0 8px; }
 
-    /* 下拉多选 */
     .bind-combo{ position:relative; display:block; }
-    .combo-btn{
-      height:36px; padding:0 12px; border:1px solid #e5e5ea; border-radius:10px; background:#fff; font:inherit;
-      display:inline-flex; align-items:center; gap:6px;
-    }
-    .combo-panel{
-      position:absolute; left:0; right:0; top:calc(100% + 6px);
-      background:#fff; border:1px solid #e5e5ea; border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,.08);
-      padding:8px; max-height:240px; overflow:auto; z-index:20; display:none;
-    }
+    .combo-btn{ height:36px; padding:0 12px; border:1px solid #e5e5ea; border-radius:10px; background:#fff; font:inherit; display:inline-flex; align-items:center; gap:6px; }
+    .combo-panel{ position:absolute; left:0; right:0; top:calc(100% + 6px); background:#fff; border:1px solid #e5e5ea; border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,.08); padding:8px; max-height:240px; overflow:auto; z-index:20; display:none; }
     .combo-panel.show{ display:block; }
     .combo-opt{ display:flex; align-items:center; gap:8px; padding:8px; border-radius:8px; }
     .combo-opt:hover{ background:#f7f7f7; }
@@ -183,80 +133,80 @@
     <!-- 聊天Tab 内容面板 -->
     <div class="msg-chat-list" id="msgChatList"></div>
 
-    <!-- 事件Tab 内容面板 -->
-<section id="tab-events" role="tabpanel" aria-label="事件" style="display:none;overflow:auto;-webkit-overflow-scrolling:touch;">
-  <div style="padding:12px">
-    <!-- 我们的约定 -->
-    <h3 style="font-size:15px;color:#111;margin:6px 4px 8px;">我们的约定</h3>
-    <div id="evt-contract-list"></div>
-    <button id="evt-add-contract" class="msg-btn-primary" style="margin:10px 0 18px;">添加约定</button>
+    <!-- 事件 Tab 内容面板（唯一） -->
+    <section id="tab-events" role="tabpanel" aria-label="事件" style="display:none;flex:1;min-height:0;background:#f2f2f7;overflow:auto;-webkit-overflow-scrolling:touch;">
+      <div style="padding:12px;">
+        <!-- 顶部操作 -->
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+          <button id="evtAddBtn" class="btn" style="background:#07c160;color:#fff;border:0;border-radius:10px;height:36px;padding:0 14px;">新建事件</button>
+          <small style="color:#6d6d72;">分区：我们的约定 / 我的记事本</small>
+        </div>
 
-    <!-- 我的记事本 -->
-    <h3 style="font-size:15px;color:#111;margin:6px 4px 8px;">我的记事本</h3>
-    <div id="evt-notes-list"></div>
-    <button id="evt-add-note" class="msg-btn-primary" style="margin:10px 0 18px;background:#5856d6;">添加记事</button>
-  </div>
+        <!-- 我们的约定 -->
+        <h3 style="font-size:13px;color:#6d6d72;margin:10px 2px 8px;">我们的约定</h3>
+        <div id="evtAgreements"></div>
 
-  <!-- 事件表单 Modal -->
-  <div class="msg-modal" id="evtModal">
-    <div class="msg-modal-content">
-      <div class="msg-modal-header">
-        <div class="msg-modal-title">编辑事件</div>
-        <div class="msg-modal-close" id="evtClose">×</div>
+        <!-- 我的记事本 -->
+        <h3 style="font-size:13px;color:#6d6d72;margin:14px 2px 8px;">我的记事本</h3>
+        <div id="evtNotes"></div>
       </div>
-      <div class="msg-modal-body">
-        <form id="evtForm">
-          <input type="hidden" id="evtId" />
-          <div class="msg-form-group">
-            <label class="msg-form-label">类型</label>
-            <select class="msg-form-input" id="evtType">
-              <option value="contract">我们的约定</option>
-              <option value="note">我的记事本</option>
-            </select>
-          </div>
+    </section>
 
-          <div class="msg-form-group">
-            <label class="msg-form-label">我的身份（可选）</label>
-            <select class="msg-form-input" id="evtIdentity"></select>
-          </div>
+    <!-- 新建/编辑事件 Modal（唯一） -->
+    <div class="msg-modal" id="evtModal">
+      <div class="msg-modal-content">
+        <div class="msg-modal-header">
+          <div class="msg-modal-title">事件</div>
+          <div class="msg-modal-close" id="evtClose">×</div>
+        </div>
+        <div class="msg-modal-body">
+          <form id="evtForm">
+            <div class="msg-form-group">
+              <label class="msg-form-label">类型</label>
+              <select class="msg-form-input" id="evtType">
+                <option value="agreement">我们的约定</option>
+                <option value="note">我的记事本</option>
+              </select>
+            </div>
 
-          <div class="msg-form-group" id="evtCharGroup">
-            <label class="msg-form-label">涉及/可见角色（多选，需为所选身份绑定的角色）</label>
-            <div id="evtChars" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;"></div>
-          </div>
+            <div class="msg-form-group">
+              <label class="msg-form-label">我的身份（可选）</label>
+              <select class="msg-form-input" id="evtIdentity"></select>
+            </div>
 
-          <div class="msg-form-group">
-            <label class="msg-form-label">事件名称</label>
-            <input class="msg-form-input" id="evtTitle" placeholder="如：周六中午野餐 / 生日" required />
-          </div>
+            <div class="msg-form-group" id="evtCharsWrap">
+              <label class="msg-form-label">涉及角色（多选；约定必选 / 记事本=可见角色）</label>
+              <div id="evtCharsBox" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;"></div>
+            </div>
 
-          <div class="msg-form-group">
-            <label class="msg-form-label">事件频次</label>
-            <select class="msg-form-input" id="evtFreq">
-              <option value="once">单次</option>
-              <option value="year">年度</option>
-              <option value="month">月度</option>
-              <option value="week">周度</option>
-              <option value="day">日度</option>
-            </select>
-          </div>
+            <div class="msg-form-group">
+              <label class="msg-form-label">事件频次</label>
+              <select class="msg-form-input" id="evtFreq">
+                <option value="once">单次</option>
+                <option value="year">年度</option>
+                <option value="month">月度</option>
+                <option value="week">周度</option>
+                <option value="day">日度</option>
+              </select>
+            </div>
 
-          <div class="msg-form-group">
-            <label class="msg-form-label">时间（可选）</label>
-            <input class="msg-form-input" id="evtTime" type="datetime-local" />
-          </div>
+            <div class="msg-form-group">
+              <label class="msg-form-label">时间（可选，ISO或 yyyy-MM-dd HH:mm）</label>
+              <input id="evtTime" class="msg-form-input" placeholder="2025-10-25 12:00">
+            </div>
 
-          <div class="msg-form-group">
-            <label class="msg-form-label">后台提示词（选填，留空用系统默认）</label>
-            <textarea class="msg-form-textarea" id="evtPrompt" placeholder="如：现在是{title}时间…"></textarea>
-          </div>
+            <div class="msg-form-group">
+              <label class="msg-form-label">事件名称</label>
+              <input id="evtName" class="msg-form-input" placeholder="如：去野餐…" required>
+            </div>
 
-          <button type="submit" class="msg-btn-primary">保存</button>
-        </form>
+            <div class="msg-form-group">
+              <button type="submit" class="msg-btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-</section>
 
     <!-- 我（身份卡）Tab 内容面板 -->
     <section id="tab-me" role="tabpanel" aria-label="我的身份">
@@ -406,7 +356,7 @@
 
       let identities=load(LS_ID)||[];
       let chars=load(LS_CHAR)||[];
-      let editingId = null;   // 记录编辑中的卡片，重渲染后保持编辑态
+      let editingId = null;
 
       if(!Array.isArray(identities)||identities.length===0){
         identities=[{kind:'identity',id:uid(),name:'User',nickname:'我',avatar:'👤',bio:'',boundCharIds:[]}];
@@ -430,7 +380,6 @@
 
       refreshBindings(); render();
 
-      // 导出/导入
       async function copyText(t){ try{ await navigator.clipboard.writeText(t); return true; }catch(_){ return false; } }
       function isIOS(){ return /iP(hone|ad|od)/.test(navigator.userAgent); }
       async function doExport(){
@@ -446,7 +395,6 @@
         inp.click();
       }
 
-      // 右上角“＋” → 新建身份并进入编辑
       window.openIdentityEditor=function(){
         const u={kind:'identity',id:uid(),name:'',nickname:'',avatar:'👤',bio:'',boundCharIds:[]};
         identities.push(u); save(LS_ID,identities); refreshBindings(); render(); setTimeout(()=> setCardEditing(u.id,true),0);
@@ -456,7 +404,7 @@
         const u = identities.find(x => x.id === uid);
         if (!u) return;
         u[key] = val;
-        save(LS_ID, identities);   // 立刻落盘，防止 render 丢失
+        localStorage.setItem(LS_ID, JSON.stringify(identities));
       }
 
       function render(){
@@ -465,8 +413,7 @@
         dots.innerHTML = identities.map((_,i)=>`<div class="dot ${i===0?'active':''}"></div>`).join('');
         bindCardEvents();
         idCarousel.addEventListener('scroll', onScrollSnap, {passive:true});
-        onScrollSnap(); // 初始化一次
-        // 保持编辑态
+        onScrollSnap();
         if (editingId) setCardEditing(editingId, true);
       }
 
@@ -488,7 +435,7 @@
             </label>`;
         }).join('');
 
-        return /* html */ `
+        return `
         <article class="id-card" data-id="${u.id}">
           <div class="id-avatar">${avHTML}</div>
           <div class="id-meta">
@@ -540,7 +487,6 @@
       }
 
       function bindCardEvents(){
-        // 下拉开合
         idCarousel.querySelectorAll('.bind-combo .combo-btn').forEach(btn=>{
           btn.addEventListener('click', (e)=>{
             e.stopPropagation();
@@ -551,7 +497,6 @@
         });
         document.addEventListener('click', ()=>{ idCarousel.querySelectorAll('.combo-panel.show').forEach(p=>p.classList.remove('show')); });
 
-        // 互斥复选
         idCarousel.querySelectorAll('.combo-panel .combo-opt input[type="checkbox"]').forEach(chk=>{
           chk.addEventListener('change', (e)=>{
             const opt = e.target.closest('.combo-opt');
@@ -559,7 +504,10 @@
             const targetId = card.dataset.id;
             const charId = opt.dataset.char;
             const defId = identities[0].id;
-            const curOwner = ownerOf(charId);
+            const curOwner = (function(){
+              for(const idt of identities){ if(idt.boundCharIds && idt.boundCharIds.includes(charId)) return idt.id; }
+              return defId;
+            })();
 
             if (e.target.checked){
               if (curOwner && curOwner !== defId && curOwner !== targetId){
@@ -584,49 +532,42 @@
               }
             }
 
-            save(LS_ID,identities);
+            localStorage.setItem(LS_ID, JSON.stringify(identities));
             refreshBindings();
-            render();            // 即时刷新（保持编辑/字段不丢）
+            render();
             broadcast();
           });
         });
 
-        // 卡片按钮 & 字段即时保存
         idCarousel.querySelectorAll('.id-card').forEach(card=>{
           const uid=card.dataset.id;
 
-          // 进入编辑
           card.querySelector('[data-act="edit"]').addEventListener('click', ()=> setCardEditing(uid,true));
 
-          // 保存 —— 先锁定置灰，再存储与重渲染（关键修复）
           card.querySelector('[data-act="save"]').addEventListener('click', ()=>{
             const u=identities.find(x=>x.id===uid);
             u.name=card.querySelector('[data-k="name"]').value.trim();
             u.nickname=card.querySelector('[data-k="nickname"]').value.trim();
             u.bio=card.querySelector('[data-k="bio"]').value.trim();
-
-            // 立刻锁定当前卡（只读 & 按钮状态）
             setCardEditing(uid, false);
             editingId = null;
-
-            save(LS_ID,identities);
+            localStorage.setItem(LS_ID, JSON.stringify(identities));
             render();
             broadcast();
           });
 
-          // 删除
           const rm=card.querySelector('[data-act="remove"]');
           rm && rm.addEventListener('click', ()=>{
             if (identities[0] && identities[0].id===uid){ alert('默认身份卡不可删除'); return; }
             if (!confirm('确认删除该身份卡？')) return;
-            identities=identities.filter(x=>x.id!==uid); save(LS_ID,identities); refreshBindings(); render(); broadcast();
+            identities=identities.filter(x=>x.id!==uid);
+            localStorage.setItem(LS_ID, JSON.stringify(identities));
+            refreshBindings(); render(); broadcast();
           });
 
-          // 导入/导出
           card.querySelector('[data-act="import"]').addEventListener('click', doImport);
           card.querySelector('[data-act="export"]').addEventListener('click', doExport);
 
-          // 头像（仅编辑态可改；即时保存）
           card.querySelector('.id-avatar').addEventListener('click', ()=>{
             const editable = !card.querySelector('.input').readOnly; if(!editable) return;
             const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
@@ -636,7 +577,6 @@
             inp.click();
           });
 
-          // 输入框/文本框：即时保存，防止绑定时丢失
           card.querySelectorAll('[data-k]').forEach(el=>{
             el.addEventListener('input', ()=>{
               writeField(uid, el.getAttribute('data-k'), el.value);
@@ -646,7 +586,6 @@
         });
       }
 
-      /* 指示点：以“视口中心最近的卡片”为当前 */
       function computeActiveIndex(){
         const cards = Array.from(idCarousel.querySelectorAll('.id-card'));
         if (!cards.length) return 0;
@@ -665,11 +604,267 @@
         all.forEach((d,i)=>d.classList.toggle('active', i===active));
       }
 
-      // 同步角色变化
       function syncChars(){ chars = JSON.parse(localStorage.getItem(LS_CHAR) || '[]'); refreshBindings(); render(); }
       window.addEventListener('eg:charsUpdated', syncChars);
       window.addEventListener('storage', e=>{ if(e.key==='eg_evt_chars') syncChars(); });
     })();
+
+    /* ========= 事件仓库 / 倒计时 / 触发（唯一版） ========= */
+    const LS_EVENTS = 'eg_events_v1';
+    const LS_CHARS  = 'eg_characters_v2';
+    const LS_IDS    = 'eg_user_identities_v1';
+    const LS_THREADS= 'eg_threads_v1';
+    const LS_BGQ    = 'eg_bg_queue_v1';
+
+    function loadJSON(k, def){ try{ return JSON.parse(localStorage.getItem(k)||''); }catch(_){ return def; } }
+    function saveJSON(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
+    function uidEvt(){ return 'e_' + Math.random().toString(36).slice(2,10); }
+
+    function parseTimeToTs(s){
+      if(!s) return null;
+      const t = s.replace('T',' ').replace(/\//g,'-');
+      const iso = t.match(/^\d{4}-\d{2}-\d{2}/) ? t : null;
+      const d = iso ? new Date(t.replace(' ', 'T')) : new Date(s);
+      const ts = d.getTime();
+      return isNaN(ts) ? null : ts;
+    }
+    function nextOccurrence(ev, fromTs){
+      const base = parseTimeToTs(ev.time) ?? Date.now();
+      if (ev.freq === 'once') return base;
+      const d = new Date(Math.max(base, fromTs || Date.now()));
+      if (ev.freq==='day')  { d.setDate(d.getDate() + (parseTimeToTs(ev.time) && fromTs>base ? 1 : 0)); }
+      if (ev.freq==='week') { d.setDate(d.getDate() + (parseTimeToTs(ev.time) && fromTs>base ? 7 : 0)); }
+      if (ev.freq==='month'){ d.setMonth(d.getMonth()+ (parseTimeToTs(ev.time) && fromTs>base ? 1 : 0)); }
+      if (ev.freq==='year') { d.setFullYear(d.getFullYear()+ (parseTimeToTs(ev.time) && fromTs>base ? 1 : 0)); }
+      return d.getTime();
+    }
+    function humanCountdown(ts){
+      if (ts==null) return '（未设置时间）';
+      const d = ts - Date.now();
+      const neg = d<0;
+      const sec = Math.abs(Math.floor(d/1000));
+      const dd = Math.floor(sec/86400);
+      const hh = Math.floor((sec%86400)/3600);
+      const mm = Math.floor((sec%3600)/60);
+      const ss = sec%60;
+      const txt = `${dd}天${hh}小时${mm}分${ss}秒`;
+      return neg ? `已过期 ${txt}` : `倒计时：${txt}`;
+    }
+
+    function renderEvents(){
+      const events = loadJSON(LS_EVENTS, []) || [];
+      const ids = loadJSON(LS_IDS, []) || [];
+      const chars = loadJSON(LS_CHARS, []) || [];
+
+      const agWrap = document.getElementById('evtAgreements');
+      const ntWrap = document.getElementById('evtNotes');
+
+      function whoName(identityId){
+        const i = (ids||[]).find(x=>x.id===identityId);
+        return i ? (i.nickname||i.name||'我') : '我';
+      }
+      function charsNames(arr){
+        return (arr||[]).map(cid=>{
+          const c=chars.find(x=>x.id===cid);
+          return c?(c.nickname||c.name||'角色'):('角色');
+        }).join('、');
+      }
+
+      function row(ev){
+        const nextAt = nextOccurrence(ev);
+        return `
+          <div class="card" style="background:#fff;border-radius:12px;margin:0 0 10px;overflow:hidden;">
+            <div class="row" style="padding:12px 12px;">
+              <div style="flex:1;">
+                <div style="font-size:15px;color:#111;font-weight:600;">${esc(ev.name)}</div>
+                <div style="font-size:12px;color:#6d6d72;margin-top:4px;">
+                  ${ev.type==='agreement'
+                    ? `我的身份：${esc(whoName(ev.identityId))} ・ 角色：${esc(charsNames(ev.charIds||[]))}`
+                    : `我的身份：${esc(whoName(ev.identityId))} ・ 可见角色：${esc(charsNames(ev.visibleCharIds||[]))}`
+                  } ・ 频次：${ev.freq}
+                </div>
+                <div data-countdown="${ev.id}" style="font-size:12px;color:#1677ff;margin-top:6px;">${humanCountdown(nextAt)}</div>
+              </div>
+              <div>
+                <button class="mini" data-evtid="${ev.id}" data-act="edit">编辑</button>
+                <button class="mini" data-evtid="${ev.id}" data-act="del" style="background:#ff3b30;color:#fff;">删除</button>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      const AG = events.filter(x=>x.type==='agreement').sort((a,b)=> (nextOccurrence(a)||Infinity)-(nextOccurrence(b)||Infinity));
+      const NT = events.filter(x=>x.type==='note').sort((a,b)=> (nextOccurrence(a)||Infinity)-(nextOccurrence(b)||Infinity));
+
+      agWrap.innerHTML = AG.map(row).join('') || `<div style="padding:10px;color:#999;">暂无</div>`;
+      ntWrap.innerHTML = NT.map(row).join('') || `<div style="padding:10px;color:#999;">暂无</div>`;
+
+      document.querySelectorAll('[data-evtid][data-act]').forEach(btn=>{
+        btn.onclick = ()=>{
+          const id = btn.getAttribute('data-evtid');
+          const act= btn.getAttribute('data-act');
+          if (act==='del'){
+            const arr = (loadJSON(LS_EVENTS,[])||[]).filter(x=>x.id!==id);
+            saveJSON(LS_EVENTS, arr);
+            renderEvents();
+          }else if (act==='edit'){
+            openEventEditor(id);
+          }
+        };
+      });
+    }
+
+    setInterval(()=>{
+      document.querySelectorAll('[data-countdown]').forEach(el=>{
+        const id=el.getAttribute('data-countdown');
+        const ev=(loadJSON(LS_EVENTS,[])||[]).find(x=>x.id===id);
+        if(!ev){ el.textContent='已删除'; return; }
+        el.textContent = humanCountdown(nextOccurrence(ev));
+      });
+    }, 1000);
+
+    setInterval(checkAndFireEvents, 30*1000);
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkAndFireEvents(); });
+
+    function checkAndFireEvents(){
+      const events = loadJSON(LS_EVENTS, []) || [];
+      const chars  = loadJSON(LS_CHARS,  []) || [];
+      const now = Date.now();
+      let changed=false;
+
+      function charAllow(cid){
+        const c = chars.find(x=>x.id===cid);
+        return !!(c && c.allowBG === true);
+      }
+
+      const queue = loadJSON(LS_BGQ, []) || [];
+
+      for (const ev of events){
+        const at = nextOccurrence(ev);
+        if (at==null) continue;
+        const due = now >= at && (!ev.lastFireAt || ev.lastFireAt < at);
+        if (!due) continue;
+
+        if (ev.type==='agreement'){
+          (ev.charIds||[]).forEach(cid=>{
+            if (!charAllow(cid)) return;
+            queue.push({
+              id: 'q_'+uidEvt(),
+              charId: cid,
+              prompt: `现在是与你和${ev.identityName||'用户'}约好的「${ev.name}」时间。请以该角色的语气给对方发一段合适的开场问候/提醒。`,
+              ts: at
+            });
+            insertUserSideSystemLine(cid, `（系统）已到约定时间：${ev.name}`, at);
+          });
+        }else{
+          (ev.visibleCharIds||[]).forEach(cid=>{
+            if (!charAllow(cid)) return;
+            queue.push({
+              id: 'q_'+uidEvt(),
+              charId: cid,
+              prompt: `${ev.identityName||'用户'}曾提到今天是「${ev.name}」。请站在角色视角、以他的性格对${ev.identityName||'用户'}表达合适的关心/祝福（1-3句）。`,
+              ts: at
+            });
+            insertUserSideSystemLine(cid, `（系统）提醒：${ev.name}`, at);
+          });
+        }
+
+        ev.lastFireAt = at;
+        changed=true;
+      }
+
+      if (changed) saveJSON(LS_EVENTS, events);
+      if (queue.length){ saveJSON(LS_BGQ, queue); localStorage.setItem('eg_bg_queue_ping', String(Date.now())); }
+    }
+
+    function insertUserSideSystemLine(charId, text, ts){
+      const threads = loadJSON(LS_THREADS, {}) || {};
+      const t = threads[charId] || (threads[charId] = {id:charId, messages:[]});
+      t.messages.push({ role:'user', content:text, ts: ts||Date.now(), meta:{system:true, auto:true} });
+      saveJSON(LS_THREADS, threads);
+
+      const list = loadJSON(LS_CHARS, [])||[];
+      const it   = list.find(c=>c.id===charId);
+      if (it){ it.lastTime = new Date(ts||Date.now()).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); saveJSON(LS_CHARS, list); }
+    }
+
+    /* ---- 事件编辑器（唯一） ---- */
+    let editingEvtId = null;
+    function openEventEditor(id){
+      const modal = document.getElementById('evtModal');
+      const form  = document.getElementById('evtForm');
+      const selType = document.getElementById('evtType');
+      const selIdt  = document.getElementById('evtIdentity');
+      const selFreq = document.getElementById('evtFreq');
+      const iptTime = document.getElementById('evtTime');
+      const iptName = document.getElementById('evtName');
+      const boxChars= document.getElementById('evtCharsBox');
+
+      const ids = loadJSON(LS_IDS, [])||[];
+      const chars = loadJSON(LS_CHARS, [])||[];
+      const data = loadJSON(LS_EVENTS, [])||[];
+
+      selIdt.innerHTML = `<option value="">（默认身份）</option>` + (ids||[]).map(i=>`<option value="${i.id}">${esc(i.nickname||i.name||'我')}</option>`).join('');
+
+      boxChars.innerHTML = (chars||[]).map(c=>{
+        const face = (typeof c.avatar==='string' && (c.avatar.startsWith('http')||c.avatar.startsWith('data:')))? `<img src="${c.avatar}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;">` : (c.avatar||'👤');
+        return `<label style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:8px 10px;">
+          <input type="checkbox" value="${c.id}"><span>${face}</span><span>${esc(c.nickname||c.name||'角色')}</span></label>`;
+      }).join('');
+
+      editingEvtId = id || null;
+      let ev = id ? (data.find(x=>x.id===id)||null) : null;
+      if (ev){
+        selType.value = ev.type;
+        selIdt.value  = ev.identityId || '';
+        selFreq.value = ev.freq || 'once';
+        iptTime.value = ev.time || '';
+        iptName.value = ev.name || '';
+        const sel = new Set((ev.type==='agreement'?ev.charIds:ev.visibleCharIds)||[]);
+        boxChars.querySelectorAll('input[type=checkbox]').forEach(chk=>{ chk.checked = sel.has(chk.value); });
+      }else{
+        selType.value='agreement'; selIdt.value=''; selFreq.value='once'; iptTime.value=''; iptName.value='';
+        boxChars.querySelectorAll('input[type=checkbox]').forEach(chk=>{ chk.checked=false; });
+      }
+
+      modal.classList.add('show');
+      document.getElementById('evtClose').onclick = ()=> modal.classList.remove('show');
+
+      form.onsubmit = (e)=>{
+        e.preventDefault();
+        const evts = loadJSON(LS_EVENTS, [])||[];
+        const identityId = selIdt.value || null;
+        const ids = loadJSON(LS_IDS, [])||[];
+        const identityName = (ids.find(x=>x.id===identityId) || ids[0] || {nickname:'我'}).nickname || '我';
+
+        const selected = Array.from(boxChars.querySelectorAll('input[type=checkbox]:checked')).map(i=>i.value);
+        const obj = {
+          id: editingEvtId || uidEvt(),
+          type: selType.value, // agreement | note
+          identityId,
+          identityName,
+          charIds: selType.value==='agreement' ? selected : [],
+          visibleCharIds: selType.value==='note' ? selected : [],
+          freq: selFreq.value,
+          time: (iptTime.value||'').trim() || null,
+          name: (iptName.value||'').trim(),
+          lastFireAt: null
+        };
+        if (selType.value==='agreement' && (!obj.charIds || obj.charIds.length===0)){
+          alert('“我们的约定”需选择涉及角色'); return;
+        }
+
+        if (editingEvtId){
+          const i = evts.findIndex(x=>x.id===editingEvtId);
+          if (i>=0) evts[i]=obj;
+        }else{
+          evts.push(obj);
+        }
+        saveJSON(LS_EVENTS, evts);
+        modal.classList.remove('show');
+        renderEvents();
+      };
+    }
 
     /* ========= 顶栏标题 / Tab 切换 / ＋按钮 ========= */
     var EG_CURRENT_TAB='chat';
@@ -679,293 +874,48 @@
       var map={chat:'新建角色', me:'新建身份', moments:'发动态', events:'添加事件'};
       addBtn.setAttribute('aria-label', map[EG_CURRENT_TAB]||'新建');
     }
-function initTabs(){
-  const items=document.querySelectorAll('.msg-tab-item');
-  const viewChat=document.getElementById('msgChatList');
-  const viewEvents=document.getElementById('tab-events');   // ★
-  const viewMe=document.getElementById('tab-me');
+    function initTabs(){
+      const items=document.querySelectorAll('.msg-tab-item');
+      const viewChat=document.getElementById('msgChatList');
+      const viewMe  =document.getElementById('tab-me');
+      const viewEvt =document.getElementById('tab-events');
 
-  function show(name){
-    EG_CURRENT_TAB=name;
-    if(viewChat)   viewChat.style.display   =(name==='chat')   ?'block':'none';
-    if(viewEvents) viewEvents.style.display =(name==='events') ?'block':'none';   // ★
-    if(viewMe)     viewMe.style.display     =(name==='me')     ?'block':'none';
-    setTopTitle(name==='me' ? '我的身份卡' : (name==='events'?'事件':'消息'));
-    updateAddButtonForTab();
-    items.forEach(el=>el.classList.remove('active'));
-    if(name==='chat')   items[0]?.classList.add('active');
-    if(name==='events') items[1]?.classList.add('active');    // ★
-    if(name==='me')     items[3]?.classList.add('active');
-  }
-  items[0]?.addEventListener('click', ()=>show('chat'));
-  items[1]?.addEventListener('click', ()=>show('events'));     // ★
-  items[2]?.addEventListener('click', ()=>alert('朋友圈：开发中'));
-  items[3]?.addEventListener('click', ()=>show('me'));
-  show('chat');
-  window.EGTab=Object.assign(window.EGTab||{},{show});
-}
-function updateAddButtonForTab(){
-  var addBtn=document.getElementById('addBtn'); if(!addBtn) return;
-  var map={chat:'新建角色', events:'添加事件', me:'新建身份', moments:'发动态'};
-  addBtn.setAttribute('aria-label', map[EG_CURRENT_TAB]||'新建');
-}
-function onGlobalAdd(){
-  switch(EG_CURRENT_TAB){
-    case 'chat':    showModal(); break;
-    case 'events':  window.EGEvents?.openEditor(); break;      // ★
-    case 'me':      window.openIdentityEditor?.(); break;
-    default:        showModal();
-  }
-}
-    /* ================= 事件引擎（我们的约定/我的记事本） ================= */
-(function(){
-  const LS_EVT='eg_events_v1';
-  const LS_ID='eg_user_identities_v1';
-  const LS_CHAR='eg_characters_v2';
-
-  function load(k,df){ try{ const t=localStorage.getItem(k); return t?JSON.parse(t):df; }catch(e){ return df; } }
-  function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-  function uid(){ return 'e_' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
-  const now = ()=> new Date();
-
-  // 计算下次发生时间（支持 once/year/month/week/day；若未填时间，返回 null）
-  function nextOccurrence(e){
-    if(!e.datetimeISO) return null;
-    const base = e.lastFiredAtISO ? new Date(e.lastFiredAtISO) : new Date(e.datetimeISO);
-    const ref  = e.lastFiredAtISO ? new Date(e.datetimeISO) : new Date(); // 首次基于目标 vs 之后基于 now 递增
-    let dt = new Date(e.datetimeISO);
-    while(dt < now()){
-      if(e.frequency==='once') break;
-      if(e.frequency==='year')  dt.setFullYear(dt.getFullYear()+1);
-      else if(e.frequency==='month') dt.setMonth(dt.getMonth()+1);
-      else if(e.frequency==='week')  dt.setDate(dt.getDate()+7);
-      else if(e.frequency==='day')   dt.setDate(dt.getDate()+1);
-      else break;
-    }
-    if(e.frequency==='once' && dt < now()) return null; // 过期
-    return dt;
-  }
-  function fmtCountdown(dt){
-    if(!dt) return '——';
-    const ms = dt - now(); if(ms<=0) return '进行中';
-    const d = Math.floor(ms/86400000);
-    const h = Math.floor((ms%86400000)/3600000);
-    const m = Math.floor((ms%3600000)/60000);
-    return (d?`${d}天`:'') + (h?`${h}小时`:'') + (d||h?``:`${m}分钟`);
-  }
-
-  // 渲染
-  const elC = document.getElementById('evt-contract-list');
-  const elN = document.getElementById('evt-notes-list');
-  function render(){
-    const events = load(LS_EVT,[]);
-    const ids = load(LS_ID,[]);
-    const chars = load(LS_CHAR,[]);
-    const idMap = Object.fromEntries(ids.map(x=>[x.id, x]));
-    const chMap = Object.fromEntries(chars.map(x=>[x.id, x]));
-
-    function card(e){
-      const next = nextOccurrence(e);
-      const participants = (e.participants||[]).map(id=>chMap[id]?.nickname||chMap[id]?.name||id).join('、') || '—';
-      const idName = e.identityId ? (idMap[e.identityId]?.nickname||idMap[e.identityId]?.name||'我') : '我';
-      return `
-        <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:12px;margin:8px 0;box-shadow:0 1px 0 rgba(0,0,0,.05)">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <div style="font-weight:600;color:#000">${e.title||'(未命名)'} <small style="color:#666">· ${idName}</small></div>
-            <div>
-              <button data-act="edit" data-id="${e.id}" class="mini">编辑</button>
-              <button data-act="del"  data-id="${e.id}" class="mini" style="background:#ff3b30;color:#fff">删除</button>
-            </div>
-          </div>
-          <div style="font-size:12px;color:#666;margin-top:6px">角色：${participants}</div>
-          <div style="font-size:12px;color:#666;margin-top:4px">频次：${({'once':'单次','year':'年度','month':'月度','week':'周度','day':'日度'})[e.frequency]||'—'}</div>
-          <div style="font-size:12px;color:#666;margin-top:4px">时间：${e.datetimeISO?new Date(e.datetimeISO).toLocaleString():'未填写'}</div>
-          <div style="font-size:13px;color:#111;margin-top:8px">距离事件还有：<b>${fmtCountdown(next)}</b></div>
-        </div>`;
-    }
-
-    const C = events.filter(x=>x.type==='contract').sort((a,b)=>(nextOccurrence(a)||1e15)-(nextOccurrence(b)||1e15));
-    const N = events.filter(x=>x.type==='note').sort((a,b)=>(nextOccurrence(a)||1e15)-(nextOccurrence(b)||1e15));
-    if(elC) elC.innerHTML = C.length? C.map(card).join('') : '<div style="color:#999;padding:12px">暂无约定</div>';
-    if(elN) elN.innerHTML = N.length? N.map(card).join('') : '<div style="color:#999;padding:12px">暂无记事</div>';
-
-    (elC||document).querySelectorAll('[data-act="edit"],[data-act="del"]').forEach(btn=>btn.addEventListener('click', onCardBtn));
-    (elN||document).querySelectorAll('[data-act="edit"],[data-act="del"]').forEach(btn=>btn.addEventListener('click', onCardBtn));
-  }
-
-  function onCardBtn(e){
-    const id = e.currentTarget.dataset.id;
-    if(e.currentTarget.dataset.act==='del'){
-      if(confirm('删除该事件？')){
-        const arr=load(LS_EVT,[]).filter(x=>x.id!==id); save(LS_EVT,arr); render();
+      function show(name){
+        EG_CURRENT_TAB=name;
+        if(viewChat) viewChat.style.display = (name==='chat') ? 'block':'none';
+        if(viewEvt)  viewEvt.style.display  = (name==='events') ? 'block' : 'none';
+        if(viewMe)   viewMe.style.display   = (name==='me') ? 'block':'none';
+        setTopTitle(name==='me' ? '我的身份卡' : (name==='events'?'事件':'消息'));
+        updateAddButtonForTab();
+        items.forEach(el=>el.classList.remove('active'));
+        if(name==='chat')   items[0]?.classList.add('active');
+        if(name==='events') items[1]?.classList.add('active');
+        if(name==='me')     items[3]?.classList.add('active');
       }
-    }else{
-      openEditor(id);
+      items[0]?.addEventListener('click', ()=>show('chat'));
+      items[1]?.addEventListener('click', ()=>{ show('events'); renderEvents(); });
+      items[2]?.addEventListener('click', ()=>alert('朋友圈：开发中'));
+      items[3]?.addEventListener('click', ()=>show('me'));
+      show('chat');
+      document.getElementById('evtAddBtn')?.addEventListener('click', ()=>openEventEditor(null));
+      window.EGTab=Object.assign(window.EGTab||{},{show});
     }
-  }
-
-  // 编辑器
-  const modal=document.getElementById('evtModal');
-  const form=document.getElementById('evtForm');
-  const closeBtn=document.getElementById('evtClose');
-  const addC=document.getElementById('evt-add-contract');
-  const addN=document.getElementById('evt-add-note');
-
-  function fillIdentityAndChars(identityId, participants){
-    const ids = load(LS_ID,[]); const chars = load(LS_CHAR,[]);
-    // 身份下拉
-    const sel=document.getElementById('evtIdentity');
-    sel.innerHTML = '<option value="">（不指定）</option>' + ids.map(u=>`<option value="${u.id}">${u.nickname||u.name||'我'}</option>`).join('');
-    if(identityId) sel.value = identityId;
-    // 角色（只展示该身份绑定的）
-    const targetId = sel.value || ids[0]?.id;
-    const bound = (ids.find(u=>u.id===targetId)?.boundCharIds)||[];
-    const box=document.getElementById('evtChars');
-    box.innerHTML = bound.map(cid=>{
-      const c = chars.find(x=>x.id===cid); const name = c?.nickname||c?.name||cid;
-      const checked = participants && participants.includes(cid) ? 'checked' : '';
-      return `<label style="display:flex;gap:6px;align-items:center;background:#f7f7f7;border:1px solid #eee;border-radius:8px;padding:8px;">
-        <input type="checkbox" value="${cid}" ${checked}/>
-        <span>${name}</span>
-      </label>`;
-    }).join('') || '<div style="color:#999">该身份暂未绑定角色</div>';
-    sel.onchange = ()=> fillIdentityAndChars(sel.value, collectChecked());
-  }
-  function collectChecked(){
-    return Array.from(document.querySelectorAll('#evtChars input[type=checkbox]:checked')).map(x=>x.value);
-  }
-
-  function openEditor(id){
-    const all=load(LS_EVT,[]); const one=all.find(x=>x.id===id)||{id:uid(),type:'contract',title:'',frequency:'once',datetimeISO:'',participants:[],identityId:'',promptTemplate:''};
-    document.getElementById('evtId').value=one.id;
-    document.getElementById('evtType').value=one.type||'contract';
-    document.getElementById('evtTitle').value=one.title||'';
-    document.getElementById('evtFreq').value=one.frequency||'once';
-    document.getElementById('evtTime').value= one.datetimeISO ? new Date(one.datetimeISO).toISOString().slice(0,16) : '';
-    document.getElementById('evtPrompt').value=one.promptTemplate||'';
-    fillIdentityAndChars(one.identityId, one.participants);
-    document.getElementById('evtIdentity').value = one.identityId||'';
-    modal.classList.add('show');
-  }
-  function closeEditor(){ modal.classList.remove('show'); }
-  closeBtn?.addEventListener('click', closeEditor);
-  modal?.addEventListener('click', e=>{ if(e.target===modal) closeEditor(); });
-  addC?.addEventListener('click', ()=>openEditor());
-  addN?.addEventListener('click', ()=>{ openEditor(); document.getElementById('evtType').value='note'; });
-
-  form?.addEventListener('submit', e=>{
-    e.preventDefault();
-    const id = document.getElementById('evtId').value || uid();
-    const obj = {
-      id,
-      type: document.getElementById('evtType').value,
-      title: document.getElementById('evtTitle').value.trim(),
-      frequency: document.getElementById('evtFreq').value,
-      datetimeISO: (document.getElementById('evtTime').value || '') ? new Date(document.getElementById('evtTime').value).toISOString() : '',
-      identityId: document.getElementById('evtIdentity').value || '',
-      participants: collectChecked(),
-      promptTemplate: document.getElementById('evtPrompt').value.trim(),
-      lastFiredAtISO: ''
-    };
-    if(!obj.title){ alert('请填写事件名称'); return; }
-    const arr=load(LS_EVT,[]);
-    const i=arr.findIndex(x=>x.id===id);
-    if(i>=0) arr[i]=Object.assign(arr[i], obj); else arr.push(obj);
-    save(LS_EVT,arr); closeEditor(); render();
-  });
-
-  // ===== 触发器：前台定时 + 离线补偿 =====
-  function buildDefaultPrompt(e, charName, identityName){
-    // contract / note 的两种默认提示
-    if(e.type==='contract'){
-      return `现在是「${e.title}」的约定时间。请以${charName}的语气，给${identityName}发一段自然、不超过3句的问候或行动描述。`;
-    }else{
-      return `${identityName}今天有「${e.title}」。请以${charName}的语气，给${identityName}发一段自然、不超过3句的关心。`;
-    }
-  }
-  async function fireEvent(e){
-    const ids = load(LS_ID,[]); const chars = load(LS_CHAR,[]);
-    const identity = e.identityId ? ids.find(x=>x.id===e.identityId) : ids[0];
-    const identityName = identity?.nickname||identity?.name||'用户';
-    const list = (e.participants||[]).map(cid=>chars.find(c=>c.id===cid)).filter(Boolean);
-
-    // 只对开启“后台活动”的角色触发
-    const targets = list.filter(c => !!c?.backgroundOn);
-
-    for(const ch of targets){
-      const prompt = e.promptTemplate || buildDefaultPrompt(e, (ch.nickname||ch.name||'Ta'), identityName);
-      await sendEventPromptToThread(ch.id, identity, prompt, e); // 写入对应会话
-    }
-
-    // 标记已触发
-    const arr=load(LS_EVT,[]);
-    const i=arr.findIndex(x=>x.id===e.id);
-    if(i>=0){
-      arr[i].lastFiredAtISO = new Date().toISOString();
-      // 单次：触发后自动清理（也可改为隐藏）
-      if(arr[i].frequency==='once') {
-        // 不直接删，保留记录到下一次 render 时自然显示“过期”；如需删：arr.splice(i,1);
-      }
-      save(LS_EVT,arr);
-    }
-  }
-
-  async function sendEventPromptToThread(charId, identity, userText, e){
-    // 把“事件时间”写进 ts，并在 ChatList 里更新时间显示
-    const threads = load('eg_threads_v1', {});
-    const mine = threads[charId] || (threads[charId] = { id:charId, messages:[] });
-    // 这里直接触发一轮 LLM：系统人设来自 message-detail 的 askLLM 逻辑，
-    // 但在当前页我们只“注入一条用户消息”，随后由聊天页自然生成；为了即时效果，这里直接合成一条“用户消息 + 触发 askLLM”的简版：
-    const pseudoUser = `${userText}`;
-    mine.messages.push({ role:'user', content:pseudoUser, ts: e.datetimeISO ? new Date(e.datetimeISO).getTime() : Date.now() });
-    save('eg_threads_v1', threads);
-
-    try{
-      const list = load(LS_CHAR,[]);
-      const it = list.find(c => c.id === charId);
-      if (it){ it.lastTime = new Date(e.datetimeISO || Date.now()).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); save(LS_CHAR,list); }
-    }catch(_){}
-
-    // 发一个“轻触发”信号给聊天页（它会在打开时或前台时拉取并继续 askLLM）
-    try{ localStorage.setItem('eg_evt_ping', String(Date.now())); }catch(_){}
-  }
-
-  function tick(){
-    const arr = load(LS_EVT,[]);
-    for(const e of arr){
-      const next = nextOccurrence(e);
-      if(!next) continue;
-      // 触发窗口：±60秒内
-      const diff = Math.abs(next - now());
-      if(diff <= 60000){
-        // 未触发过，或下一轮已到达窗口
-        if(!e.lastFiredAtISO || new Date(e.lastFiredAtISO) < next) fireEvent(e);
+    function onGlobalAdd(){
+      switch(EG_CURRENT_TAB){
+        case 'chat':    showModal(); break;
+        case 'events':  openEventEditor(null); break;
+        case 'me':      window.openIdentityEditor?.(); break;
+        default:        showModal();
       }
     }
-    render(); // 刷新倒计时
-  }
-
-  // 初始化
-  render();
-  // 离线补偿：进入页面先 tick 一次
-  tick();
-  // 前台每 30s 刷新/触发
-  setInterval(tick, 30000);
-
-  // 暴露给“＋”按钮
-  window.EGEvents = { openEditor };
-})();
 
     /* ========= 模态框与初始化 ========= */
     function showModal(){ document.getElementById('msgAddModal')?.classList.add('show'); }
     function init(){
-      // 返回按钮
       document.getElementById('backBtn')?.addEventListener('click', ()=>{ if(window.closeApp) window.closeApp(); else if(history.length>1) history.back(); else location.href='../index.html'; });
 
-      // 角色数据&渲染
       loadChars(); renderList();
 
-      // 角色添加弹框
       document.getElementById('closeModalBtn')?.addEventListener('click', ()=>document.getElementById('msgAddModal').classList.remove('show'));
       document.getElementById('msgAddModal')?.addEventListener('click', e=>{ if(e.target.id==='msgAddModal') e.currentTarget.classList.remove('show'); });
       var up=document.getElementById('msgAvatarUpload'), inp=document.getElementById('msgAvatarInput');
@@ -983,11 +933,9 @@ function onGlobalAdd(){
         });
       }
 
-      // 右上角＋
-      var addBtn=document.getElementById('addBtn'); 
-      if(addBtn){ addBtn.replaceWith(addBtn.cloneNode(true)); addBtn=document.getElementById('addBtn'); addBtn.addEventListener('click', onGlobalAdd); updateAddButtonForTab(); }
+      var addBtn=document.getElementById('addBtn');
+      if(addBtn){ addBtn.addEventListener('click', onGlobalAdd); updateAddButtonForTab(); }
 
-      // Tab
       initTabs();
     }
 
