@@ -568,6 +568,95 @@
 
     // 默认打开聊天
     switchTab('chat');
+      if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+  })();
+
+  /* ================= 隐形事件引擎（不改现有 UI/交互） ================= */
+  (function(){
+    const LS_EVT='eg_events_v1';           // 事件列表（我们的约定/我的记事本通用）
+    const LS_ID='eg_user_identities_v1';   // 身份
+    const LS_CHAR='eg_characters_v2';      // 角色
+
+    // 确保有全局默认的全天提醒时刻
+    try{
+      const st = JSON.parse(localStorage.getItem('eg_settings_v1')||'{}');
+      if(!st.allDayFire) { st.allDayFire = '09:00'; localStorage.setItem('eg_settings_v1', JSON.stringify(st)); }
+    }catch(_){/* noop */}
+
+    function load(k,df){ try{ const t=localStorage.getItem(k); return t?JSON.parse(t):df; }catch(e){ return df; } }
+    function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+    const now = ()=> new Date();
+
+    // 计算下次发生时间（datetimeISO 已包含全天提醒时刻；本引擎不碰 UI）
+    function nextOccurrence(e){
+      if(!e || !e.datetimeISO) return null;
+      let dt = new Date(e.datetimeISO);
+      while(dt < now()){
+        if(e.frequency==='once') break;
+        if(e.frequency==='year')  dt.setFullYear(dt.getFullYear()+1);
+        else if(e.frequency==='month') dt.setMonth(dt.getMonth()+1);
+        else if(e.frequency==='week')  dt.setDate(dt.getDate()+7);
+        else if(e.frequency==='day')   dt.setDate(dt.getDate()+1);
+        else break;
+      }
+      if(e.frequency==='once' && dt < now()) return null;
+      return dt;
+    }
+
+    // 触发到对应会话：写一条“用户消息”，时间戳=约定时刻；message-detail 打开时再让 LLM接续
+    function sendEventPromptToThread(charId, identity, userText, e){
+      const threads = load('eg_threads_v1', {});
+      const mine = threads[charId] || (threads[charId] = { id:charId, messages:[] });
+      const ts = e.datetimeISO ? new Date(e.datetimeISO).getTime() : Date.now();
+      mine.messages.push({ role:'user', content:userText, ts: ts, meta:{from:'event', eventId:e.id} });
+      save('eg_threads_v1', threads);
+      try{ localStorage.setItem('eg_evt_ping', String(Date.now())); }catch(_){ }
+    }
+
+    function buildDefaultPrompt(e, charName, identityName){
+      if(e.type==='contract'){
+        return `现在是「${e.title}」的约定时间。请以${charName}的语气，给${identityName}发一段自然、不超过3句的问候或行动描述。`;
+      }else{
+        return `${identityName}今天有「${e.title}」。请以${charName}的语气，给${identityName}发一段自然、不超过3句的关心。`;
+      }
+    }
+
+    function fireEvent(e){
+      const ids = load(LS_ID,[]); const chars = load(LS_CHAR,[]);
+      const identity = e.identityId ? ids.find(x=>x.id===e.identityId) : ids[0];
+      const identityName = identity?.nickname||identity?.name||'用户';
+      const list = (e.participants||[]).map(cid=>chars.find(c=>c.id===cid)).filter(Boolean);
+      const targets = list.filter(c => !!c?.backgroundOn);
+      for(const ch of targets){
+        const prompt = e.promptTemplate || buildDefaultPrompt(e, (ch.nickname||ch.name||'Ta'), identityName);
+        sendEventPromptToThread(ch.id, identity, prompt, e);
+      }
+      const arr=load(LS_EVT,[]); const i=arr.findIndex(x=>x.id===e.id);
+      if(i>=0){ arr[i].lastFiredAtISO = new Date().toISOString(); save(LS_EVT,arr); }
+    }
+
+    function tick(){
+      const arr = load(LS_EVT,[]);
+      const nowTs = now();
+      for(const e of arr){
+        const next = nextOccurrence(e);
+        if(!next) continue;
+        const diff = Math.abs(next - nowTs);
+        if(diff <= 60000){ // ±60s 窗口
+          if(!e.lastFiredAtISO || new Date(e.lastFiredAtISO) < next) fireEvent(e);
+        }
+      }
+    }
+
+    // 页面进入/前台：补偿触发；保持与现有 UI 解耦
+    tick();
+    const iv = setInterval(tick, 30000);
+    window.addEventListener('focus', tick);
+    window.addEventListener('storage', (e)=>{ if(e.key==='eg_evt_ping') tick(); });
+
+    // 组件卸载（单页应用场景）
+    window.addEventListener('beforeunload', ()=> clearInterval(iv));
+  })();
   </script>
 </body>
 </html>
