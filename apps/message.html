@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="rgba(0,0,0,0)">
@@ -15,22 +16,20 @@
     html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
     .message-app{position:fixed;inset:0;background:#ededed;display:flex;flex-direction:column}
 
-    /* 顶栏 */
+    /* 顶栏（与返回/新增水平对齐，居中标题不被灵动岛遮挡） */
     .msg-navbar{
       position:relative;
       height:calc(44px + var(--safe-top));
-      padding:0 16px; padding-top:var(--safe-top);
-      background:#f7f7f7;border-bottom:.5px solid #d9d9d9;
-      display:flex;align-items:center;justify-content:space-between;flex-shrink:0
+      padding:0 12px; padding-top:var(--safe-top);
+      background:#f7f7f7; border-bottom:.5px solid #d9d9d9;
+      display:flex; align-items:center; gap:12px;
+      flex-shrink:0;
     }
-    .msg-navbar-left{display:flex;align-items:center;gap:12px; z-index:2;}
-    .msg-back-btn{font-size:20px;cursor:pointer;user-select:none;padding:8px;margin:-8px}
-    .msg-navbar-title{font-size:17px;font-weight:600;color:#000}
-    .msg-navbar-icon{font-size:22px;cursor:pointer;user-select:none;padding:8px;margin:-8px; z-index:2;}
-    .msg-navbar-center{
-      position:absolute; left:0; right:0; top:0; bottom:0;
-      display:flex; align-items:center; justify-content:center; pointer-events:none;
-    }
+    .msg-navbar-left{ display:flex; align-items:center; gap:8px; z-index:2; }
+    .msg-back-btn{ font-size:20px; cursor:pointer; user-select:none; padding:8px; margin:-8px; color:#333; }
+    .msg-navbar-icon{ font-size:22px; cursor:pointer; user-select:none; padding:8px; margin:-8px; color:#333; z-index:2; }
+    .msg-navbar-center{ flex:1; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+    .msg-navbar-title{ font-size:17px; font-weight:600; color:#000; }
 
     /* 聊天列表（聊天Tab内容面板） */
     .msg-chat-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;touch-action:pan-y}
@@ -52,7 +51,7 @@
     .msg-tab-label{font-size:10px;color:#999}
     .msg-tab-item.active .msg-tab-label{color:#07c160}
 
-    /* 添加角色 Modal */
+    /* 添加角色 Modal（聊天Tab） */
     .msg-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:3000}
     .msg-modal.show{display:flex}
     .msg-modal-content{background:#fff;width:90%;max-width:400px;border-radius:12px;overflow:hidden}
@@ -75,21 +74,28 @@
 
     #debugBox{position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.8);color:#0f0;padding:8px;border-radius:6px;font-size:11px;max-height:25vh;overflow:auto;font-family:monospace;white-space:pre-wrap;word-break:break-all;display:none}
 
-    /* ===== 我（身份卡）Tab 样式（响应式+下拉选择） ===== */
+    /* ===== 我（身份卡）Tab（居中 + 下拉多选 + 指示点修正） ===== */
     :root{ --bg:#f2f2f7; --card-bg:#fff; --muted:#666; --hair:#ddd; --tint:#1677ff; --ok:#34c759; --warn:#ff3b30; }
     #tab-me{
       position:relative; display:flex; flex-direction:column; flex:1; min-height:0; 
       background:var(--bg);
-      padding-bottom:calc(74px + var(--safe-bottom)); /* 为底部Tabbar留白，避免重叠 */
+      padding-bottom:calc(50px + var(--safe-bottom)); /* 给底部 tabbar 留白 */
     }
-    .id-wrap{ flex:1; min-height:0; display:flex; }
+    /* 让“卡片 + 指示点”整体在中部显示 */
+    .id-wrap{
+      flex:1; min-height:0;
+      display:flex; align-items:center; justify-content:center;
+      padding:clamp(12px, 3vh, 24px);
+    }
     .id-carousel{
-      flex:1; min-height:0; overflow-x:auto; scroll-snap-type:x mandatory;
-      display:flex; align-items:flex-start; gap:18px; padding:18px 18px 24px;
-      justify-content:center;   /* 居中卡片 */
+      flex:0 0 auto;
+      max-width:min(92vw, 760px);
+      overflow-x:auto; scroll-snap-type:x mandatory;
+      display:flex; gap:18px; padding:0 6px;
+      align-items:flex-start; justify-content:center;
     }
     .id-card{
-      flex:0 0 clamp(320px, 92vw, 680px);  /* 响应式卡片宽度 */
+      flex:0 0 clamp(320px, 88vw, 680px);
       scroll-snap-align:center;
       background:var(--card-bg); border-radius:16px; padding:16px 16px 18px;
       box-shadow:0 6px 18px rgba(0,0,0,.06);
@@ -136,9 +142,9 @@
     .btn.primary{ background:var(--ok); color:#fff; }
     .btn.warn{ background:var(--warn); color:#fff; }
 
-    .dots{ height:24px; display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:8px; }
-    .dot{ width:6px; height:6px; border-radius:50%; background:#ddd; }
-    .dot.active{ width:16px; border-radius:4px; background:#999; transition:all .25s; }
+    .dots{ height:30px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; }
+    .dot{ width:6px; height:6px; border-radius:999px; background:#ddd; transition:all .25s; }
+    .dot.active{ width:22px; height:6px; border-radius:4px; background:#999; }
   </style>
 </head>
 <body>
@@ -146,7 +152,7 @@
     <!-- 顶部导航 -->
     <div class="msg-navbar">
       <div class="msg-navbar-left">
-        <div class="msg-back-btn" id="backBtn">◀</div>
+        <div class="msg-back-btn" id="backBtn">&lsaquo;</div>
       </div>
       <div class="msg-navbar-center"><div id="topTitle" class="msg-navbar-title">消息</div></div>
       <div class="msg-navbar-icon" id="addBtn" aria-label="新建">➕</div>
@@ -214,19 +220,25 @@
     var debugBox = document.getElementById('debugBox');
     function log(m){ try{var t=new Date().toTimeString().slice(0,8); (debugBox||{}).innerHTML+=(t+' '+m+'\\n'); if(debugBox) debugBox.scrollTop=debugBox.scrollHeight;}catch(e){} }
 
-    /* ========= 工具 ========= */
+    /* ========= 小工具 ========= */
     function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function attr(s){ return String(s ?? '').replace(/"/g,'&quot;'); }
     function text(s){ return String(s ?? ''); }
     function isImg(s){ return typeof s==='string' && (s.startsWith('data:') || s.startsWith('http')); }
     function fileToDataURL(file){ return new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file); }); }
 
-    /* ========= 角色仓库 ========= */
+    /* ========= 角色仓库（聊天列表使用） ========= */
     var STORAGE_KEY='eg_characters_v2';
     var msgCharacters=[]; var touchStartX=0, touchCurrentX=0;
 
     function notifyCharsUpdated(){ try{ localStorage.setItem('eg_evt_chars', String(Date.now())); }catch(_){} window.dispatchEvent(new CustomEvent('eg:charsUpdated')); }
-    function loadChars(){ try{ var s=localStorage.getItem(STORAGE_KEY); msgCharacters = s?JSON.parse(s):[{kind:'char',id:'nash',name:'Nash',nickname:'Nash',bio:'天真开朗的小狐狸',avatar:'🦊',lastTime:'12:00'}]; if(!s) saveChars(); }catch(e){ msgCharacters=[]; } }
+    function loadChars(){
+      try{
+        var s=localStorage.getItem(STORAGE_KEY);
+        msgCharacters = s?JSON.parse(s):[{kind:'char',id:'nash',name:'Nash',nickname:'Nash',bio:'天真开朗的小狐狸',avatar:'🦊',lastTime:'12:00'}];
+        if(!s) saveChars();
+      }catch(e){ msgCharacters=[]; }
+    }
     function saveChars(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(msgCharacters)); }catch(e){} notifyCharsUpdated(); }
 
     function renderList(){
@@ -261,6 +273,7 @@
       }).join('');
       bindChatEvents();
     }
+
     function bindChatEvents(){
       document.querySelectorAll('.msg-chat-item').forEach(el=>{
         el.addEventListener('click', function(){
@@ -284,7 +297,7 @@
       });
     }
 
-    /* ========= 我（身份卡）——互斥绑定 + 下拉多选 + 输入即保存 ========= */
+    /* ========= 我（身份卡）——互斥绑定 + 下拉多选 + 指示点修正 ========= */
     (function(){
       const LS_ID='eg_user_identities_v1', LS_CHAR='eg_characters_v2';
       const $=s=>document.querySelector(s); const idCarousel=$('#idCarousel'); const dots=$('#dots');
@@ -302,13 +315,11 @@
         save(LS_ID,identities);
       }
 
-      // 身份所有权查询：无显式所有者 → 默认身份
       function ownerOf(charId){
         for(const idt of identities){ if(idt.boundCharIds && idt.boundCharIds.includes(charId)) return idt.id; }
         return identities[0]?.id;
       }
 
-      // 刷新默认身份：默认获取“未被其它身份占用”的全部角色
       function refreshBindings(){
         if(!identities.length) return;
         const def=identities[0];
@@ -321,7 +332,7 @@
 
       refreshBindings(); render();
 
-      // 导出/导入（页级）
+      // 导出/导入
       async function copyText(t){ try{ await navigator.clipboard.writeText(t); return true; }catch(_){ return false; } }
       function isIOS(){ return /iP(hone|ad|od)/.test(navigator.userAgent); }
       async function doExport(){
@@ -337,13 +348,12 @@
         inp.click();
       }
 
-      // 对外 API：右上角“＋” → 新建身份并进入编辑
+      // 右上角“＋” → 新建身份并进入编辑
       window.openIdentityEditor=function(){
         const u={kind:'identity',id:uid(),name:'',nickname:'',avatar:'👤',bio:'',boundCharIds:[]};
         identities.push(u); save(LS_ID,identities); refreshBindings(); render(); setTimeout(()=> setCardEditing(u.id,true),0);
       };
 
-      // ★ 输入即保存：写回工具
       function writeField(uid, key, val){
         const u = identities.find(x => x.id === uid);
         if (!u) return;
@@ -357,6 +367,7 @@
         dots.innerHTML = identities.map((_,i)=>`<div class="dot ${i===0?'active':''}"></div>`).join('');
         bindCardEvents();
         idCarousel.addEventListener('scroll', onScrollSnap, {passive:true});
+        onScrollSnap(); // 初始化一次
       }
 
       function renderCard(u){
@@ -439,7 +450,7 @@
         });
         document.addEventListener('click', ()=>{ idCarousel.querySelectorAll('.combo-panel.show').forEach(p=>p.classList.remove('show')); });
 
-        // 复选互斥逻辑
+        // 互斥复选
         idCarousel.querySelectorAll('.combo-panel .combo-opt input[type="checkbox"]').forEach(chk=>{
           chk.addEventListener('change', (e)=>{
             const opt = e.target.closest('.combo-opt');
@@ -450,7 +461,6 @@
             const curOwner = ownerOf(charId);
 
             if (e.target.checked){
-              // 切换到目标身份
               if (curOwner && curOwner !== defId && curOwner !== targetId){
                 const owner = identities.find(x=>x.id===curOwner);
                 const name = owner?.nickname || owner?.name || '该身份';
@@ -465,7 +475,6 @@
                 if (!tar.boundCharIds.includes(charId)) tar.boundCharIds.push(charId);
               }
             }else{
-              // 取消：非默认 → 回到默认；默认 → 不允许取消
               if (targetId !== defId){
                 const tar = identities.find(x=>x.id===targetId);
                 tar.boundCharIds = (tar.boundCharIds||[]).filter(id=>id!==charId);
@@ -475,17 +484,15 @@
             }
 
             save(LS_ID,identities);
-            refreshBindings();   // 维护默认身份
-            render();            // 即时刷新
-            broadcast();         // 跨页同步
+            refreshBindings();
+            render();
+            broadcast();
           });
         });
 
         // 卡片按钮
         idCarousel.querySelectorAll('.id-card').forEach(card=>{
           const uid=card.dataset.id;
-
-          // 编辑/保存/删除/导入导出
           card.querySelector('[data-act="edit"]').addEventListener('click', ()=> setCardEditing(uid,true));
           card.querySelector('[data-act="save"]').addEventListener('click', ()=>{
             const u=identities.find(x=>x.id===uid);
@@ -503,32 +510,44 @@
           card.querySelector('[data-act="import"]').addEventListener('click', doImport);
           card.querySelector('[data-act="export"]').addEventListener('click', doExport);
 
-          // 头像（仅编辑态可改）——就地保存
+          // 头像（仅编辑态可改）
           card.querySelector('.id-avatar').addEventListener('click', ()=>{
             const editable = !card.querySelector('.input').readOnly; if(!editable) return;
             const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
             inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return; const b64=await fileToDataURL(f);
-              writeField(uid, 'avatar', b64); render(); broadcast();
+              const u=identities.find(x=>x.id===uid); u.avatar=b64; save(LS_ID,identities); render(); broadcast();
             };
             inp.click();
           });
+        });
 
-          // ★ 输入即保存：姓名/昵称/设定实时写回
-          card.querySelectorAll('.input,.textarea').forEach(el=>{
-            const key = el.getAttribute('data-k'); // name | nickname | bio
-            if (!key) return;
-            el.addEventListener('input', ()=>{
-              writeField(uid, key, el.value);
-              const saveBtn = card.querySelector('[data-act="save"]');
-              if (saveBtn) saveBtn.disabled = false;
-            });
+        idCarousel.querySelectorAll('.input,.textarea').forEach(el=>{
+          el.addEventListener('input', ()=>{
+            const card=el.closest('.id-card'); const saveBtn=card.querySelector('[data-act="save"]'); if(saveBtn) saveBtn.disabled=false;
           });
         });
       }
 
-      function onScrollSnap(){ const w=idCarousel.clientWidth; const i=Math.round(idCarousel.scrollLeft/(w+18)); dots.querySelectorAll('.dot').forEach((d,idx)=>d.classList.toggle('active', idx===i)); }
+      /* 指示点：以“视口中心最近的卡片”为当前 */
+      function computeActiveIndex(){
+        const cards = Array.from(idCarousel.querySelectorAll('.id-card'));
+        if (!cards.length) return 0;
+        const viewportCenter = idCarousel.scrollLeft + idCarousel.clientWidth / 2;
+        let minDist = Infinity, active = 0;
+        cards.forEach((card, idx) => {
+          const center = card.offsetLeft + card.offsetWidth/2;
+          const d = Math.abs(center - viewportCenter);
+          if (d < minDist) { minDist = d; active = idx; }
+        });
+        return active;
+      }
+      function onScrollSnap(){
+        const active = computeActiveIndex();
+        const all = dots.querySelectorAll('.dot');
+        all.forEach((d,i)=>d.classList.toggle('active', i===active));
+      }
 
-      // 来自“角色仓库”的变化 → 实时同步
+      // 同步角色变化
       function syncChars(){ chars = JSON.parse(localStorage.getItem(LS_CHAR) || '[]'); refreshBindings(); render(); }
       window.addEventListener('eg:charsUpdated', syncChars);
       window.addEventListener('storage', e=>{ if(e.key==='eg_evt_chars') syncChars(); });
