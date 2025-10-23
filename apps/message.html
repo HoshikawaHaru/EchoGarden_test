@@ -250,6 +250,13 @@
               <label class="msg-form-label">人设</label>
               <textarea class="msg-form-textarea" id="msgCharacterBio" placeholder="描述角色的性格、特点..." required></textarea>
             </div>
+            <div class="msg-form-group">
+  <label class="msg-form-label">允许后台活动</label>
+  <label style="display:flex;align-items:center;gap:8px;color:#666;">
+    <input type="checkbox" id="msgAllowBg">
+    <span>到事件时间时，系统可代表该角色后台行动</span>
+  </label>
+</div>
             <button type="submit" class="msg-btn-primary">添加</button>
           </form>
         </div>
@@ -928,7 +935,18 @@
           var nickname=document.getElementById('msgCharacterNickname').value.trim()||name;
           var bio=document.getElementById('msgCharacterBio').value.trim();
           var img=up?up.querySelector('img'):null; var avatar=img?img.src:'👤';
-          var newChar={kind:'char', id:String(Date.now()), name, nickname, bio, avatar, lastTime:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
+          var allowBG = document.getElementById('msgAllowBg')?.checked || false;
+var newChar={
+  kind:'char',
+  id:String(Date.now()),
+  name,
+  nickname,
+  bio,
+  avatar,
+  allowBG,          // ★
+  lastMsg:'',       // ★ 用于列表预览
+  lastTime:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})
+};
           msgCharacters.push(newChar); saveChars(); renderList(); document.getElementById('msgAddModal').classList.remove('show');
         });
       }
