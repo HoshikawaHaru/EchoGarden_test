@@ -66,6 +66,8 @@
     .btn{flex:1;padding:12px;border:none;border-radius:8px;font-size:16px;cursor:pointer}
     .btn.primary{background:#07c160;color:#fff}
     .btn.ghost{background:#f2f2f2;color:#111}
+    .hint{font-size:12px;color:#999;margin-top:6px}
+    .switch{display:flex;align-items:center;gap:8px}
   </style>
 </head>
 <body>
@@ -110,6 +112,17 @@
             <label class="form-label">人设</label>
             <textarea id="bioInput" class="form-textarea" required></textarea>
           </div>
+
+          <!-- 新增：允许后台活动 -->
+          <div class="form-group">
+            <label class="form-label">允许后台活动</label>
+            <label class="switch">
+              <input type="checkbox" id="allowBgInput">
+              <span>到事件时间时，可由系统触发向我发送 prompt</span>
+            </label>
+            <div class="hint">开启后，“事件”到点会在你不在线时排队，返回聊天页或页面激活后自动驱动回复。</div>
+          </div>
+
           <div class="btns">
             <button type="button" class="btn ghost" id="cancelEdit">取消</button>
             <button type="submit" class="btn primary">保存</button>
@@ -123,10 +136,20 @@
 (() => {
   'use strict';
 
+  /* ---------------- 常量 Key ---------------- */
+  const LS_CHAR    = 'eg_characters_v2';
+  const LS_THREADS = 'eg_threads_v1';
+  const LS_IDS     = 'eg_user_identities_v1';
+  const LS_EVENTS  = 'eg_events_v1';
+  const LS_BGQ     = 'eg_bg_queue_v1';
+
   /* ---------------- 小工具 ---------------- */
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const isImg = s => typeof s === 'string' && (s.startsWith('data:') || s.startsWith('http'));
+  const toJSON = (k, df) => { try{ return JSON.parse(localStorage.getItem(k) || ''); }catch(_){ return df; } };
+  const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  const uid = ()=>'e_'+Math.random().toString(36).slice(2,10);
 
   const chat     = $('#chatList');
   const ipt      = $('#ipt');
@@ -135,52 +158,48 @@
   const inputBar = $('#inputBar');
 
   /* ---------------- 布局/键盘适配 ---------------- */
+  function layout(){
+    const navHeight = nav.offsetHeight;
+    const inputHeight = inputBar.offsetHeight;
+    chat.style.top = navHeight + 'px';
+    chat.style.bottom = inputHeight + 'px';
+  }
   function bindKeyboardFit(){
     layout();
     if (!window.visualViewport) return;
     const vv = window.visualViewport;
-    
-    // 阻止视口滚动
-    const preventScroll = (e) => {
-      window.scrollTo(0, 0);
-    };
-    
     const onVV = () => {
-      // 立即阻止滚动
-      window.scrollTo(0, 0);
-      
       const windowHeight = window.innerHeight;
       const viewportHeight = vv.height;
       const keyboardHeight = windowHeight - viewportHeight;
-      
+
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+
       if (keyboardHeight > 100) {
-        // 键盘弹起
         inputBar.style.position = 'fixed';
         inputBar.style.bottom = `${keyboardHeight}px`;
         const navHeight = nav.offsetHeight;
         const inputRect = inputBar.getBoundingClientRect();
         chat.style.top = `${navHeight}px`;
         chat.style.bottom = `${windowHeight - inputRect.top}px`;
+        nav.style.position = 'fixed';
+        nav.style.top = '0';
       } else {
-        // 键盘收起
         inputBar.style.position = 'fixed';
         inputBar.style.bottom = '0';
-        // 重新计算布局，确保没有空隙
-        requestAnimationFrame(() => {
-          layout();
-        });
+        nav.style.position = 'fixed';
+        nav.style.top = '0';
+        requestAnimationFrame(() => { layout(); });
       }
       setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
     };
-    
     vv.addEventListener('resize', onVV);
-    vv.addEventListener('scroll', (e) => {
-      preventScroll(e);
-      onVV();
-    });
+    vv.addEventListener('scroll', onVV);
     window.addEventListener('resize', onVV);
-    window.addEventListener('scroll', preventScroll, { passive: false });
   }
+
   /* ---------------- 数据：角色 & 身份 ---------------- */
   const urlParams   = new URLSearchParams(location.search);
   const characterId = urlParams.get('id') || sessionStorage.getItem('currentChatId') || 'nash';
@@ -190,36 +209,28 @@
 
   // 身份卡
   let identities = [];
-  let activeIdentity = null; // 当前角色实际绑定/生效的身份
+  let activeIdentity = null;
 
   function loadCharacters(){
-    try{
-      const stored = localStorage.getItem('eg_characters_v2');
-      characters = stored ? JSON.parse(stored) : [];
-    }catch(e){ characters = []; }
+    characters = toJSON(LS_CHAR, []) || [];
     if (!characters.length){
-      characters = [{ id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊' }];
-      localStorage.setItem('eg_characters_v2', JSON.stringify(characters));
+      characters = [{ id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊', allowBG:false }];
+      saveJSON(LS_CHAR, characters);
     }
     current = characters.find(c => c.id === characterId) || characters[0];
     setTitleTyping(false);
   }
 
   function loadIdentities(){
-    try{
-      identities = JSON.parse(localStorage.getItem('eg_user_identities_v1') || '[]') || [];
-    }catch(e){ identities = []; }
+    identities = toJSON(LS_IDS, []) || [];
     if (!identities.length){
       identities = [{ id:'u_default', name:'User', nickname:'我', avatar:'👤', bio:'', boundCharIds:[], kind:'identity' }];
-      localStorage.setItem('eg_user_identities_v1', JSON.stringify(identities));
+      saveJSON(LS_IDS, identities);
     }
-    // 计算“默认身份卡”的自动绑定（= 未被其它身份占用的角色）
     refreshDefaultBinding();
-    // 计算当前角色的实际生效身份
     activeIdentity = getActiveIdentityFor(characterId);
   }
 
-  // 默认身份 = identities[0]
   function refreshDefaultBinding(){
     if (!identities.length) return;
     const def = identities[0];
@@ -227,32 +238,29 @@
     const taken = new Set();
     identities.slice(1).forEach(u => (u.boundCharIds||[]).forEach(cid => taken.add(cid)));
     def.boundCharIds = allCharIds.filter(cid => !taken.has(cid));
-    try{ localStorage.setItem('eg_user_identities_v1', JSON.stringify(identities)); }catch(_){}
+    saveJSON(LS_IDS, identities);
   }
   function getActiveIdentityFor(charId){
-    // 优先找“非默认”里谁绑定了 charId
     for (let i=1;i<identities.length;i++){
       const u = identities[i];
       if (Array.isArray(u.boundCharIds) && u.boundCharIds.includes(charId)) return u;
     }
-    // 否则回落默认
     return identities[0];
   }
 
-  // 身份变化监听（从“我”页联动过来）
   window.addEventListener('storage', e=>{
-    if (e.key === 'eg_evt_ping' || e.key === 'eg_evt_chars' || e.key === 'eg_user_identities_v1'){
+    if (e.key === 'eg_evt_ping' || e.key === 'eg_evt_chars' || e.key === LS_IDS){
       loadIdentities();
-      // 立刻刷新我的头像缓存
       myAvatarCache = null;
+    }
+    if (e.key === 'eg_bg_queue_ping'){
+      drainBackgroundQueue(); // 有新后台任务时尝试拉取
     }
   });
 
   /* ---------------- 历史消息存储 ---------------- */
-  function getThreads(){
-    try{ return JSON.parse(localStorage.getItem('eg_threads_v1') || '{}'); }catch(e){ return {}; }
-  }
-  function saveThreads(map){ localStorage.setItem('eg_threads_v1', JSON.stringify(map)); }
+  function getThreads(){ return toJSON(LS_THREADS, {}) || {}; }
+  function saveThreads(map){ saveJSON(LS_THREADS, map); }
 
   /* ---------------- 渲染历史 ---------------- */
   function loadHistory(){
@@ -345,16 +353,16 @@
     saveThreads(threads);
 
     try{
-      const list = JSON.parse(localStorage.getItem('eg_characters_v2') || '[]');
+      const list = toJSON(LS_CHAR, []) || [];
       const it = list.find(c => c.id === characterId);
-      if (it){ it.lastTime = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); localStorage.setItem('eg_characters_v2', JSON.stringify(list)); }
+      if (it){ it.lastTime = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); saveJSON(LS_CHAR, list); }
     }catch(e){}
 
     bufferMsgs.push(text);
     if (document.activeElement !== ipt) scheduleFlush();
   }
 
-  /* ---------------- LLM 调用：把身份卡作为“用户上下文（可见但不扮演）” ---------------- */
+  /* ---------------- LLM 调用 & 事件解析 ---------------- */
   function buildPersonaSystemPrompt(role){
     const name = role.nickname || role.name || 'Ta';
     return `你是一名角色对话助手，请严格扮演以下人设进行简洁自然的中文回复。
@@ -388,8 +396,40 @@
     return final;
   }
 
+  // 解析 EG_EVENT 指令并写入事件仓库
+  function tryParseAndSaveEvent(fullText){
+    try{
+      const m = fullText.match(/EG_EVENT\s*:\s*(\{[\s\S]*?\})|<eg_event>([\s\S]*?)<\/eg_event>/i);
+      const raw = m ? (m[1] || m[2]) : null;
+      if (!raw) return;
+      const obj = JSON.parse(raw);
+
+      const events = toJSON(LS_EVENTS, []) || [];
+      const ids = toJSON(LS_IDS, []) || [];
+      const identityId = obj.identityId || ids?.[0]?.id || null;
+      const identityName = (ids?.find(x=>x.id===identityId) || ids?.[0] || {nickname:'我'}).nickname || '我';
+
+      const rec = {
+        id: uid(),
+        type: (obj.type==='note') ? 'note' : 'agreement',
+        name: String(obj.name || '未命名'),
+        time: obj.time || null,          // 支持 "2025-10-25 12:00" 或 ISO
+        freq: obj.freq || 'once',        // once/year/month/week/day
+        identityId,
+        identityName,
+        charIds: Array.isArray(obj.charIds) ? obj.charIds : (obj.type==='agreement' ? [characterId] : []),
+        visibleCharIds: Array.isArray(obj.visibleCharIds) ? obj.visibleCharIds : (obj.type==='note' ? [characterId] : []),
+        lastFireAt: null
+      };
+      events.push(rec);
+      saveJSON(LS_EVENTS, events);
+      // 通知事件页刷新
+      localStorage.setItem('eg_evt_ping', String(Date.now()));
+    }catch(e){}
+  }
+
   async function askLLM(history, mergedUserText){
-    const cfg = JSON.parse(localStorage.getItem('eg_main_model_cfg') || '{}');
+    const cfg = toJSON('eg_main_model_cfg', {}) || {};
     const apiKey = (cfg.apiKey||'').trim();
     const base   = (cfg.base||'').trim().replace(/\/+$/,'');
     const model  = (cfg.model||'').trim();
@@ -398,7 +438,6 @@
     isStreaming = true;
     setTitleTyping(true);
 
-    // 系统提示 = 角色扮演 + 用户身份上下文（可见但不扮演）
     const sysText = buildPersonaSystemPrompt(current) + buildUserContextPrompt(activeIdentity);
     const sys = { role:'system', content: sysText };
 
@@ -417,6 +456,11 @@
 
       const data = await res.json();
       const full = (data?.choices?.[0]?.message?.content || '').trim();
+
+      // 1) 事件解析
+      if (full) tryParseAndSaveEvent(full);
+
+      // 2) 正常分片显示
       if (full){
         const chunks = splitChunks(full);
         const threads = getThreads();
@@ -438,6 +482,39 @@
     }
   }
 
+  /* ---------------- 后台队列：离线补发与即时驱动 ---------------- */
+  async function drainBackgroundQueue(){
+    let q = toJSON(LS_BGQ, []) || [];
+    const mine = q.filter(x=>x.charId===characterId);
+    if (!mine.length) return;
+    // 过滤掉当前角色的任务
+    q = q.filter(x=>x.charId!==characterId);
+    saveJSON(LS_BGQ, q);
+
+    // 按时间顺序处理
+    mine.sort((a,b)=>(a.ts||0)-(b.ts||0));
+    for(const job of mine){
+      // 1) 将系统提示作为一条“用户消息”注入到当前线程（时间 = 事件时间）
+      const threads = getThreads();
+      const t = threads[characterId] || (threads[characterId] = { id: characterId, messages: [] });
+      t.messages.push({ role:'user', content: job.prompt, ts: job.ts || Date.now(), meta:{system:true, auto:true} });
+      saveThreads(threads);
+
+      // 2) UI 也给出一条“我”的气泡，保持上下文（不显示 ts，但存储里已是事件时间）
+      push('me', job.prompt);
+
+      // 3) 立刻触发 LLM（利用聚合函数，传空合并文本，让模型根据系统提示回应）
+      await new Promise(r=>setTimeout(r, 50));
+      await askLLM(t.messages, '');
+    }
+  }
+
+  // 页面获得焦点/可见时尝试拉取队列
+  window.addEventListener('focus', drainBackgroundQueue);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) drainBackgroundQueue(); });
+  // 首次进入也尝试一次
+  setTimeout(drainBackgroundQueue, 300);
+
   /* ---------------- 返回/编辑 ---------------- */
   $('#backBtn').addEventListener('click', () => {
     if (window.openAppPage){ window.openAppPage('message.html'); return; }
@@ -449,6 +526,7 @@
     $('#nameInput').value = current.name || '';
     $('#nickInput').value = current.nickname || '';
     $('#bioInput').value  = current.bio || '';
+    $('#allowBgInput').checked = !!current.allowBG;
     const up = $('#avatarUpload');
     if (current.avatar && isImg(current.avatar)){ up.innerHTML = '<img src="'+current.avatar+'">'; }
     else { up.innerHTML = current.avatar || '👤'; }
@@ -468,20 +546,31 @@
     current.name     = $('#nameInput').value.trim() || current.name;
     current.nickname = $('#nickInput').value.trim() || current.nickname || current.name;
     current.bio      = $('#bioInput').value.trim() || current.bio;
+    current.allowBG  = !!$('#allowBgInput').checked;
 
-    const list = JSON.parse(localStorage.getItem('eg_characters_v2') || '[]');
+    const list = toJSON(LS_CHAR, []) || [];
     const idx  = list.findIndex(c => c.id === current.id);
     if (idx >= 0) list[idx] = current;
-    localStorage.setItem('eg_characters_v2', JSON.stringify(list));
+    saveJSON(LS_CHAR, list);
+
+    // 告知“事件引擎”等有变更（角色 allowBG 影响触发）
+    try{ localStorage.setItem('eg_evt_chars', String(Date.now())); }catch(_){}
+
     setTitleTyping(false);
     $('#editModal').classList.remove('show');
   });
 
   /* ---------------- 启动 ---------------- */
+  function loadHistoryAndMaybeTick(){
+    loadHistory();
+    // 页面进入时也尝试触发一次队列（以防 storage 事件没捕获）
+    drainBackgroundQueue();
+  }
+
   bindKeyboardFit();
   loadCharacters();
-  loadIdentities();     // ★ 加载身份并计算当前角色的有效身份
-  loadHistory();
+  loadIdentities();
+  loadHistoryAndMaybeTick();
 })();
 </script>
 </body>
