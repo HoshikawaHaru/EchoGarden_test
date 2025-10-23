@@ -133,59 +133,55 @@
   const titleEl  = $('#title');
   const nav      = $('#navBar');
   const inputBar = $('#inputBar');
-  const app      = $('.chat-app'); // 👈 加上这一行
 
   /* ---------------- 布局/键盘适配 ---------------- */
-function bindKeyboardFit(){
-    // 1. 获取所有需要动态布局的元素
+  function layout(){
     const navHeight = nav.offsetHeight;
     const inputHeight = inputBar.offsetHeight;
-
-    // 2. 设置 chat-list 的顶部
-    //    这个值永远不会变
     chat.style.top = navHeight + 'px';
-
-    // 3. 检查 visualViewport API 是否存在
-    if (!window.visualViewport) {
-      // (B) 不支持 VV 的旧浏览器 (例如桌面端)
-      //     保持原始的简单布局
-      chat.style.bottom = inputHeight + 'px';
-      return;
-    }
-
-    // --- (A) 支持 VV 的现代移动浏览器 ---
+    chat.style.bottom = inputHeight + 'px';
+  }
+  function bindKeyboardFit(){
+    layout();
+    if (!window.visualViewport) return;
     const vv = window.visualViewport;
-
-    // 4. 定义布局函数
-    //    这个函数会在“视口变化时”被调用
-    const onViewportChange = () => {
-      // 5. 计算键盘高度
-      //    在 iOS PWA 中, window.innerHeight 是固定的 (屏幕高度)
-      //    vv.height 是可见区域高度 (屏幕高度 - 键盘高度)
-      const keyboardHeight = window.innerHeight - vv.height;
-
-      // 6. 移动输入框
-      //    当键盘弹出时, keyboardHeight > 0, inputBar 上移
-      //    当键盘收起时, keyboardHeight = 0, inputBar 归位 (bottom: 0px)
-      inputBar.style.bottom = `${keyboardHeight}px`;
-
-      // 7. 调整聊天列表的底部
-      //    聊天列表的 bottom = 输入框的自然高度 + 键盘高度
-      //    (这修复了“灰边”问题)
-      chat.style.bottom = `${inputHeight + keyboardHeight}px`;
+    const onVV = () => {
+      const windowHeight = window.innerHeight;
+      const viewportHeight = vv.height;
+      const keyboardHeight = windowHeight - viewportHeight;
       
-      // 8. 滚动到底部
-      //    用一个短暂延迟确保布局先生效，再滚动
-      setTimeout(() => {
-        chat.scrollTop = chat.scrollHeight;
-      }, 100);
-    }
-
-    // 9. 绑定监听
-    vv.addEventListener('resize', onViewportChange);
-    
-    // 10. 立即执行一次，完成初始布局
-    onViewportChange();
+      // 防止页面整体滚动
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      
+      if (keyboardHeight > 100) {
+        // 键盘弹起
+        inputBar.style.position = 'fixed';
+        inputBar.style.bottom = `${keyboardHeight}px`;
+        const navHeight = nav.offsetHeight;
+        const inputRect = inputBar.getBoundingClientRect();
+        chat.style.top = `${navHeight}px`;
+        chat.style.bottom = `${windowHeight - inputRect.top}px`;
+        // 保持导航栏固定在顶部
+        nav.style.position = 'fixed';
+        nav.style.top = '0';
+      } else {
+        // 键盘收起
+        inputBar.style.position = 'fixed';
+        inputBar.style.bottom = '0';
+        nav.style.position = 'fixed';
+        nav.style.top = '0';
+        // 重新计算布局，确保没有空隙
+        requestAnimationFrame(() => {
+          layout();
+        });
+      }
+      setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
+    };
+    vv.addEventListener('resize', onVV);
+    vv.addEventListener('scroll', onVV);
+    window.addEventListener('resize', onVV);
   }
   /* ---------------- 数据：角色 & 身份 ---------------- */
   const urlParams   = new URLSearchParams(location.search);
