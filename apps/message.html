@@ -76,18 +76,28 @@
 
     /* ===== 我（身份卡）Tab（垂直居中 + 下拉多选 + 指示点） ===== */
     :root{ --bg:#f2f2f7; --card-bg:#fff; --muted:#666; --hair:#ddd; --tint:#1677ff; --ok:#34c759; --warn:#ff3b30; }
-/* 我（身份卡）Tab：垂直居中显示"卡片 + 指示点"整体 */
-/* 我（身份卡）Tab：垂直居中显示"卡片 + 指示点"整体 */
+
+    /* 我（身份卡）Tab：垂直居中显示"卡片 + 指示点"整体 */
 #tab-me{
-  position:relative; display:flex; flex-direction:column; flex:1; min-height:0; 
+  position:absolute; 
+  top:calc(44px + var(--safe-top)); 
+  left:0; 
+  right:0; 
+  bottom:calc(50px + var(--safe-bottom));
+  display:flex; 
+  flex-direction:column; 
   background:var(--bg);
 }
 
 /* 这个容器负责把"卡片+指示点"整体在可用空间内垂直居中 */
 .id-wrap{
-  flex:1; min-height:0;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:0;   /* 移除内边距，让 justify-content 自动计算居中 */
+  flex:1; 
+  min-height:0;
+  display:flex; 
+  flex-direction:column; 
+  align-items:center; 
+  justify-content:center;
+  padding:0;
 }
 
 /* 横向走马灯 */
