@@ -133,6 +133,7 @@
   const titleEl  = $('#title');
   const nav      = $('#navBar');
   const inputBar = $('#inputBar');
+  const app      = $('.chat-app'); // 👈 加上这一行
 
   /* ---------------- 布局/键盘适配 ---------------- */
   function layout(){
@@ -141,47 +142,43 @@
     chat.style.top = navHeight + 'px';
     chat.style.bottom = inputHeight + 'px';
   }
-  function bindKeyboardFit(){
-    layout();
+function bindKeyboardFit(){
+    layout(); // 初始布局
     if (!window.visualViewport) return;
+
     const vv = window.visualViewport;
+
     const onVV = () => {
-      const windowHeight = window.innerHeight;
-      const viewportHeight = vv.height;
-      const keyboardHeight = windowHeight - viewportHeight;
-      
-      // 防止页面整体滚动
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.height = '100%';
-      
-      if (keyboardHeight > 100) {
-        // 键盘弹起
-        inputBar.style.position = 'fixed';
-        inputBar.style.bottom = `${keyboardHeight}px`;
-        const navHeight = nav.offsetHeight;
-        const inputRect = inputBar.getBoundingClientRect();
-        chat.style.top = `${navHeight}px`;
-        chat.style.bottom = `${windowHeight - inputRect.top}px`;
-        // 保持导航栏固定在顶部
-        nav.style.position = 'fixed';
-        nav.style.top = '0';
-      } else {
-        // 键盘收起
-        inputBar.style.position = 'fixed';
-        inputBar.style.bottom = '0';
-        nav.style.position = 'fixed';
-        nav.style.top = '0';
-        // 重新计算布局，确保没有空隙
-        requestAnimationFrame(() => {
-          layout();
-        });
-      }
-      setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
+        // 1. 锚定主容器 .chat-app 到可视窗口
+        //    - 使用 transform 抵消浏览器滚动（解决问题1）
+        //    - 使用 vv.height 设置高度（解决问题2）
+        app.style.transform = `translateY(${vv.offsetTop}px)`;
+        app.style.height = `${vv.height}px`;
+
+        // 2. 覆盖 CSS 的 inset: 0，以便 height 和 transform 生效
+        app.style.top = '0';
+        app.style.bottom = 'auto';
+
+        // 3. 重置 inputBar 的内联样式
+        //    - 因为 app 容器应用了 transform，
+        //    - inputBar (fixed, bottom: 0) 会自动贴在 app 底部，
+        //    - 也就是可视窗口的底部，不再需要JS计算 bottom。
+        inputBar.style.position = '';
+        inputBar.style.bottom = '';
+
+        // 4. 重新计算 chat-list 的边界
+        layout();
+        
+        // 5. 滚动到底部
+        setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
     };
+
     vv.addEventListener('resize', onVV);
     vv.addEventListener('scroll', onVV);
     window.addEventListener('resize', onVV);
+    
+    // 立即执行一次以设置初始状态
+    onVV();
   }
   /* ---------------- 数据：角色 & 身份 ---------------- */
   const urlParams   = new URLSearchParams(location.search);
