@@ -81,10 +81,9 @@
 #tab-me{
   flex:1;
   min-height:0;
-  display:none;  /* 默认隐藏 */
+  display:none;
   flex-direction:column; 
   background:var(--bg);
-  overflow:hidden;
 }
 
 /* 这个容器负责把"卡片+指示点"整体在可用空间内垂直居中 */
@@ -95,7 +94,8 @@
   flex-direction:column; 
   align-items:center; 
   justify-content:center;
-  overflow:hidden;
+  gap:0;
+  padding:20px 0;  /* 给整体上下留白 */
 }
 
 /* 横向走马灯 */
@@ -104,12 +104,13 @@
   width:100%;
   max-width:100%;
   overflow-x:auto; 
-  overflow-y:hidden;
+  overflow-y:visible;
   scroll-snap-type:x mandatory;
   display:flex; 
   gap:18px; 
-  padding:20px clamp(16px, 5vw, 32px);   /* 上下内边距 + 左右内边距 */
+  padding:0 clamp(16px, 5vw, 32px);   /* 只保留左右内边距 */
   align-items:flex-start;
+  -webkit-overflow-scrolling:touch;
 }
 
 /* 卡片保持响应式宽度、加长一点 */
