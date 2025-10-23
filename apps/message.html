@@ -284,7 +284,7 @@
       });
     }
 
-    /* ========= 我（身份卡）——互斥绑定 + 下拉多选 ========= */
+    /* ========= 我（身份卡）——互斥绑定 + 下拉多选 + 输入即保存 ========= */
     (function(){
       const LS_ID='eg_user_identities_v1', LS_CHAR='eg_characters_v2';
       const $=s=>document.querySelector(s); const idCarousel=$('#idCarousel'); const dots=$('#dots');
@@ -342,6 +342,14 @@
         const u={kind:'identity',id:uid(),name:'',nickname:'',avatar:'👤',bio:'',boundCharIds:[]};
         identities.push(u); save(LS_ID,identities); refreshBindings(); render(); setTimeout(()=> setCardEditing(u.id,true),0);
       };
+
+      // ★ 输入即保存：写回工具
+      function writeField(uid, key, val){
+        const u = identities.find(x => x.id === uid);
+        if (!u) return;
+        u[key] = val;
+        save(LS_ID, identities);   // 立刻落盘，防止 render 丢失
+      }
 
       function render(){
         if(!idCarousel) return;
@@ -476,6 +484,8 @@
         // 卡片按钮
         idCarousel.querySelectorAll('.id-card').forEach(card=>{
           const uid=card.dataset.id;
+
+          // 编辑/保存/删除/导入导出
           card.querySelector('[data-act="edit"]').addEventListener('click', ()=> setCardEditing(uid,true));
           card.querySelector('[data-act="save"]').addEventListener('click', ()=>{
             const u=identities.find(x=>x.id===uid);
@@ -493,20 +503,25 @@
           card.querySelector('[data-act="import"]').addEventListener('click', doImport);
           card.querySelector('[data-act="export"]').addEventListener('click', doExport);
 
-          // 头像（仅编辑态可改）
+          // 头像（仅编辑态可改）——就地保存
           card.querySelector('.id-avatar').addEventListener('click', ()=>{
             const editable = !card.querySelector('.input').readOnly; if(!editable) return;
             const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
             inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return; const b64=await fileToDataURL(f);
-              const u=identities.find(x=>x.id===uid); u.avatar=b64; save(LS_ID,identities); render(); broadcast();
+              writeField(uid, 'avatar', b64); render(); broadcast();
             };
             inp.click();
           });
-        });
 
-        idCarousel.querySelectorAll('.input,.textarea').forEach(el=>{
-          el.addEventListener('input', ()=>{
-            const card=el.closest('.id-card'); const saveBtn=card.querySelector('[data-act="save"]'); if(saveBtn) saveBtn.disabled=false;
+          // ★ 输入即保存：姓名/昵称/设定实时写回
+          card.querySelectorAll('.input,.textarea').forEach(el=>{
+            const key = el.getAttribute('data-k'); // name | nickname | bio
+            if (!key) return;
+            el.addEventListener('input', ()=>{
+              writeField(uid, key, el.value);
+              const saveBtn = card.querySelector('[data-act="save"]');
+              if (saveBtn) saveBtn.disabled = false;
+            });
           });
         });
       }
