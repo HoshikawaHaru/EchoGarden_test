@@ -183,6 +183,81 @@
     <!-- 聊天Tab 内容面板 -->
     <div class="msg-chat-list" id="msgChatList"></div>
 
+    <!-- 事件Tab 内容面板 -->
+<section id="tab-events" role="tabpanel" aria-label="事件" style="display:none;overflow:auto;-webkit-overflow-scrolling:touch;">
+  <div style="padding:12px">
+    <!-- 我们的约定 -->
+    <h3 style="font-size:15px;color:#111;margin:6px 4px 8px;">我们的约定</h3>
+    <div id="evt-contract-list"></div>
+    <button id="evt-add-contract" class="msg-btn-primary" style="margin:10px 0 18px;">添加约定</button>
+
+    <!-- 我的记事本 -->
+    <h3 style="font-size:15px;color:#111;margin:6px 4px 8px;">我的记事本</h3>
+    <div id="evt-notes-list"></div>
+    <button id="evt-add-note" class="msg-btn-primary" style="margin:10px 0 18px;background:#5856d6;">添加记事</button>
+  </div>
+
+  <!-- 事件表单 Modal -->
+  <div class="msg-modal" id="evtModal">
+    <div class="msg-modal-content">
+      <div class="msg-modal-header">
+        <div class="msg-modal-title">编辑事件</div>
+        <div class="msg-modal-close" id="evtClose">×</div>
+      </div>
+      <div class="msg-modal-body">
+        <form id="evtForm">
+          <input type="hidden" id="evtId" />
+          <div class="msg-form-group">
+            <label class="msg-form-label">类型</label>
+            <select class="msg-form-input" id="evtType">
+              <option value="contract">我们的约定</option>
+              <option value="note">我的记事本</option>
+            </select>
+          </div>
+
+          <div class="msg-form-group">
+            <label class="msg-form-label">我的身份（可选）</label>
+            <select class="msg-form-input" id="evtIdentity"></select>
+          </div>
+
+          <div class="msg-form-group" id="evtCharGroup">
+            <label class="msg-form-label">涉及/可见角色（多选，需为所选身份绑定的角色）</label>
+            <div id="evtChars" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;"></div>
+          </div>
+
+          <div class="msg-form-group">
+            <label class="msg-form-label">事件名称</label>
+            <input class="msg-form-input" id="evtTitle" placeholder="如：周六中午野餐 / 生日" required />
+          </div>
+
+          <div class="msg-form-group">
+            <label class="msg-form-label">事件频次</label>
+            <select class="msg-form-input" id="evtFreq">
+              <option value="once">单次</option>
+              <option value="year">年度</option>
+              <option value="month">月度</option>
+              <option value="week">周度</option>
+              <option value="day">日度</option>
+            </select>
+          </div>
+
+          <div class="msg-form-group">
+            <label class="msg-form-label">时间（可选）</label>
+            <input class="msg-form-input" id="evtTime" type="datetime-local" />
+          </div>
+
+          <div class="msg-form-group">
+            <label class="msg-form-label">后台提示词（选填，留空用系统默认）</label>
+            <textarea class="msg-form-textarea" id="evtPrompt" placeholder="如：现在是{title}时间…"></textarea>
+          </div>
+
+          <button type="submit" class="msg-btn-primary">保存</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
     <!-- 我（身份卡）Tab 内容面板 -->
     <section id="tab-me" role="tabpanel" aria-label="我的身份">
       <div class="id-wrap">
@@ -604,36 +679,282 @@
       var map={chat:'新建角色', me:'新建身份', moments:'发动态', events:'添加事件'};
       addBtn.setAttribute('aria-label', map[EG_CURRENT_TAB]||'新建');
     }
-    function initTabs(){
-      const items=document.querySelectorAll('.msg-tab-item');
-      const viewChat=document.getElementById('msgChatList');
-      const viewMe=document.getElementById('tab-me');
-      function show(name){
-        EG_CURRENT_TAB=name;
-        if(viewChat) viewChat.style.display=(name==='chat')?'block':'none';
-        if(viewMe)   viewMe.style.display  =(name==='me')  ?'block':'none';
-        setTopTitle(name==='me' ? '我的身份卡' : '消息');
-        updateAddButtonForTab();
-        items.forEach(el=>el.classList.remove('active'));
-        if(name==='chat') items[0]?.classList.add('active');
-        if(name==='me')   items[3]?.classList.add('active');
-      }
-      items[0]?.addEventListener('click', ()=>show('chat'));
-      items[1]?.addEventListener('click', ()=>alert('事件：开发中'));
-      items[2]?.addEventListener('click', ()=>alert('朋友圈：开发中'));
-      items[3]?.addEventListener('click', ()=>show('me'));
-      show('chat');
-      window.EGTab=Object.assign(window.EGTab||{},{show});
+function initTabs(){
+  const items=document.querySelectorAll('.msg-tab-item');
+  const viewChat=document.getElementById('msgChatList');
+  const viewEvents=document.getElementById('tab-events');   // ★
+  const viewMe=document.getElementById('tab-me');
+
+  function show(name){
+    EG_CURRENT_TAB=name;
+    if(viewChat)   viewChat.style.display   =(name==='chat')   ?'block':'none';
+    if(viewEvents) viewEvents.style.display =(name==='events') ?'block':'none';   // ★
+    if(viewMe)     viewMe.style.display     =(name==='me')     ?'block':'none';
+    setTopTitle(name==='me' ? '我的身份卡' : (name==='events'?'事件':'消息'));
+    updateAddButtonForTab();
+    items.forEach(el=>el.classList.remove('active'));
+    if(name==='chat')   items[0]?.classList.add('active');
+    if(name==='events') items[1]?.classList.add('active');    // ★
+    if(name==='me')     items[3]?.classList.add('active');
+  }
+  items[0]?.addEventListener('click', ()=>show('chat'));
+  items[1]?.addEventListener('click', ()=>show('events'));     // ★
+  items[2]?.addEventListener('click', ()=>alert('朋友圈：开发中'));
+  items[3]?.addEventListener('click', ()=>show('me'));
+  show('chat');
+  window.EGTab=Object.assign(window.EGTab||{},{show});
+}
+function updateAddButtonForTab(){
+  var addBtn=document.getElementById('addBtn'); if(!addBtn) return;
+  var map={chat:'新建角色', events:'添加事件', me:'新建身份', moments:'发动态'};
+  addBtn.setAttribute('aria-label', map[EG_CURRENT_TAB]||'新建');
+}
+function onGlobalAdd(){
+  switch(EG_CURRENT_TAB){
+    case 'chat':    showModal(); break;
+    case 'events':  window.EGEvents?.openEditor(); break;      // ★
+    case 'me':      window.openIdentityEditor?.(); break;
+    default:        showModal();
+  }
+}
+    /* ================= 事件引擎（我们的约定/我的记事本） ================= */
+(function(){
+  const LS_EVT='eg_events_v1';
+  const LS_ID='eg_user_identities_v1';
+  const LS_CHAR='eg_characters_v2';
+
+  function load(k,df){ try{ const t=localStorage.getItem(k); return t?JSON.parse(t):df; }catch(e){ return df; } }
+  function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+  function uid(){ return 'e_' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
+  const now = ()=> new Date();
+
+  // 计算下次发生时间（支持 once/year/month/week/day；若未填时间，返回 null）
+  function nextOccurrence(e){
+    if(!e.datetimeISO) return null;
+    const base = e.lastFiredAtISO ? new Date(e.lastFiredAtISO) : new Date(e.datetimeISO);
+    const ref  = e.lastFiredAtISO ? new Date(e.datetimeISO) : new Date(); // 首次基于目标 vs 之后基于 now 递增
+    let dt = new Date(e.datetimeISO);
+    while(dt < now()){
+      if(e.frequency==='once') break;
+      if(e.frequency==='year')  dt.setFullYear(dt.getFullYear()+1);
+      else if(e.frequency==='month') dt.setMonth(dt.getMonth()+1);
+      else if(e.frequency==='week')  dt.setDate(dt.getDate()+7);
+      else if(e.frequency==='day')   dt.setDate(dt.getDate()+1);
+      else break;
     }
-    function onGlobalAdd(){
-      switch(EG_CURRENT_TAB){
-        case 'chat':    showModal(); break;
-        case 'me':      if (typeof window.openIdentityEditor==='function') window.openIdentityEditor(); else alert('打开身份编辑器失败'); break;
-        case 'moments': alert('发动态：开发中'); break;
-        case 'events':  alert('添加事件：开发中'); break;
-        default:        showModal();
+    if(e.frequency==='once' && dt < now()) return null; // 过期
+    return dt;
+  }
+  function fmtCountdown(dt){
+    if(!dt) return '——';
+    const ms = dt - now(); if(ms<=0) return '进行中';
+    const d = Math.floor(ms/86400000);
+    const h = Math.floor((ms%86400000)/3600000);
+    const m = Math.floor((ms%3600000)/60000);
+    return (d?`${d}天`:'') + (h?`${h}小时`:'') + (d||h?``:`${m}分钟`);
+  }
+
+  // 渲染
+  const elC = document.getElementById('evt-contract-list');
+  const elN = document.getElementById('evt-notes-list');
+  function render(){
+    const events = load(LS_EVT,[]);
+    const ids = load(LS_ID,[]);
+    const chars = load(LS_CHAR,[]);
+    const idMap = Object.fromEntries(ids.map(x=>[x.id, x]));
+    const chMap = Object.fromEntries(chars.map(x=>[x.id, x]));
+
+    function card(e){
+      const next = nextOccurrence(e);
+      const participants = (e.participants||[]).map(id=>chMap[id]?.nickname||chMap[id]?.name||id).join('、') || '—';
+      const idName = e.identityId ? (idMap[e.identityId]?.nickname||idMap[e.identityId]?.name||'我') : '我';
+      return `
+        <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:12px;margin:8px 0;box-shadow:0 1px 0 rgba(0,0,0,.05)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div style="font-weight:600;color:#000">${e.title||'(未命名)'} <small style="color:#666">· ${idName}</small></div>
+            <div>
+              <button data-act="edit" data-id="${e.id}" class="mini">编辑</button>
+              <button data-act="del"  data-id="${e.id}" class="mini" style="background:#ff3b30;color:#fff">删除</button>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#666;margin-top:6px">角色：${participants}</div>
+          <div style="font-size:12px;color:#666;margin-top:4px">频次：${({'once':'单次','year':'年度','month':'月度','week':'周度','day':'日度'})[e.frequency]||'—'}</div>
+          <div style="font-size:12px;color:#666;margin-top:4px">时间：${e.datetimeISO?new Date(e.datetimeISO).toLocaleString():'未填写'}</div>
+          <div style="font-size:13px;color:#111;margin-top:8px">距离事件还有：<b>${fmtCountdown(next)}</b></div>
+        </div>`;
+    }
+
+    const C = events.filter(x=>x.type==='contract').sort((a,b)=>(nextOccurrence(a)||1e15)-(nextOccurrence(b)||1e15));
+    const N = events.filter(x=>x.type==='note').sort((a,b)=>(nextOccurrence(a)||1e15)-(nextOccurrence(b)||1e15));
+    if(elC) elC.innerHTML = C.length? C.map(card).join('') : '<div style="color:#999;padding:12px">暂无约定</div>';
+    if(elN) elN.innerHTML = N.length? N.map(card).join('') : '<div style="color:#999;padding:12px">暂无记事</div>';
+
+    (elC||document).querySelectorAll('[data-act="edit"],[data-act="del"]').forEach(btn=>btn.addEventListener('click', onCardBtn));
+    (elN||document).querySelectorAll('[data-act="edit"],[data-act="del"]').forEach(btn=>btn.addEventListener('click', onCardBtn));
+  }
+
+  function onCardBtn(e){
+    const id = e.currentTarget.dataset.id;
+    if(e.currentTarget.dataset.act==='del'){
+      if(confirm('删除该事件？')){
+        const arr=load(LS_EVT,[]).filter(x=>x.id!==id); save(LS_EVT,arr); render();
+      }
+    }else{
+      openEditor(id);
+    }
+  }
+
+  // 编辑器
+  const modal=document.getElementById('evtModal');
+  const form=document.getElementById('evtForm');
+  const closeBtn=document.getElementById('evtClose');
+  const addC=document.getElementById('evt-add-contract');
+  const addN=document.getElementById('evt-add-note');
+
+  function fillIdentityAndChars(identityId, participants){
+    const ids = load(LS_ID,[]); const chars = load(LS_CHAR,[]);
+    // 身份下拉
+    const sel=document.getElementById('evtIdentity');
+    sel.innerHTML = '<option value="">（不指定）</option>' + ids.map(u=>`<option value="${u.id}">${u.nickname||u.name||'我'}</option>`).join('');
+    if(identityId) sel.value = identityId;
+    // 角色（只展示该身份绑定的）
+    const targetId = sel.value || ids[0]?.id;
+    const bound = (ids.find(u=>u.id===targetId)?.boundCharIds)||[];
+    const box=document.getElementById('evtChars');
+    box.innerHTML = bound.map(cid=>{
+      const c = chars.find(x=>x.id===cid); const name = c?.nickname||c?.name||cid;
+      const checked = participants && participants.includes(cid) ? 'checked' : '';
+      return `<label style="display:flex;gap:6px;align-items:center;background:#f7f7f7;border:1px solid #eee;border-radius:8px;padding:8px;">
+        <input type="checkbox" value="${cid}" ${checked}/>
+        <span>${name}</span>
+      </label>`;
+    }).join('') || '<div style="color:#999">该身份暂未绑定角色</div>';
+    sel.onchange = ()=> fillIdentityAndChars(sel.value, collectChecked());
+  }
+  function collectChecked(){
+    return Array.from(document.querySelectorAll('#evtChars input[type=checkbox]:checked')).map(x=>x.value);
+  }
+
+  function openEditor(id){
+    const all=load(LS_EVT,[]); const one=all.find(x=>x.id===id)||{id:uid(),type:'contract',title:'',frequency:'once',datetimeISO:'',participants:[],identityId:'',promptTemplate:''};
+    document.getElementById('evtId').value=one.id;
+    document.getElementById('evtType').value=one.type||'contract';
+    document.getElementById('evtTitle').value=one.title||'';
+    document.getElementById('evtFreq').value=one.frequency||'once';
+    document.getElementById('evtTime').value= one.datetimeISO ? new Date(one.datetimeISO).toISOString().slice(0,16) : '';
+    document.getElementById('evtPrompt').value=one.promptTemplate||'';
+    fillIdentityAndChars(one.identityId, one.participants);
+    document.getElementById('evtIdentity').value = one.identityId||'';
+    modal.classList.add('show');
+  }
+  function closeEditor(){ modal.classList.remove('show'); }
+  closeBtn?.addEventListener('click', closeEditor);
+  modal?.addEventListener('click', e=>{ if(e.target===modal) closeEditor(); });
+  addC?.addEventListener('click', ()=>openEditor());
+  addN?.addEventListener('click', ()=>{ openEditor(); document.getElementById('evtType').value='note'; });
+
+  form?.addEventListener('submit', e=>{
+    e.preventDefault();
+    const id = document.getElementById('evtId').value || uid();
+    const obj = {
+      id,
+      type: document.getElementById('evtType').value,
+      title: document.getElementById('evtTitle').value.trim(),
+      frequency: document.getElementById('evtFreq').value,
+      datetimeISO: (document.getElementById('evtTime').value || '') ? new Date(document.getElementById('evtTime').value).toISOString() : '',
+      identityId: document.getElementById('evtIdentity').value || '',
+      participants: collectChecked(),
+      promptTemplate: document.getElementById('evtPrompt').value.trim(),
+      lastFiredAtISO: ''
+    };
+    if(!obj.title){ alert('请填写事件名称'); return; }
+    const arr=load(LS_EVT,[]);
+    const i=arr.findIndex(x=>x.id===id);
+    if(i>=0) arr[i]=Object.assign(arr[i], obj); else arr.push(obj);
+    save(LS_EVT,arr); closeEditor(); render();
+  });
+
+  // ===== 触发器：前台定时 + 离线补偿 =====
+  function buildDefaultPrompt(e, charName, identityName){
+    // contract / note 的两种默认提示
+    if(e.type==='contract'){
+      return `现在是「${e.title}」的约定时间。请以${charName}的语气，给${identityName}发一段自然、不超过3句的问候或行动描述。`;
+    }else{
+      return `${identityName}今天有「${e.title}」。请以${charName}的语气，给${identityName}发一段自然、不超过3句的关心。`;
+    }
+  }
+  async function fireEvent(e){
+    const ids = load(LS_ID,[]); const chars = load(LS_CHAR,[]);
+    const identity = e.identityId ? ids.find(x=>x.id===e.identityId) : ids[0];
+    const identityName = identity?.nickname||identity?.name||'用户';
+    const list = (e.participants||[]).map(cid=>chars.find(c=>c.id===cid)).filter(Boolean);
+
+    // 只对开启“后台活动”的角色触发
+    const targets = list.filter(c => !!c?.backgroundOn);
+
+    for(const ch of targets){
+      const prompt = e.promptTemplate || buildDefaultPrompt(e, (ch.nickname||ch.name||'Ta'), identityName);
+      await sendEventPromptToThread(ch.id, identity, prompt, e); // 写入对应会话
+    }
+
+    // 标记已触发
+    const arr=load(LS_EVT,[]);
+    const i=arr.findIndex(x=>x.id===e.id);
+    if(i>=0){
+      arr[i].lastFiredAtISO = new Date().toISOString();
+      // 单次：触发后自动清理（也可改为隐藏）
+      if(arr[i].frequency==='once') {
+        // 不直接删，保留记录到下一次 render 时自然显示“过期”；如需删：arr.splice(i,1);
+      }
+      save(LS_EVT,arr);
+    }
+  }
+
+  async function sendEventPromptToThread(charId, identity, userText, e){
+    // 把“事件时间”写进 ts，并在 ChatList 里更新时间显示
+    const threads = load('eg_threads_v1', {});
+    const mine = threads[charId] || (threads[charId] = { id:charId, messages:[] });
+    // 这里直接触发一轮 LLM：系统人设来自 message-detail 的 askLLM 逻辑，
+    // 但在当前页我们只“注入一条用户消息”，随后由聊天页自然生成；为了即时效果，这里直接合成一条“用户消息 + 触发 askLLM”的简版：
+    const pseudoUser = `${userText}`;
+    mine.messages.push({ role:'user', content:pseudoUser, ts: e.datetimeISO ? new Date(e.datetimeISO).getTime() : Date.now() });
+    save('eg_threads_v1', threads);
+
+    try{
+      const list = load(LS_CHAR,[]);
+      const it = list.find(c => c.id === charId);
+      if (it){ it.lastTime = new Date(e.datetimeISO || Date.now()).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); save(LS_CHAR,list); }
+    }catch(_){}
+
+    // 发一个“轻触发”信号给聊天页（它会在打开时或前台时拉取并继续 askLLM）
+    try{ localStorage.setItem('eg_evt_ping', String(Date.now())); }catch(_){}
+  }
+
+  function tick(){
+    const arr = load(LS_EVT,[]);
+    for(const e of arr){
+      const next = nextOccurrence(e);
+      if(!next) continue;
+      // 触发窗口：±60秒内
+      const diff = Math.abs(next - now());
+      if(diff <= 60000){
+        // 未触发过，或下一轮已到达窗口
+        if(!e.lastFiredAtISO || new Date(e.lastFiredAtISO) < next) fireEvent(e);
       }
     }
+    render(); // 刷新倒计时
+  }
+
+  // 初始化
+  render();
+  // 离线补偿：进入页面先 tick 一次
+  tick();
+  // 前台每 30s 刷新/触发
+  setInterval(tick, 30000);
+
+  // 暴露给“＋”按钮
+  window.EGEvents = { openEditor };
+})();
 
     /* ========= 模态框与初始化 ========= */
     function showModal(){ document.getElementById('msgAddModal')?.classList.add('show'); }
