@@ -136,71 +136,56 @@
   const app      = $('.chat-app'); // 👈 加上这一行
 
   /* ---------------- 布局/键盘适配 ---------------- */
-  function layout(){
+function bindKeyboardFit(){
+    // 1. 获取所有需要动态布局的元素
     const navHeight = nav.offsetHeight;
     const inputHeight = inputBar.offsetHeight;
-    chat.style.top = navHeight + 'px';
-    chat.style.bottom = inputHeight + 'px';
-  }
-function bindKeyboardFit(){
-    layout(); // 初始布局
-    if (!window.visualViewport) return;
 
+    // 2. 设置 chat-list 的顶部
+    //    这个值永远不会变
+    chat.style.top = navHeight + 'px';
+
+    // 3. 检查 visualViewport API 是否存在
+    if (!window.visualViewport) {
+      // (B) 不支持 VV 的旧浏览器 (例如桌面端)
+      //     保持原始的简单布局
+      chat.style.bottom = inputHeight + 'px';
+      return;
+    }
+
+    // --- (A) 支持 VV 的现代移动浏览器 ---
     const vv = window.visualViewport;
 
-    const onVV = () => {
-        
-        // 检查视口是否因滚动而偏移（主要针对安卓）
-        if (vv.offsetTop > 0) {
-            // --- 情况 A: 页面被滚动了 (安卓) ---
-            // 1. 使用 transform 将 app 拉回原位
-            //    (这解决了顶部栏消失问题，但会带来“闪烁”问题)
-            app.style.transform = `translateY(${vv.offsetTop}px)`;
-            // 2. 将 app 高度设为可视区域高度
-            app.style.height = `${vv.height}px`;
-            // 3. 覆盖 CSS 的 inset: 0
-            app.style.top = '0';
-            app.style.bottom = 'auto';
-            
-            // 4. inputBar 已被 transform 锚定，无需额外定位
-            inputBar.style.position = '';
-            inputBar.style.bottom = '';
+    // 4. 定义布局函数
+    //    这个函数会在“视口变化时”被调用
+    const onViewportChange = () => {
+      // 5. 计算键盘高度
+      //    在 iOS PWA 中, window.innerHeight 是固定的 (屏幕高度)
+      //    vv.height 是可见区域高度 (屏幕高度 - 键盘高度)
+      const keyboardHeight = window.innerHeight - vv.height;
 
-        } else {
-            // --- 情况 B: 页面未滚动 (iOS 或 键盘已收起) ---
-            
-            // 1. 撤销所有 app 上的内联样式，让 CSS (inset: 0) 生效
-            //    (这解决了键盘收起时的“灰边”问题)
-            app.style.transform = '';
-            app.style.height = '';
-            app.style.top = '';
-            app.style.bottom = '';
-            
-            // 2. 检查键盘高度（主要针对 iOS 模式）
-            const keyboardHeight = window.innerHeight - vv.height;
-            
-            if (keyboardHeight > 50) { // 留 50px 阈值
-                // 键盘弹起 (iOS 模式)，手动上移 inputBar
-                inputBar.style.position = 'fixed';
-                inputBar.style.bottom = `${keyboardHeight}px`;
-            } else {
-                // 键盘已收起
-                inputBar.style.position = ''; // 恢复 CSS 默认 (fixed)
-                inputBar.style.bottom = '';   // 恢复 CSS 默认 (bottom: 0)
-            }
-        }
-        
-        // 无论哪种情况，都需要重新计算 chat-list 的 bottom
-        layout();
-        setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
-    };
+      // 6. 移动输入框
+      //    当键盘弹出时, keyboardHeight > 0, inputBar 上移
+      //    当键盘收起时, keyboardHeight = 0, inputBar 归位 (bottom: 0px)
+      inputBar.style.bottom = `${keyboardHeight}px`;
 
-    vv.addEventListener('resize', onVV);
-    vv.addEventListener('scroll', onVV);
-    window.addEventListener('resize', onVV);
+      // 7. 调整聊天列表的底部
+      //    聊天列表的 bottom = 输入框的自然高度 + 键盘高度
+      //    (这修复了“灰边”问题)
+      chat.style.bottom = `${inputHeight + keyboardHeight}px`;
+      
+      // 8. 滚动到底部
+      //    用一个短暂延迟确保布局先生效，再滚动
+      setTimeout(() => {
+        chat.scrollTop = chat.scrollHeight;
+      }, 100);
+    }
+
+    // 9. 绑定监听
+    vv.addEventListener('resize', onViewportChange);
     
-    // 立即执行一次以设置初始状态
-    onVV();
+    // 10. 立即执行一次，完成初始布局
+    onViewportChange();
   }
   /* ---------------- 数据：角色 & 身份 ---------------- */
   const urlParams   = new URLSearchParams(location.search);
