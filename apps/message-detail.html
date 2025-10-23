@@ -135,25 +135,23 @@
   const inputBar = $('#inputBar');
 
   /* ---------------- 布局/键盘适配 ---------------- */
-  function layout(){
-    const navHeight = nav.offsetHeight;
-    const inputHeight = inputBar.offsetHeight;
-    chat.style.top = navHeight + 'px';
-    chat.style.bottom = inputHeight + 'px';
-  }
   function bindKeyboardFit(){
     layout();
     if (!window.visualViewport) return;
     const vv = window.visualViewport;
+    
+    // 阻止视口滚动
+    const preventScroll = (e) => {
+      window.scrollTo(0, 0);
+    };
+    
     const onVV = () => {
+      // 立即阻止滚动
+      window.scrollTo(0, 0);
+      
       const windowHeight = window.innerHeight;
       const viewportHeight = vv.height;
       const keyboardHeight = windowHeight - viewportHeight;
-      
-      // 防止页面整体滚动
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.height = '100%';
       
       if (keyboardHeight > 100) {
         // 键盘弹起
@@ -163,15 +161,10 @@
         const inputRect = inputBar.getBoundingClientRect();
         chat.style.top = `${navHeight}px`;
         chat.style.bottom = `${windowHeight - inputRect.top}px`;
-        // 保持导航栏固定在顶部
-        nav.style.position = 'fixed';
-        nav.style.top = '0';
       } else {
         // 键盘收起
         inputBar.style.position = 'fixed';
         inputBar.style.bottom = '0';
-        nav.style.position = 'fixed';
-        nav.style.top = '0';
         // 重新计算布局，确保没有空隙
         requestAnimationFrame(() => {
           layout();
@@ -179,9 +172,14 @@
       }
       setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
     };
+    
     vv.addEventListener('resize', onVV);
-    vv.addEventListener('scroll', onVV);
+    vv.addEventListener('scroll', (e) => {
+      preventScroll(e);
+      onVV();
+    });
     window.addEventListener('resize', onVV);
+    window.addEventListener('scroll', preventScroll, { passive: false });
   }
   /* ---------------- 数据：角色 & 身份 ---------------- */
   const urlParams   = new URLSearchParams(location.search);
