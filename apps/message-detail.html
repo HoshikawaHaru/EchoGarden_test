@@ -317,7 +317,7 @@
     const list = toJSON(LS_CHAR, []) || [];
     const it = list.find(c => c.id === characterId);
     if (it){
-      it.lastMsg = shortText.slice(0, 40); // 取前40个字符
+      it.lastMsg = shortText.slice(0, 40);
       it.lastTime = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
       saveJSON(LS_CHAR, list);
       try{ localStorage.setItem('eg_evt_chars', String(Date.now())); }catch(_){}
@@ -340,7 +340,7 @@
     const merged  = bufferMsgs.join(' ');
     bufferMsgs = [];
     saveThreads(threads);
-    await askLLM_viaWorker(mine.messages, merged); // 改为经由 SharedWorker
+    await askLLM_viaWorker(mine.messages, merged); // 通过 SharedWorker
   }
 
   $('#sendBtn').addEventListener('click', onSend);
@@ -373,7 +373,6 @@
 
   /* ---------------- 世界书：可配置模板 ---------------- */
   function getWorldbook(){
-    // 用户可在“世界书”中编辑存入如下结构（有则覆盖默认）
     const user = toJSON(LS_WB, {}) || {};
     const defaults = {
       systemPersona: `你是一名角色对话助手，请严格扮演以下人设进行简洁自然的中文回复。
@@ -425,47 +424,22 @@
     return final;
   }
 
-  /* ---------------- EG_EVENT 解析 & 写库（更鲁棒） ---------------- */
+  /* ---------------- EG_EVENT 解析 & 写库 ---------------- */
   function tryParseAndSaveEvent(fullText){
     try{
-      // 1) <eg_event>...</eg_event>
       let raw = null;
       const m1 = fullText.match(/<eg_event>([\s\S]*?)<\/eg_event>/i);
       if (m1) raw = m1[1].trim();
-
-      // 2) EG_EVENT : {...}
       if (!raw){
         const m2 = fullText.match(/EG_EVENT\s*:\s*({[\s\S]*?})/i);
         if (m2) raw = m2[1].trim();
       }
-
-      // 3) ```json ... ```
       if (!raw){
         const m3 = fullText.match(/```json\s*([\s\S]*?)```/i);
         if (m3 && /"name"\s*:/.test(m3[1])) raw = m3[1].trim();
       }
-
-      // 4) EVENT: key=value; 兜底
       let obj = null;
-      if (!raw){
-        const m4 = fullText.match(/EVENT\s*:([\s\S]*?)$/i);
-        if (m4){
-          const kv = {};
-          m4[1].split(/[;\n]/).forEach(line=>{
-            const mm = line.match(/\s*([\w_]+)\s*=\s*(.+?)\s*$/);
-            if (mm){ kv[mm[1]] = mm[2].replace(/^"|"$/g,''); }
-          });
-          if (kv.name || kv.time) obj = {
-            type: /note/i.test(kv.type)?'note':'agreement',
-            name: kv.name || '未命名',
-            time: kv.time || null,
-            freq: kv.freq || 'once'
-          };
-        }
-      }
-      if (!obj && raw){
-        try{ obj = JSON.parse(raw); }catch(_){}
-      }
+      if (!obj && raw){ try{ obj = JSON.parse(raw); }catch(_){ } }
       if (!obj) return;
 
       const events = toJSON(LS_EVENTS, []) || [];
@@ -491,8 +465,7 @@
     }catch(e){}
   }
 
-  /* ---------------- SharedWorker：后台不打断 ---------------- */
-  // 以 Blob 形式创建 SharedWorker，任何页面都能复用；页面切换不打断请求。
+  /* ---------------- SharedWorker：后台不中断 ---------------- */
   const workerURL = (() => {
     const code = `
       const ports = [];
@@ -544,7 +517,6 @@
       msgs.push({ role:'user', content: mergedUserText });
     }
 
-    // 通过 SharedWorker 发起请求
     const content = await new Promise((resolve)=>{
       const onMsg = (ev)=>{
         const data = ev.data || {};
