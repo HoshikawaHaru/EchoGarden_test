@@ -141,7 +141,7 @@
     chat.style.top = navHeight + 'px';
     chat.style.bottom = inputHeight + 'px';
   }
-  function bindKeyboardFit(){
+function bindKeyboardFit(){
     layout();
     if (!window.visualViewport) return;
     const vv = window.visualViewport;
@@ -149,15 +149,27 @@
       const windowHeight = window.innerHeight;
       const viewportHeight = vv.height;
       const keyboardHeight = windowHeight - viewportHeight;
-      if (keyboardHeight > 0) {
+      if (keyboardHeight > 100) {
+        // 键盘弹起
         inputBar.style.position = 'fixed';
         inputBar.style.bottom = `${keyboardHeight}px`;
-        const rect = inputBar.getBoundingClientRect();
-        chat.style.bottom = `${windowHeight - rect.top}px`;
+        const navHeight = nav.offsetHeight;
+        const inputRect = inputBar.getBoundingClientRect();
+        chat.style.top = `${navHeight}px`;
+        chat.style.bottom = `${windowHeight - inputRect.top}px`;
+        // 保持导航栏固定在顶部
+        nav.style.position = 'fixed';
+        nav.style.top = '0';
       } else {
+        // 键盘收起
         inputBar.style.position = 'fixed';
         inputBar.style.bottom = '0';
-        layout();
+        nav.style.position = 'fixed';
+        nav.style.top = '0';
+        // 重新计算布局，确保没有空隙
+        requestAnimationFrame(() => {
+          layout();
+        });
       }
       setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
     };
@@ -165,7 +177,6 @@
     vv.addEventListener('scroll', onVV);
     window.addEventListener('resize', onVV);
   }
-
   /* ---------------- 数据：角色 & 身份 ---------------- */
   const urlParams   = new URLSearchParams(location.search);
   const characterId = urlParams.get('id') || sessionStorage.getItem('currentChatId') || 'nash';
