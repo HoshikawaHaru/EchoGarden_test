@@ -108,12 +108,12 @@
   scroll-snap-type:x mandatory;
   display:flex; 
   gap:18px; 
-  padding:0 clamp(16px, 5vw, 32px);   /* 只保留左右内边距 */
+  padding:0 clamp(16px, 5vw, 32px);
   align-items:flex-start;
   -webkit-overflow-scrolling:touch;
 }
 
-/* 卡片保持响应式宽度、加长一点 */
+/* 卡片 */
 .id-card{
   flex:0 0 clamp(320px, 88vw, 680px);
   scroll-snap-align:center;
@@ -122,10 +122,11 @@
   display:grid; grid-template-columns:92px 1fr; grid-auto-rows:min-content; gap:12px 16px;
 }
 
-/* 指示点区域与卡片一起被 .id-wrap 居中 */
+/* 指示点 */
 .dots{ height:30px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; }
 .dot{ width:6px; height:6px; border-radius:999px; background:#ddd; transition:all .25s; }
 .dot.active{ width:22px; height:6px; border-radius:4px; background:#999; }
+
     .id-avatar{ width:92px; height:92px; border-radius:14px; background:#eee; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:44px; cursor:pointer; user-select:none;}
     .id-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
     .id-meta{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -166,10 +167,6 @@
     .btn{ flex:1; height:36px; border:0; border-radius:10px; background:#ededed; }
     .btn.primary{ background:var(--ok); color:#fff; }
     .btn.warn{ background:var(--warn); color:#fff; }
-
-    .dots{ height:30px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; }
-    .dot{ width:6px; height:6px; border-radius:999px; background:#ddd; transition:all .25s; }
-    .dot.active{ width:22px; height:6px; border-radius:4px; background:#999; }
   </style>
 </head>
 <body>
@@ -190,8 +187,8 @@
     <section id="tab-me" role="tabpanel" aria-label="我的身份">
       <div class="id-wrap">
         <div class="id-carousel" id="idCarousel" aria-live="polite"></div>
+        <div class="dots" id="dots"></div>
       </div>
-      <div class="dots" id="dots"></div>
     </section>
 
     <!-- 底部Tab -->
@@ -243,7 +240,7 @@
 
     /* ========= 调试 ========= */
     var debugBox = document.getElementById('debugBox');
-    function log(m){ try{var t=new Date().toTimeString().slice(0,8); (debugBox||{}).innerHTML+=(t+' '+m+'\\n'); if(debugBox) debugBox.scrollTop=debugBox.scrollHeight;}catch(e){} }
+    function log(m){ try{var t=new Date().toTimeString().slice(0,8); (debugBox||{}).innerHTML+=(t+' '+m+'\n'); if(debugBox) debugBox.scrollTop=debugBox.scrollHeight;}catch(e){} }
 
     /* ========= 小工具 ========= */
     function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -514,7 +511,7 @@
 
             save(LS_ID,identities);
             refreshBindings();
-            render();            // 即时刷新（会保持编辑/字段不丢）
+            render();            // 即时刷新（保持编辑/字段不丢）
             broadcast();
           });
         });
@@ -526,13 +523,20 @@
           // 进入编辑
           card.querySelector('[data-act="edit"]').addEventListener('click', ()=> setCardEditing(uid,true));
 
-          // 保存（此时已是最新值，但仍做一次稳妥写入）
+          // 保存 —— 先锁定置灰，再存储与重渲染（关键修复）
           card.querySelector('[data-act="save"]').addEventListener('click', ()=>{
             const u=identities.find(x=>x.id===uid);
             u.name=card.querySelector('[data-k="name"]').value.trim();
             u.nickname=card.querySelector('[data-k="nickname"]').value.trim();
             u.bio=card.querySelector('[data-k="bio"]').value.trim();
-            save(LS_ID,identities); render(); broadcast();
+
+            // 立刻锁定当前卡（只读 & 按钮状态）
+            setCardEditing(uid, false);
+            editingId = null;
+
+            save(LS_ID,identities);
+            render();
+            broadcast();
           });
 
           // 删除
