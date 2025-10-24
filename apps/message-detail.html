@@ -128,18 +128,33 @@
       const windowHeight = window.innerHeight;
       const viewportHeight = vv.height;
       const keyboardHeight = windowHeight - viewportHeight;
-      document.body.style.position = 'fixed';document.body.style.width='100%';document.body.style.height='100%';
+      
+      // 防止页面整体滚动
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      
       if (keyboardHeight > 100) {
+        // 键盘弹起
+        inputBar.style.position = 'fixed';
         inputBar.style.bottom = `${keyboardHeight}px`;
         const navHeight = nav.offsetHeight;
         const inputRect = inputBar.getBoundingClientRect();
         chat.style.top = `${navHeight}px`;
         chat.style.bottom = `${windowHeight - inputRect.top}px`;
+        // 保持导航栏固定在顶部
+        nav.style.position = 'fixed';
         nav.style.top = '0';
       } else {
+        // 键盘收起
+        inputBar.style.position = 'fixed';
         inputBar.style.bottom = '0';
+        nav.style.position = 'fixed';
         nav.style.top = '0';
-        requestAnimationFrame(layout);
+        // 重新计算布局，确保没有空隙
+        requestAnimationFrame(() => {
+          layout();
+        });
       }
       setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
     };
