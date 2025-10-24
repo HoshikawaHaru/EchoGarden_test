@@ -11,10 +11,12 @@
     :root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
     html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ededed;color:#111}
     .chat-app{position:fixed;inset:0;overflow:hidden}
-    .chat-navbar{position:fixed;left:0;right:0;top:0;z-index:10;height:calc(44px + var(--safe-top));padding-top:var(--safe-top);background:#f7f7f7;border-bottom:.5px solid #d9d9d9;display:flex;align-items:center;justify-content:space-between;padding-left:12px;padding-right:12px}
+    .chat-navbar{position:fixed;left:0;right:0;top:0;z-index:10;height:calc(44px + var(--safe-top));padding-top:var(--safe-top);background:#f7f7f7;border-bottom:.5px solid #d9d9d9;display:flex;align-items:center;justify-content:space-between;padding:0 12px}
     .chat-back,.chat-more{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px}
     .chat-title{position:absolute;left:50%;transform:translateX(-50%);top:calc(10px + var(--safe-top));height:24px;display:flex;align-items:center;font-weight:600;color:#000}
+
     .chat-list{position:absolute;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px 0 12px}
+
     .row{display:flex;align-items:flex-end;margin:10px 0;gap:8px}
     .row.you{justify-content:flex-start}
     .row.me{justify-content:flex-end}
@@ -23,14 +25,38 @@
     .bubble{max-width:72vw;padding:10px 12px;border-radius:8px;font-size:16px;line-height:1.4;word-break:break-word;box-shadow:0 1px 0 rgba(0,0,0,.05)}
     .row.you .bubble{background:#fff;border:1px solid #eaeaea}
     .row.me  .bubble{background:#95ec69}
+    .bubble.sticker{background:transparent;border:none;box-shadow:none;padding:0}
+    .bubble.sticker img{max-width:40vw;border-radius:8px;display:block}
+
+    /* 输入区 */
     .input-bar{position:fixed;left:0;right:0;bottom:0;z-index:11;background:#f7f7f7;border-top:.5px solid #d9d9d9;padding:8px 10px;padding-bottom:calc(8px + var(--safe-bottom));display:flex;gap:8px;align-items:center;min-height:calc(52px + var(--safe-bottom))}
+    .round-btn{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid #111;cursor:pointer;background:transparent;user-select:none}
+    .round-btn span{font-size:18px;line-height:1}
     .ipt{flex:1;background:#fff;border:1px solid #e1e1e1;border-radius:18px;padding:10px 14px;font-size:16px;outline:none}
     .send{background:#07c160;color:#fff;border:none;border-radius:18px;padding:10px 14px;font-size:15px;cursor:pointer}
     .send:active{background:#06ad56}
+
+    /* 菜单 / 表情面板 */
+    .sheet{position:fixed;left:0;right:0;bottom:calc(52px + var(--safe-bottom) + 8px);display:none;z-index:12}
+    .sheet.show{display:block}
+    .sheet-card{margin:0 10px;background:#fff;border:1px solid #e5e5e5;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.08);overflow:hidden}
+    .sheet-row{display:flex;gap:8px;padding:10px}
+    .pill{flex:1;background:#f5f5f5;border-radius:10px;padding:10px;text-align:center;cursor:pointer}
+    .pill:active{filter:brightness(.95)}
+
+    .emoji-panel{max-height:40vh;overflow:auto;padding:10px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+    .emoji-tile{background:#fafafa;border:1px solid #eee;border-radius:10px;padding:8px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .emoji-tile img{max-width:100%;max-height:72px}
+    .emoji-actions{display:flex;gap:8px;padding:10px;border-top:1px solid #eee}
+    .emoji-actions .pill{background:#efefef}
+
+    /* typing dots */
     .title-typing .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#666;margin:0 1px;opacity:.5;animation:blink 1.2s infinite}
     .title-typing .dot:nth-child(2){animation-delay:.2s}
     .title-typing .dot:nth-child(3){animation-delay:.4s}
     @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+    /* 编辑角色弹窗 */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:20}
     .modal.show{display:flex}
     .modal-content{background:#fff;width:90%;max-width:420px;border-radius:12px;overflow:hidden}
@@ -48,6 +74,7 @@
     .btn{flex:1;padding:12px;border:none;border-radius:8px;font-size:16px;cursor:pointer}
     .btn.primary{background:#07c160;color:#fff}
     .btn.ghost{background:#f2f2f2;color:#111}
+    .switch{display:flex;align-items:center;gap:8px}
   </style>
 </head>
 <body>
@@ -57,9 +84,36 @@
       <div class="chat-title" id="title">聊天</div>
       <div class="chat-more" id="moreBtn">⋯</div>
     </div>
+
     <div class="chat-list" id="chatList"></div>
+
+    <!-- 功能菜单 -->
+    <div class="sheet" id="actionSheet">
+      <div class="sheet-card">
+        <div class="sheet-row">
+          <div class="pill" id="actRegen">↻ 重新生成</div>
+          <div class="pill" id="actPoke">👉 戳一戳</div>
+          <div class="pill" id="actRedPacket">🧧 发红包</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 表情/贴纸面板 -->
+    <div class="sheet" id="emojiSheet">
+      <div class="sheet-card">
+        <div class="emoji-panel" id="emojiGrid"></div>
+        <div class="emoji-actions">
+          <div class="pill" id="btnUploadSticker">上传到表情库</div>
+          <div class="pill" id="btnCloseEmoji">关闭</div>
+          <input type="file" id="stickerInput" accept="image/*" style="display:none">
+        </div>
+      </div>
+    </div>
+
     <div class="input-bar" id="inputBar">
+      <button class="round-btn" id="plusBtn" aria-label="更多"><span>＋</span></button>
       <input id="ipt" class="ipt" placeholder="发消息..." />
+      <button class="round-btn" id="emojiBtn" aria-label="表情"><span>☺</span></button>
       <button id="sendBtn" class="send">发送</button>
     </div>
   </div>
@@ -90,6 +144,13 @@
             <label class="form-label">人设</label>
             <textarea id="bioInput" class="form-textarea" required></textarea>
           </div>
+          <div class="form-group">
+            <label class="form-label">允许后台活动</label>
+            <label class="switch">
+              <input type="checkbox" id="allowBgInput">
+              <span style="color:#666">到事件时间时可后台行动</span>
+            </label>
+          </div>
           <div class="btns">
             <button type="button" class="btn ghost" id="cancelEdit">取消</button>
             <button type="submit" class="btn primary">保存</button>
@@ -114,53 +175,22 @@
   const nav      = $('#navBar');
   const inputBar = $('#inputBar');
 
-  function layout(){
-    const navHeight = nav.offsetHeight;
-    const inputHeight = inputBar.offsetHeight;
-    chat.style.top = navHeight + 'px';
-    chat.style.bottom = inputHeight + 'px';
-  }
+  function layout(){ const nh=nav.offsetHeight, ih=inputBar.offsetHeight; chat.style.top=nh+'px'; chat.style.bottom=ih+'px'; }
   function bindKeyboardFit(){
     layout();
     if (!window.visualViewport) return;
     const vv = window.visualViewport;
     const onVV = () => {
-      const windowHeight = window.innerHeight;
-      const viewportHeight = vv.height;
-      const keyboardHeight = windowHeight - viewportHeight;
-      
-      // 防止页面整体滚动
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.height = '100%';
-      
+      const windowHeight = window.innerHeight, viewportHeight = vv.height, keyboardHeight = windowHeight - viewportHeight;
+      document.body.style.position = 'fixed'; document.body.style.width='100%'; document.body.style.height='100%';
       if (keyboardHeight > 100) {
-        // 键盘弹起
-        inputBar.style.position = 'fixed';
         inputBar.style.bottom = `${keyboardHeight}px`;
-        const navHeight = nav.offsetHeight;
-        const inputRect = inputBar.getBoundingClientRect();
-        chat.style.top = `${navHeight}px`;
-        chat.style.bottom = `${windowHeight - inputRect.top}px`;
-        // 保持导航栏固定在顶部
-        nav.style.position = 'fixed';
-        nav.style.top = '0';
-      } else {
-        // 键盘收起
-        inputBar.style.position = 'fixed';
-        inputBar.style.bottom = '0';
-        nav.style.position = 'fixed';
-        nav.style.top = '0';
-        // 重新计算布局，确保没有空隙
-        requestAnimationFrame(() => {
-          layout();
-        });
-      }
-      setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
+        const navHeight = nav.offsetHeight, inputRect = inputBar.getBoundingClientRect();
+        chat.style.top = `${navHeight}px`; chat.style.bottom = `${windowHeight - inputRect.top}px`; nav.style.top = '0';
+      } else { inputBar.style.bottom='0'; nav.style.top='0'; requestAnimationFrame(layout); }
+      setTimeout(()=>{ chat.scrollTop = chat.scrollHeight; },80);
     };
-    vv.addEventListener('resize', onVV);
-    vv.addEventListener('scroll', onVV);
-    window.addEventListener('resize', onVV);
+    vv.addEventListener('resize', onVV); vv.addEventListener('scroll', onVV); window.addEventListener('resize', onVV);
   }
 
   /* ========= 角色 & 身份 ========= */
@@ -173,7 +203,7 @@
   function loadCharacters(){
     try{ characters = JSON.parse(localStorage.getItem('eg_characters_v2') || '[]'); }catch(e){ characters = []; }
     if (!characters.length){
-      characters = [{ id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊' }];
+      characters = [{ id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊', allowBG:false }];
       localStorage.setItem('eg_characters_v2', JSON.stringify(characters));
     }
     current = characters.find(c => c.id === characterId) || characters[0];
@@ -200,17 +230,23 @@
   }
   function getActiveIdentityFor(charId){
     for (let i=1;i<identities.length;i++){
-      const u = identities[i];
-      if (Array.isArray(u.boundCharIds) && u.boundCharIds.includes(charId)) return u;
+      const u = identities[i]; if (Array.isArray(u.boundCharIds) && u.boundCharIds.includes(charId)) return u;
     }
     return identities[0];
   }
   window.addEventListener('storage', e=>{
-    if (e.key === 'eg_evt_ping' || e.key === 'eg_evt_chars' || e.key === 'eg_user_identities_v1'){
-      loadIdentities();
-      myAvatarCache = null;
-    }
+    if (e.key === 'eg_evt_ping' || e.key === 'eg_evt_chars' || e.key === 'eg_user_identities_v1'){ loadIdentities(); myAvatarCache = null; }
   });
+
+  /* ========= 贴纸库 ========= */
+  const LS_STICKERS='eg_stickers_v1';
+  function loadStickers(){ try{ return JSON.parse(localStorage.getItem(LS_STICKERS)||'[]'); }catch(_){ return []; } }
+  function saveStickers(v){ localStorage.setItem(LS_STICKERS, JSON.stringify(v)); }
+  function ensureStickersDemo(){
+    const arr=loadStickers(); if(arr.length) return;
+    arr.push({id:'demo_1', name:'鼓掌', url:'https://fastly.jsdelivr.net/gh/tonykungfu/cdn/emoji/clap.gif'});
+    saveStickers(arr);
+  }
 
   /* ========= 历史 ========= */
   function getThreads(){ try{ return JSON.parse(localStorage.getItem('eg_threads_v1') || '{}'); }catch(e){ return {}; } }
@@ -218,7 +254,7 @@
   function loadHistory(){
     const msgs = (getThreads()[characterId]?.messages) || [];
     chat.innerHTML = '';
-    msgs.forEach(m => push(m.role === 'user' ? 'me' : 'you', m.content));
+    msgs.forEach(m => renderMsg(m.role === 'user' ? 'me' : 'you', m.content));
     chat.scrollTop = chat.scrollHeight;
   }
 
@@ -226,32 +262,45 @@
   let myAvatarCache = null;
   function avatarNode(from){
     const el = document.createElement('div'); el.className = 'avatar';
-    if (from === 'me'){
-      const av = (activeIdentity && activeIdentity.avatar) || '👤';
-      if (isImg(av)){ const img=document.createElement('img'); img.src=av; el.appendChild(img); } else el.textContent = av;
-    }else{
-      const av = current.avatar || '👤';
-      if (isImg(av)){ const img=document.createElement('img'); img.src=av; el.appendChild(img); } else el.textContent = av;
-    }
+    const av = (from==='me') ? ((activeIdentity && activeIdentity.avatar) || '👤') : (current.avatar || '👤');
+    if (isImg(av)){ const img=document.createElement('img'); img.src=av; el.appendChild(img); } else el.textContent = av;
     return el;
   }
-  function push(type, text){
+  function isStickerToken(t){ return /^\[\[sticker:(.+?)\]\]$/i.test(t) || /<eg_sticker\s+name="(.+?)"\s*\/?>/i.test(t); }
+  function getStickerName(t){
+    let m=t.match(/^\[\[sticker:(.+?)\]\]$/i); if(m) return m[1].trim();
+    m=t.match(/<eg_sticker\s+name="(.+?)"\s*\/?>/i); if(m) return m[1].trim();
+    return null;
+  }
+  function findStickerByName(name){ return loadStickers().find(s=>s.name===name); }
+
+  function renderMsg(type, text){
     if (!text) return;
-    const row = document.createElement('div');
-    row.className = 'row ' + (type === 'me' ? 'me' : 'you');
-    const ava    = avatarNode(type);
-    const bubble = document.createElement('div'); bubble.className = 'bubble'; bubble.textContent = text;
-    if (type === 'me'){ row.appendChild(bubble); row.appendChild(ava); } else { row.appendChild(ava); row.appendChild(bubble); }
+    const row = document.createElement('div'); row.className = 'row ' + (type === 'me' ? 'me' : 'you');
+    const ava = avatarNode(type);
+    const bubble = document.createElement('div'); bubble.className = 'bubble';
+
+    // 贴纸渲染
+    const name = isStickerToken(text) ? getStickerName(text) : null;
+    const sticker = name ? findStickerByName(name) : null;
+    if (sticker){
+      bubble.classList.add('sticker');
+      bubble.innerHTML = `<img src="${esc(sticker.url)}" alt="${esc(sticker.name)}">`;
+    }else{
+      bubble.textContent = text;
+    }
+
+    if (type === 'me'){ row.appendChild(bubble); row.appendChild(ava); }
+    else { row.appendChild(ava); row.appendChild(bubble); }
+
     chat.appendChild(row); chat.scrollTop = chat.scrollHeight;
   }
 
-  /* ========= title typing ========= */
-  let typingTicker = null;
+  /* ========= typing ========= */
   function setTitleTyping(isTyping){
     if (isTyping){
       titleEl.classList.add('title-typing');
       titleEl.innerHTML = '对方正在输入&nbsp;<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-      if (typingTicker){ clearInterval(typingTicker); typingTicker = null; }
     }else{
       titleEl.classList.remove('title-typing');
       titleEl.textContent = current.nickname || current.name || '聊天';
@@ -281,11 +330,12 @@
 
   function onSend(){
     const text = ipt.value.trim(); if (!text) return; ipt.value = '';
-    push('me', text);
+    renderMsg('me', text);
     const threads = getThreads();
     const mine = threads[characterId] || (threads[characterId] = { id: characterId, messages: [] });
     mine.messages.push({ role:'user', content:text, ts: Date.now() });
     saveThreads(threads);
+
     try{
       const list = JSON.parse(localStorage.getItem('eg_characters_v2') || '[]');
       const it = list.find(c => c.id === characterId);
@@ -295,7 +345,11 @@
     if (document.activeElement !== ipt) scheduleFlush();
   }
 
-  /* ========= 世界书 Prompt （可选） ========= */
+  /* ========= 世界书 Prompt（保持不变，略） + 事件抽取/合并 ========= */
+  // —— 省略：与上一版一致的 buildPersonaSystemPrompt/buildUserContextPrompt/splitChunks/
+  //        中文时间解析/事件抽取合并/askLLM —— 为节省篇幅，这里直接内联上一版完整实现 —— 
+  // === 注意：下面是上一版的完整实现（未删减） ===
+
   function buildPersonaSystemPrompt(role){
     const name = role.nickname || role.name || 'Ta';
     return `你是一名角色对话助手，请严格扮演以下人设进行简洁自然的中文回复。
@@ -319,7 +373,6 @@
 - 姓名/昵称：${uname}
 - 设定：${identity.bio || '（无）'}`.trim();
   }
-
   function splitChunks(t){
     const arr = [];
     t.replace(/\s+/g,' ').split(/(?<=[。！？!?…\n])/).forEach(s=>{ const ss=s.trim(); if(ss) arr.push(ss); });
@@ -327,97 +380,45 @@
     return final;
   }
 
-  /* ========= 事件：提取 + 中文时间解析 + 草稿合并 ========= */
-
-  // 中文数字→阿拉伯
+  // ===== 时间解析 & 事件抽取（与上一版相同） =====
   const CN_NUM = {'零':0,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};
-  function parseHour(h){
-    if (h==null) return null;
-    if (/^\d+$/.test(h)) return parseInt(h,10);
+  function parseHour(h){ if (h==null) return null; if (/^\d+$/.test(h)) return parseInt(h,10);
     let sum=0; if(h.length===1) return CN_NUM[h]??null;
-    if (h.includes('十')){
-      const [a,b]=h.split('十');
-      if (a==='') sum += 10; else sum += (CN_NUM[a]||0)*10;
-      if (b!=='') sum += (CN_NUM[b]||0);
-      return sum;
-    }
+    if (h.includes('十')){ const [a,b]=h.split('十'); if (a==='') sum += 10; else sum += (CN_NUM[a]||0)*10; if (b!=='') sum += (CN_NUM[b]||0); return sum; }
     return CN_NUM[h]??null;
   }
-
-  // 解析“下午两点/中午/晚上八点半/14:30”等
   function parseTimeOfDay(str){
     if(!str) return null;
     const m1 = str.match(/(?:(上午|早上|中午|下午|傍晚|晚上))?(\d{1,2}|[零一二两三四五六七八九十]{1,3})(?:点|:)?(?:(\d{1,2})|([零一二三四五六七八九十]{1,3}))?(?:分)?/);
-    if(!m1) return null;
-    const dayp = m1[1]||'';
-    let h = /^\d+$/.test(m1[2]) ? parseInt(m1[2],10) : parseHour(m1[2]);
-    let m = 0;
-    if (m1[3]) m = parseInt(m1[3],10);
-    else if (m1[4]) m = parseHour(m1[4])||0;
+    if(!m1) return null; const dayp = m1[1]||''; let h = /^\d+$/.test(m1[2]) ? parseInt(m1[2],10) : parseHour(m1[2]); let m = 0;
+    if (m1[3]) m = parseInt(m1[3],10); else if (m1[4]) m = parseHour(m1[4])||0;
     if (dayp==='下午' || dayp==='傍晚' || dayp==='晚上'){ if (h>=1 && h<=11) h += 12; }
-    if (dayp==='中午' && h>=1 && h<=11) h = 12;
-    return {h,m};
+    if (dayp==='中午' && h>=1 && h<=11) h = 12; return {h,m};
   }
-
-  // 解析“周末/本周六/下周三/明天/后天/今天晚上”等 → Date
   const WEEK_MAP = {'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'日':7,'天':7};
   function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
   function clone(d){return new Date(d.getTime());}
-
-  function findWeekday(base, targetDow){ // 1..7, Monday=1
-    const d = startOfDay(base); const curDow = (d.getDay()+6)%7 + 1; // Mon=1
-    const diff = targetDow - curDow;
-    d.setDate(d.getDate() + (diff>=0? diff: diff)); // 本周优先：不跨周
-    return d;
-  }
-
-  const DEFAULT_MOVIE_HOUR = 15; // “周末看电影”默认 15:00
+  function findWeekday(base, targetDow){ const d=startOfDay(base); const curDow=(d.getDay()+6)%7 + 1; const diff=targetDow - curDow; d.setDate(d.getDate() + (diff>=0? diff: diff)); return d; }
+  const DEFAULT_MOVIE_HOUR = 15;
   function parseChineseDateTime(text, base=new Date()){
-    if(!text) return null;
-    const s = text.trim();
-
-    // 显式 ISO/标准
+    if(!text) return null; const s=text.trim();
     const dt = Date.parse(s.replace('T',' ').replace(/\//g,'-')); if(!isNaN(dt)) return new Date(dt);
-
     const now = base;
-    // 绝对日关键词
     if (/明天/.test(s)){ const d=startOfDay(now); d.setDate(d.getDate()+1); const tod=parseTimeOfDay(s); if(tod){d.setHours(tod.h,tod.m,0,0);} else {d.setHours(10,0,0,0);} return d; }
     if (/后天/.test(s)){ const d=startOfDay(now); d.setDate(d.getDate()+2); const tod=parseTimeOfDay(s); if(tod){d.setHours(tod.h,tod.m,0,0);} else {d.setHours(10,0,0,0);} return d; }
     if (/今晚|今天晚上/.test(s)){ const d=startOfDay(now); d.setHours(20,0,0,0); return d; }
     if (/今天/.test(s)){ const d=startOfDay(now); const tod=parseTimeOfDay(s); d.setHours(tod?tod.h:10, tod?tod.m:0,0,0); return d; }
-
-    // 周末/周X/下周X
     const wk = s.match(/(本周|这周|下周)?(周末|周[一二三四五六日天])/);
     if (wk){
-      const flag = wk[1]||'本周';
-      const token= wk[2];
-      const d = startOfDay(now);
-      let target = clone(d);
-      if (token==='周末'){
-        // 本周优先：找到本周六
-        const curDow = (d.getDay()+6)%7 + 1; // Mon=1..7
-        const delta = (6 - curDow); // 周六=6
-        target.setDate(d.getDate() + (delta>=0?delta:7+delta)); // 若已过也按下周六
-        target.setHours(DEFAULT_MOVIE_HOUR,0,0,0);
-      }else{
-        const dow = WEEK_MAP[token.replace('周','')];
-        target = findWeekday(d, dow);
-        // 若“本周”但已经过去，就仍然给本周当天（可能已过期）；如果写“下周”，强制 +7
-        if (flag==='下周'){ target.setDate(target.getDate()+7); }
-        const tod = parseTimeOfDay(s);
-        if (tod){ target.setHours(tod.h,tod.m,0,0);} else { target.setHours(12,0,0,0); }
-      }
+      const flag = wk[1]||'本周'; const token= wk[2]; const d = startOfDay(now); let target = clone(d);
+      if (token==='周末'){ const curDow=(d.getDay()+6)%7 + 1; const delta=(6 - curDow); target.setDate(d.getDate() + (delta>=0?delta:7+delta)); target.setHours(DEFAULT_MOVIE_HOUR,0,0,0); }
+      else{ const dow=WEEK_MAP[token.replace('周','')]; target = findWeekday(d, dow); if (flag==='下周'){ target.setDate(target.getDate()+7); } const tod=parseTimeOfDay(s); if (tod){ target.setHours(tod.h,tod.m,0,0);} else { target.setHours(12,0,0,0); } }
       return target;
     }
-
-    // 只有“下午两点/中午”等（无日期）→ 返回一个“时间片”标记
     const onlyTime = parseTimeOfDay(s);
     if (onlyTime){ const d = startOfDay(now); d.setHours(onlyTime.h, onlyTime.m, 0,0); d.__onlyTime = true; return d; }
-
     return null;
   }
-
-  // —— 事件块提取 —— //
   function normalizeEventKeys(obj){
     const o = {...obj};
     if (o.req && !o.freq) o.freq = o.req;
@@ -428,167 +429,95 @@
   }
   function extractEgEventBlock(text){
     if(!text) return { cleaned: text, event: null };
-    const re = /<eg_event>([\s\S]*?)<\/eg_event>/i;
-    const m  = text.match(re);
+    const re = /<eg_event>([\s\S]*?)<\/eg_event>/i; const m  = text.match(re);
     if(!m) return { cleaned: text, event: null };
     let jsonStr = m[1].replace(/[\u201C\u201D]/g,'"').replace(/,\s*([}\]])/g,'$1').trim();
     jsonStr = jsonStr.replace(/^\s*```(?:json)?\s*|\s*```\s*$/g,'');
-    let parsed = null;
-    try{ parsed = JSON.parse(jsonStr); }catch(_){ try{ parsed = JSON.parse(jsonStr.replace(/\s*\n\s*/g,' ')); }catch(_){} }
-    const cleaned = text.replace(re,'').trim();
-    return { cleaned, event: parsed ? normalizeEventKeys(parsed) : null };
+    let parsed = null; try{ parsed = JSON.parse(jsonStr); }catch(_){ try{ parsed = JSON.parse(jsonStr.replace(/\s*\n\s*/g,' ')); }catch(_){} }
+    const cleaned = text.replace(re,'').trim(); return { cleaned, event: parsed ? normalizeEventKeys(parsed) : null };
   }
-
-  // —— 事件存储/合并 —— //
-  const LS_EVENTS = 'eg_events_v1';
-  const LS_IDS    = 'eg_user_identities_v1';
+  const LS_EVENTS = 'eg_events_v1'; const LS_IDS='eg_user_identities_v1';
   function loadEvents(){ try{ return JSON.parse(localStorage.getItem(LS_EVENTS)||'[]'); }catch(_){ return []; } }
   function saveEvents(v){ localStorage.setItem(LS_EVENTS, JSON.stringify(v)); try{ localStorage.setItem('eg_evt_ping', String(Date.now())); }catch(_){ } }
-
   function normalizeEventDraft(ev, latestUserText){
-    // 默认补齐
     const identityId = ev.identityId || (activeIdentity?.id || null);
-    const identityName = (function(){
-      const ids = JSON.parse(localStorage.getItem(LS_IDS)||'[]')||[];
-      return (ids.find(x=>x.id===identityId)||ids[0]||{nickname:'我'}).nickname || '我';
-    })();
-
-    // 解析时间（优先 ev.time，否则从 name/最近一轮用户话语兜底）
+    const identityName = (function(){ const ids = JSON.parse(localStorage.getItem(LS_IDS)||'[]')||[]; return (ids.find(x=>x.id===identityId)||ids[0]||{nickname:'我'}).nickname || '我'; })();
     let dt = null, onlyTimeFlag = false;
     const tryTexts = [ev.time, ev.name, latestUserText].filter(Boolean);
-    for(const t of tryTexts){
-      const d = parseChineseDateTime(t);
-      if (d){ dt = d; onlyTimeFlag = !!d.__onlyTime; break; }
-    }
-
+    for(const t of tryTexts){ const d = parseChineseDateTime(t); if (d){ dt = d; onlyTimeFlag = !!d.__onlyTime; break; } }
     const type = ev.type === 'note' ? 'note' : 'agreement';
     const charIds = Array.isArray(ev.charIds) && ev.charIds.length ? ev.charIds : [characterId];
     const visibleCharIds = Array.isArray(ev.visibleCharIds) ? ev.visibleCharIds : [];
     const freq = ev.freq || 'once';
-
     return {
       id: ev.id || ('e_' + Math.random().toString(36).slice(2,10)),
-      type,
-      identityId,
-      identityName,
+      type, identityId, identityName,
       charIds: type==='agreement' ? charIds : [],
       visibleCharIds: type==='note' ? visibleCharIds : [],
       freq,
-      time: dt ? (dt.__onlyTime ? null : dt.toISOString().slice(0,16).replace('T',' ')) : null, // 存“yyyy-MM-dd HH:mm”
+      time: dt ? (dt.__onlyTime ? null : dt.toISOString().slice(0,16).replace('T',' ')) : null,
       name: (ev.name || '未命名事件').trim(),
       status: dt ? (dt.__onlyTime ? 'draft' : 'confirmed') : 'draft',
-      // 临时保留一个“仅时间”的提示，方便后续合并
       _onlyTime: dt && dt.__onlyTime ? {h:dt.getHours(), m:dt.getMinutes()} : null,
       lastFireAt: ev.lastFireAt || null,
       updatedAt: Date.now()
     };
   }
-
-  function similarName(a,b){
-    if(!a||!b) return false;
-    const sa=a.replace(/\s+/g,''); const sb=b.replace(/\s+/g,'');
-    if(sa===sb) return true;
-    return sa.includes(sb) || sb.includes(sa);
-  }
-
+  function similarName(a,b){ if(!a||!b) return false; const sa=a.replace(/\s+/g,''); const sb=b.replace(/\s+/g,''); if(sa===sb) return true; return sa.includes(sb) || sb.includes(sa); }
   function tryMergeDraft(list, incoming){
-    // 仅在“同会话（包含当前 char）、同身份、同类型”下尝试合并
-    const candidates = list.filter(x =>
-      x.type===incoming.type &&
-      x.identityId===incoming.identityId &&
-      (incoming.type==='agreement' ? x.charIds.includes(characterId) : true)
-    ).sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
-
+    const candidates = list.filter(x => x.type===incoming.type && x.identityId===incoming.identityId && (incoming.type==='agreement' ? x.charIds.includes(characterId) : true)).sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
     for(const old of candidates){
-      // 1) 名称非常相近 → 高优先合并
       if (similarName(old.name, incoming.name)){
         const merged = {...old};
-        // 名称：以更长/更具体的为准
         if (incoming.name.length > old.name.length) merged.name = incoming.name;
-        // 时间：合并“只有时间/只有日期”的情况
         if (!old.time && incoming.time) merged.time = incoming.time;
-        if (old.time && incoming._onlyTime){
-          const [d, tm] = old.time.split(' ');
-          const hh = String(incoming._onlyTime.h).padStart(2,'0');
-          const mm = String(incoming._onlyTime.m).padStart(2,'0');
-          merged.time = `${d} ${hh}:${mm}`;
-        }
+        if (old.time && incoming._onlyTime){ const [d, tm] = old.time.split(' '); const hh=String(incoming._onlyTime.h).padStart(2,'0'); const mm=String(incoming._onlyTime.m).padStart(2,'0'); merged.time = `${d} ${hh}:${mm}`; }
         if (!old.time && !incoming.time && incoming._onlyTime){ merged._onlyTime = incoming._onlyTime; }
-        merged.status = merged.time ? 'confirmed' : 'draft';
-        merged.updatedAt = Date.now();
-        // 覆盖
-        Object.assign(old, merged);
-        return old;
+        merged.status = merged.time ? 'confirmed' : 'draft'; merged.updatedAt = Date.now(); Object.assign(old, merged); return old;
       }
     }
     return null;
   }
+  function saveOrMergeEvent(evDraft){ const arr=loadEvents(); const merged=tryMergeDraft(arr, evDraft); if (merged){ saveEvents(arr); return merged.id; } arr.push(evDraft); saveEvents(arr); return evDraft.id; }
 
-  function saveOrMergeEvent(evDraft){
-    const arr = loadEvents();
-    const merged = tryMergeDraft(arr, evDraft);
-    if (merged){ saveEvents(arr); return merged.id; }
-    // 新增
-    arr.push(evDraft); saveEvents(arr); return evDraft.id;
-  }
-
-  /* ========= LLM ========= */
   async function askLLM(history, mergedUserText){
     const cfg = JSON.parse(localStorage.getItem('eg_main_model_cfg') || '{}');
-    const apiKey = (cfg.apiKey||'').trim();
-    const base   = (cfg.base||'').trim().replace(/\/+$/,'');
-    const model  = (cfg.model||'').trim();
+    const apiKey = (cfg.apiKey||'').trim(), base=(cfg.base||'').trim().replace(/\/+$/,''), model=(cfg.model||'').trim();
     if (!apiKey || !base || !model) return;
 
     isStreaming = true; setTitleTyping(true);
 
-    // 系统提示：优先世界书，否则回退本地
     let sysText = '';
-    try{
-      if (window.Worldbook && window.Worldbook.getPrompt){
-        sysText = window.Worldbook.getPrompt('dm_online', {
-          charName: current.nickname || current.name,
-          charBio: current.bio || '',
-          userName: activeIdentity?.nickname || activeIdentity?.name || '用户',
-          userBio: activeIdentity?.bio || '',
-          ltm: '', recentN: 6, platform: 'wechat'
-        });
-      }
-    }catch(_){}
+    try{ if (window.Worldbook && window.Worldbook.getPrompt){ sysText = window.Worldbook.getPrompt('dm_online', {charName: current.nickname || current.name, charBio: current.bio || '', userName: activeIdentity?.nickname || activeIdentity?.name || '用户', userBio: activeIdentity?.bio || '', ltm:'', recentN:6, platform:'wechat'}); } }catch(_){}
     if (!sysText){ sysText = buildPersonaSystemPrompt(current) + buildUserContextPrompt(activeIdentity); }
     const sys = { role:'system', content: sysText };
 
     const msgs = history.slice(-20).map(m => ({ role: m.role==='user' ? 'user' : 'assistant', content: m.content }));
-    if (mergedUserText && (!msgs.length || msgs[msgs.length-1].role!=='user')){
-      msgs.push({ role:'user', content: mergedUserText });
-    }
+    if (mergedUserText && (!msgs.length || msgs[msgs.length-1].role!=='user')){ msgs.push({ role:'user', content: mergedUserText }); }
 
     try{
-      const res = await fetch(base + '/chat/completions', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-        body: JSON.stringify({ model, messages:[sys, ...msgs], temperature:0.7 })
-      });
+      const res = await fetch(base + '/chat/completions', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey}, body: JSON.stringify({ model, messages:[sys, ...msgs], temperature:0.7 }) });
       if (!res.ok) throw new Error(await res.text().catch(()=>('HTTP '+res.status)));
-
       const data = await res.json();
       let full = (data?.choices?.[0]?.message?.content || '').trim();
 
-      // ① 事件抽取：先整段提取与保存/合并
+      // 事件块优先抽取
       const { cleaned, event } = extractEgEventBlock(full);
-      if (event){
-        const draft = normalizeEventDraft(event, mergedUserText || '');
-        saveOrMergeEvent(draft);
-      }
+      if (event){ const draft = normalizeEventDraft(event, mergedUserText || ''); saveOrMergeEvent(draft); }
       full = cleaned;
 
-      // ② 渲染短句 & 回写 lastMsg
+      // 支持 LLM 主动发贴纸：[[sticker:名字]]
+      if (isStickerToken(full)){
+        const name = getStickerName(full); const st = name && findStickerByName(name);
+        if (st){ full = full; } // 保持 token，渲染时转换
+      }
+
       if (full){
         const chunks = splitChunks(full);
         const threads = getThreads();
         const mine = threads[characterId] || (threads[characterId] = { id: characterId, messages: [] });
         for (const seg of chunks){
-          push('you', seg);
+          renderMsg('you', seg);
           mine.messages.push({ role:'assistant', content: seg, ts: Date.now() });
           saveThreads(threads);
           try{
@@ -606,16 +535,19 @@
     }
   }
 
-  /* ========= 返回/编辑 ========= */
+  /* ========= 顶部操作 ========= */
   $('#backBtn').addEventListener('click', () => {
     if (window.openAppPage){ window.openAppPage('message.html'); return; }
     if (history.length > 1){ history.back(); return; }
     location.href = 'message.html';
   });
+
+  // 角色编辑
   $('#moreBtn').addEventListener('click', () => {
     $('#nameInput').value = current.name || '';
     $('#nickInput').value = current.nickname || '';
     $('#bioInput').value  = current.bio || '';
+    $('#allowBgInput').checked = !!current.allowBG;
     const up = $('#avatarUpload');
     if (current.avatar && isImg(current.avatar)){ up.innerHTML = '<img src="'+current.avatar+'">'; }
     else { up.innerHTML = current.avatar || '👤'; }
@@ -635,18 +567,88 @@
     current.name     = $('#nameInput').value.trim() || current.name;
     current.nickname = $('#nickInput').value.trim() || current.nickname || current.name;
     current.bio      = $('#bioInput').value.trim() || current.bio;
+    current.allowBG  = $('#allowBgInput').checked;
+
     const list = JSON.parse(localStorage.getItem('eg_characters_v2') || '[]');
     const idx  = list.findIndex(c => c.id === current.id);
     if (idx >= 0) list[idx] = current;
     localStorage.setItem('eg_characters_v2', JSON.stringify(list));
     setTitleTyping(false);
     $('#editModal').classList.remove('show');
+    // 通知事件页
+    try{ localStorage.setItem('eg_evt_chars', String(Date.now())); }catch(_){}
+  });
+
+  /* ========= “＋”菜单 ========= */
+  const actionSheet = $('#actionSheet');
+  $('#plusBtn').addEventListener('click', ()=>{
+    actionSheet.classList.toggle('show');
+    $('#emojiSheet').classList.remove('show');
+  });
+  document.addEventListener('click', (e)=>{ if(!actionSheet.contains(e.target) && e.target!==$('#plusBtn')) actionSheet.classList.remove('show'); }, true);
+
+  // 重新生成：基于最近一条用户消息触发
+  $('#actRegen').addEventListener('click', ()=>{
+    actionSheet.classList.remove('show');
+    const threads=getThreads(); const msgs=(threads[characterId]?.messages)||[];
+    const lastUser = [...msgs].reverse().find(m=>m.role==='user');
+    if (lastUser){ bufferMsgs=[lastUser.content]; tryFlush(); }
+  });
+
+  // 戳一戳：写入一条系统态消息
+  $('#actPoke').addEventListener('click', ()=>{
+    actionSheet.classList.remove('show');
+    renderMsg('me','（你戳了对方一下）');
+    const threads = getThreads(); const mine = threads[characterId] || (threads[characterId]={id:characterId,messages:[]});
+    mine.messages.push({role:'user', content:'（你戳了对方一下）', ts:Date.now(), meta:{nudge:true}});
+    saveThreads(threads); bufferMsgs.push('轻轻戳他一下，给个调皮的回应'); scheduleFlush();
+  });
+
+  // 发红包：简单输入金额与祝福
+  $('#actRedPacket').addEventListener('click', ()=>{
+    actionSheet.classList.remove('show');
+    const amount = prompt('红包金额（元）'); if(!amount) return;
+    const note = prompt('红包留言（可选）')||'';
+    const text = `🧧 发送红包 ¥${amount} ${note?('· '+note):''}`;
+    renderMsg('me', text);
+    const threads=getThreads(); const mine=threads[characterId] || (threads[characterId]={id:characterId,messages:[]});
+    mine.messages.push({role:'user', content:text, ts:Date.now(), meta:{redpacket:true, amount:amount}});
+    saveThreads(threads);
+  });
+
+  /* ========= 表情/贴纸 ========= */
+  const emojiSheet = $('#emojiSheet'), emojiGrid = $('#emojiGrid');
+  function renderStickerGrid(){
+    const arr = loadStickers();
+    emojiGrid.innerHTML = arr.map(s=>`<div class="emoji-tile" data-id="${s.id}" title="${esc(s.name)}"><img src="${esc(s.url)}" alt="${esc(s.name)}"></div>`).join('') || '<div style="grid-column:1/-1;color:#999;text-align:center;padding:16px">还没有表情，点下方“上传到表情库”</div>';
+    emojiGrid.querySelectorAll('.emoji-tile').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const id = el.getAttribute('data-id'); const one = loadStickers().find(x=>x.id===id); if(!one) return;
+        // 发送为 [[sticker:名字]]
+        const token = `[[sticker:${one.name}]]`;
+        renderMsg('me', token);
+        const threads=getThreads(); const mine=threads[characterId] || (threads[characterId]={id:characterId,messages:[]});
+        mine.messages.push({role:'user', content:token, ts:Date.now()});
+        saveThreads(threads);
+      });
+    });
+  }
+  $('#emojiBtn').addEventListener('click', ()=>{ emojiSheet.classList.toggle('show'); actionSheet.classList.remove('show'); renderStickerGrid(); });
+  $('#btnCloseEmoji').addEventListener('click', ()=> emojiSheet.classList.remove('show'));
+  $('#btnUploadSticker').addEventListener('click', ()=> $('#stickerInput').click());
+  $('#stickerInput').addEventListener('change', e=>{
+    const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
+    rd.onload = ev=>{
+      const name = prompt('给表情起个名字（用于命令：[[sticker:名字]]）','新表情') || ('st_'+Date.now());
+      const arr=loadStickers(); arr.push({id:'s_'+Date.now(), name, url:ev.target.result}); saveStickers(arr); renderStickerGrid();
+    }; rd.readAsDataURL(f);
   });
 
   /* ========= 启动 ========= */
   bindKeyboardFit();
   loadCharacters();
   loadIdentities();
+  ensureStickersDemo();
   loadHistory();
 })();
 </script>
