@@ -2,179 +2,157 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <title>聊天</title>
 <link rel="apple-touch-icon" sizes="512x512" href="../assets/icons/icon512.png">
 <link rel="icon" href="../assets/icons/icon512.png" type="image/png">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  :root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
-  html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ededed;color:#111}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ededed;color:#111}
+.chat-app{position:fixed;inset:0;overflow:hidden}
 
-  .chat-app{position:fixed;inset:0;overflow:hidden;background:#ededed}
+/* 顶部栏 */
+.chat-navbar{
+  position:fixed;left:0;right:0;top:0;z-index:10;
+  height:calc(44px + var(--safe-top));padding:0 12px;padding-top:var(--safe-top);
+  background:#f7f7f7;border-bottom:.5px solid #d9d9d9;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.nav-left,.nav-right{width:56px;height:44px;display:flex;align-items:center;justify-content:center}
+.nav-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#111}
+.nav-btn svg{width:22px;height:22px;stroke:#111;fill:none;stroke-width:2}
+.chat-title{flex:1;text-align:center;font-weight:600;color:#000}
 
-  /* 顶栏（固定不浮动） */
-  .chat-navbar{
-    position:fixed;left:0;right:0;top:0;z-index:100;
-    height:calc(44px + var(--safe-top)); padding-top:var(--safe-top);
-    background:#f7f7f7;border-bottom:.5px solid #d9d9d9;
-    display:flex;align-items:center;justify-content:space-between;
-    padding-left:8px;padding-right:8px
-  }
-  .nav-left,.nav-right{width:96px;display:flex;align-items:center;gap:6px}
-  .chat-back,.chat-more{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer}
-  .icon-ellipsis{width:22px;height:22px;display:block}
-  .chat-title{position:absolute;left:50%;transform:translateX(-50%);top:calc(10px + var(--safe-top));height:24px;display:flex;align-items:center;font-weight:600;color:#000}
+/* 列表 */
+.chat-list{position:absolute;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px 0 12px}
+.row{display:flex;align-items:flex-end;margin:10px 0;gap:8px}
+.row.you{justify-content:flex-start}
+.row.me{justify-content:flex-end}
+.avatar{width:36px;height:36px;border-radius:6px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+.bubble{max-width:72vw;padding:10px 12px;border-radius:8px;font-size:16px;line-height:1.45;word-break:break-word;box-shadow:0 1px 0 rgba(0,0,0,.05)}
+.row.you .bubble{background:#fff;border:1px solid #eaeaea}
+.row.me  .bubble{background:#95ec69}
 
-  /* 聊天列表 */
-  .chat-list{position:absolute;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px 0 12px}
-  .row{display:flex;align-items:flex-end;margin:10px 0;gap:8px}
-  .row.you{justify-content:flex-start}
-  .row.me{justify-content:flex-end}
-  .row.center{justify-content:center}
-  .center-note{font-size:13px;color:#909090;background:transparent;padding:6px 10px;border-radius:6px}
+/* 系统提示（时间/拍一拍等） */
+.sys-tip{margin:12px auto;color:#8a8a8f;background:#f5f5f7;border-radius:6px;padding:6px 10px;font-size:12px;width:max-content;max-width:80%;text-align:center}
 
-  .avatar{width:36px;height:36px;border-radius:6px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-  .avatar img{width:100%;height:100%;object-fit:cover;border-radius:6px}
-  .bubble{max-width:72vw;padding:10px 12px;border-radius:8px;font-size:16px;line-height:1.4;word-break:break-word;box-shadow:0 1px 0 rgba(0,0,0,.05)}
-  .row.you .bubble{background:#fff;border:1px solid #eaeaea}
-  .row.me  .bubble{background:#95ec69}
+/* 输入栏 */
+.input-wrap{
+  position:fixed;left:0;right:0;bottom:0;z-index:11;background:#f7f7f7;border-top:.5px solid #d9d9d9;
+  padding:8px 10px;padding-bottom:calc(8px + var(--safe-bottom));
+}
+.input-bar{display:flex;align-items:center;gap:8px}
+.tool-btn{width:36px;height:36px;border-radius:18px;border:1.5px solid #111;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fff}
+.tool-btn svg{width:20px;height:20px;stroke:#111;fill:none;stroke-width:2}
+.ipt{flex:1;background:#fff;border:1px solid #e1e1e1;border-radius:18px;padding:10px 14px;font-size:16px;outline:none}
+.send{background:#07c160;color:#fff;border:none;border-radius:18px;padding:10px 14px;font-size:15px;cursor:pointer}
+.send:active{background:#06ad56}
 
-  /* 图片/贴纸 */
-  .bubble.img{padding:4px;background:transparent;border:none;box-shadow:none}
-  .bubble.img img{max-width:220px;border-radius:8px;display:block}
+/* 展开菜单（+） */
+.plus-sheet{position:absolute;left:10px;bottom:calc(56px + var(--safe-bottom));display:none;z-index:12}
+.plus-sheet .card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.08);padding:8px}
+.plus-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;cursor:pointer}
+.plus-item:hover{background:#f7f7f7}
+.plus-item svg{width:18px;height:18px;stroke:#111;fill:none;stroke-width:2}
 
-  /* 红包气泡（仿微信） */
-  .redpack{background:#ff9f33;color:#fff;border-radius:12px;min-width:200px;max-width:280px;box-shadow:0 2px 0 rgba(0,0,0,.03)}
-  .redpack .rp-hd{display:flex;gap:10px;align-items:center;padding:12px 14px 8px}
-  .redpack .rp-icon{width:36px;height:36px;border-radius:6px;background:#ff6a00;display:flex;align-items:center;justify-content:center}
-  .redpack .rp-icon:before{content:"¥";display:block;color:#ffd966;font-weight:700}
-  .redpack .rp-title{font-size:17px;font-weight:700}
-  .redpack .rp-ft{font-size:12px;opacity:.9;padding:8px 14px;border-top:1px solid rgba(255,255,255,.25)}
-  .row.me .redpack{background:#ff9f33} .row.you .redpack{background:#ff9f33}
+/* 表情面板 */
+.emoji-panel{position:absolute;right:10px;bottom:calc(56px + var(--safe-bottom));display:none;z-index:12}
+.emoji-card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.08);width:280px;max-height:40vh;display:flex;flex-direction:column}
+.sticker-grid{padding:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;overflow:auto}
+.sticker{width:60px;height:60px;border-radius:8px;background:#f5f5f7;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+.sticker img{max-width:100%;max-height:100%}
+.sticker-tools{border-top:1px solid #eee;display:flex;gap:8px;padding:8px}
+.sticker-tools .mini{flex:1;height:32px;border-radius:8px;border:1px solid #e1e1e1;background:#fff}
 
-  /* 底栏（固定不浮动） */
-  .input-bar{
-    position:fixed;left:0;right:0;bottom:0;z-index:90;
-    background:#f7f7f7;border-top:.5px solid #d9d9d9;
-    padding:8px 10px;padding-bottom:calc(8px + var(--safe-bottom));
-    display:flex;gap:8px;align-items:center;min-height:calc(52px + var(--safe-bottom));
-  }
-  .tool-btn,.emoji-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer}
-  .icon-plus,.icon-emoji{width:26px;height:26px;stroke:#111;stroke-width:2;fill:none}
-  .ipt{flex:1;background:#fff;border:1px solid #e1e1e1;border-radius:18px;padding:10px 14px;font-size:16px;outline:none}
-  .send{background:#07c160;color:#fff;border:none;border-radius:18px;padding:10px 14px;font-size:15px;cursor:pointer}
-  .send:active{background:#06ad56}
+/* 红包 */
+.redpkt{max-width:72vw;background:#ff9f3f;color:#fff;border-radius:10px;padding:12px 14px;min-width:220px;box-shadow:0 1px 0 rgba(0,0,0,.05);position:relative}
+.redpkt:after{content:'';position:absolute;top:12px;right:-6px;border-left:6px solid #ff9f3f;border-top:6px solid transparent;border-bottom:6px solid transparent;display:block}
+.row.you .redpkt:after{left:-6px;right:auto;border-left:none;border-right:6px solid #fff} /* 兼容左侧小尾巴 */
+.row.you .redpkt{background:#fff;color:#ff9f3f;border:1px solid #ffd2a5}
+.redpkt-title{font-weight:700}
+.redpkt-sub{opacity:.9;margin-top:10px;font-size:12px}
 
-  .title-typing .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#666;margin:0 1px;opacity:.5;animation:blink 1.2s infinite}
-  .title-typing .dot:nth-child(2){animation-delay:.2s}
-  .title-typing .dot:nth-child(3){animation-delay:.4s}
-  @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
-
-  /* 面板 / 弹窗 */
-  .panel{position:fixed;left:0;right:0;bottom:calc(52px + var(--safe-bottom) + 8px);z-index:80;display:none}
-  .panel.show{display:block}
-  .panel-inner{margin:0 12px;background:#fff;border:1px solid #e6e6e6;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.08);overflow:hidden}
-  .action-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px}
-  .action{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
-  .action svg{width:28px;height:28px;stroke:#111;stroke-width:2;fill:none}
-
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:200}
-  .modal.show{display:flex}
-  .modal-content{background:#fff;width:90%;max-width:420px;border-radius:12px;overflow:hidden}
-  .modal-header{padding:16px;border-bottom:.5px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center}
-  .modal-title{font-size:17px;font-weight:600}
-  .modal-close{font-size:24px;color:#999;cursor:pointer;padding:4px}
-  .modal-body{padding:16px;max-height:60vh;overflow-y:auto}
-  .form-group{margin-bottom:16px}
-  .form-label{display:block;font-size:14px;color:#666;margin-bottom:8px}
-  .form-input{width:100%;padding:12px;border:1px solid #e5e5e5;border-radius:8px;font-size:16px}
-  .form-textarea{width:100%;padding:12px;border:1px solid #e5e5e5;border-radius:8px;font-size:16px;min-height:100px;resize:vertical}
-  .btns{display:flex;gap:10px}
-  .btn{flex:1;padding:12px;border:none;border-radius:8px;font-size:16px;cursor:pointer}
-  .btn.primary{background:#07c160;color:#fff}
-  .btn.ghost{background:#f2f2f2;color:#111}
-
-  /* 编辑角色弹窗里“后台活动”开关行 */
-  .switch-line{display:flex;align-items:center;gap:10px}
-  .switch-line input{transform:scale(1.2)}
-  /* 表情面板 */
-  .emoji-panel .panel-inner{padding:10px}
-  .stickers{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-  .stickers img{width:60px;height:60px;border-radius:8px;object-fit:cover;cursor:pointer}
-  .upload-sticker{margin-top:10px}
+/* 模态框通用 */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:20}
+.modal.show{display:flex}
+.modal-content{background:#fff;width:90%;max-width:420px;border-radius:12px;overflow:hidden}
+.modal-header{padding:16px;border-bottom:.5px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-size:17px;font-weight:600}
+.modal-close{font-size:24px;color:#999;cursor:pointer;padding:4px}
+.modal-body{padding:16px;max-height:60vh;overflow-y:auto}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:14px;color:#666;margin-bottom:6px}
+.form-input{width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;font-size:15px}
+.form-textarea{width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;font-size:15px;min-height:90px;resize:vertical}
+.btns{display:flex;gap:10px;margin-top:6px}
+.btn{flex:1;padding:12px;border:none;border-radius:8px;font-size:16px;cursor:pointer}
+.btn.primary{background:#07c160;color:#fff}
+.btn.ghost{background:#f2f2f2;color:#111}
 </style>
 </head>
 <body>
 <div class="chat-app">
-  <!-- 顶栏 -->
+  <!-- 顶部 -->
   <div class="chat-navbar" id="navBar">
-    <div class="nav-left">
-      <div class="chat-back" id="backBtn">
-        <svg class="icon-plus" viewBox="0 0 24 24" style="transform:rotate(45deg)"><path d="M12 4 L12 20"></path><path d="M4 12 L20 12"></path></svg>
-      </div>
-    </div>
+    <div class="nav-left"><div class="nav-btn" id="backBtn" aria-label="返回">
+      <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+    </div></div>
     <div class="chat-title" id="title">聊天</div>
-    <div class="nav-right">
-      <div class="chat-more" id="moreBtn">
-        <svg class="icon-ellipsis" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="#111"/><circle cx="12" cy="12" r="2" fill="#111"/><circle cx="19" cy="12" r="2" fill="#111"/></svg>
-      </div>
-    </div>
+    <div class="nav-right"><div class="nav-btn" id="moreBtn" aria-label="更多">
+      <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+    </div></div>
   </div>
 
-  <!-- 列表 -->
+  <!-- 消息列表 -->
   <div class="chat-list" id="chatList"></div>
 
-  <!-- 功能面板（加号） -->
-  <div class="panel" id="toolPanel">
-    <div class="panel-inner">
-      <div class="action-grid">
-        <div class="action" id="actRegen" title="重新生成">
-          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 1 3 6"/><path d="M3 12H8M3 12V7"></path></svg>
-          <small>重新生成</small>
+  <!-- 输入栏 -->
+  <div class="input-wrap" id="inputWrap">
+    <div class="input-bar">
+      <div class="tool-btn" id="plusBtn" aria-label="更多">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+      </div>
+      <input id="ipt" class="ipt" placeholder="发消息..." />
+      <div class="tool-btn" id="emojiBtn" aria-label="表情">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 10h.01M16 10h.01M7 15c1.2 1.3 3 2 5 2s3.8-.7 5-2"/></svg>
+      </div>
+      <button id="sendBtn" class="send">发送</button>
+    </div>
+
+    <!-- + 展开 -->
+    <div class="plus-sheet" id="plusSheet">
+      <div class="card">
+        <div class="plus-item" id="actRegenerate">
+          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-5.5L21 9M21 12a9 9 0 01-15.5 5.5L3 15"/><path d="M21 9V5h-4"/></svg>
+          <span>重新生成</span>
         </div>
-        <div class="action" id="actNudge" title="戳一戳">
-          <svg viewBox="0 0 24 24"><path d="M8 12h8M5 12a7 7 0 0 1 14 0 7 7 0 0 1-14 0z"></path></svg>
-          <small>戳一戳</small>
+        <div class="plus-item" id="actPat">
+          <svg viewBox="0 0 24 24"><path d="M8 12l2-2 4 4 5-5"/><path d="M3 12l3 3 2-2"/></svg>
+          <span>拍一拍</span>
         </div>
-        <div class="action" id="actRedpack" title="发红包">
-          <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M4 9h16"></path><path d="M8 7h8"></path></svg>
-          <small>发红包</small>
+        <div class="plus-item" id="actRedPacket">
+          <svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M10 14h4"/></svg>
+          <span>发红包</span>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- 表情/贴纸面板 -->
-  <div class="panel emoji-panel" id="emojiPanel">
-    <div class="panel-inner">
-      <div class="stickers" id="stickerBox"></div>
-      <div class="upload-sticker">
-        <input type="file" id="stickerInput" accept="image/*" hidden>
-        <button class="btn ghost" id="btnUploadSticker">上传贴纸</button>
+    <!-- 表情面板 -->
+    <div class="emoji-panel" id="emojiPanel">
+      <div class="emoji-card">
+        <div class="sticker-grid" id="stickerGrid"></div>
+        <div class="sticker-tools">
+          <button class="mini" id="uploadSticker">上传表情</button>
+          <button class="mini" id="closeSticker">关闭</button>
+        </div>
       </div>
     </div>
-  </div>
-
-  <!-- 底部 -->
-  <div class="input-bar" id="inputBar">
-    <button class="tool-btn" id="toolBtn" aria-label="更多">
-      <svg class="icon-plus" viewBox="0 0 24 24"><path d="M12 4 L12 20"></path><path d="M4 12 L20 12"></path></svg>
-    </button>
-    <input id="ipt" class="ipt" placeholder="发消息..." />
-    <button class="emoji-btn" id="emojiBtn" aria-label="表情">
-      <svg class="icon-emoji" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9"></circle>
-        <circle cx="9" cy="10" r="1.2"></circle>
-        <circle cx="15" cy="10" r="1.2"></circle>
-        <path d="M8 14c1.2 1 2.4 1.5 4 1.5s2.8-.5 4-1.5"></path>
-      </svg>
-    </button>
-    <button id="sendBtn" class="send">发送</button>
   </div>
 </div>
 
-<!-- 编辑角色弹窗（含“允许后台活动”） -->
+<!-- 编辑角色弹窗（保留） -->
 <div class="modal" id="editModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -185,7 +163,7 @@
       <form id="editForm">
         <div class="form-group">
           <label class="form-label">头像</label>
-          <div class="avatar-upload" id="avatarUpload" style="width:80px;height:80px;border:2px dashed #e5e5e5;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden"><span>📷</span></div>
+          <div class="avatar-upload" id="avatarUpload" style="width:80px;height:80px;border:2px dashed #e5e5e5;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;border-radius:8px"><span>📷</span></div>
           <input type="file" id="avatarInput" accept="image/*" style="display:none">
         </div>
         <div class="form-group">
@@ -201,11 +179,11 @@
           <textarea id="bioInput" class="form-textarea" required></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">后台活动</label>
-          <div class="switch-line">
-            <input type="checkbox" id="bgSwitch">
-            <span>允许该角色在事件时间后台行动</span>
-          </div>
+          <label class="form-label">允许后台活动</label>
+          <label style="display:flex;align-items:center;gap:8px;color:#666;">
+            <input type="checkbox" id="allowBgInput">
+            <span>到事件时间，系统可代表该角色后台行动</span>
+          </label>
         </div>
         <div class="btns">
           <button type="button" class="btn ghost" id="cancelEdit">取消</button>
@@ -217,371 +195,434 @@
 </div>
 
 <!-- 红包弹窗 -->
-<div class="modal" id="rpModal">
+<div class="modal" id="redModal">
   <div class="modal-content">
     <div class="modal-header">
-      <div class="modal-title">发红包</div>
-      <div class="modal-close" id="rpClose">×</div>
+      <div class="modal-title">发送红包</div>
+      <div class="modal-close" id="redClose">×</div>
     </div>
     <div class="modal-body">
-      <form id="rpForm">
-        <div class="form-group">
-          <label class="form-label">金额（元）</label>
-          <input type="number" step="0.01" min="0.01" id="rpAmount" class="form-input" placeholder="如 8.88" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">祝福语（选填）</label>
-          <input type="text" id="rpBless" class="form-input" placeholder="如 生日快乐">
-        </div>
-        <div class="btns">
-          <button type="button" class="btn ghost" id="rpCancel">取消</button>
-          <button type="submit" class="btn primary">发送</button>
-        </div>
-      </form>
+      <div class="form-group">
+        <label class="form-label">金额（元）</label>
+        <input type="number" id="redAmount" class="form-input" inputmode="decimal" step="0.01" placeholder="例如 8.88" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">祝福语（选填）</label>
+        <input type="text" id="redBless" class="form-input" placeholder="如：生日快乐">
+      </div>
+      <div class="btns">
+        <button class="btn ghost" id="redCancel">取消</button>
+        <button class="btn primary" id="redSend">发送</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
 (() => {
-  'use strict';
+'use strict';
 
-  /* ---------- DOM refs ---------- */
-  const $ = s => document.querySelector(s);
-  const chat     = $('#chatList');
-  const ipt      = $('#ipt');
-  const titleEl  = $('#title');
-  const nav      = $('#navBar');
-  const inputBar = $('#inputBar');
-  const toolPanel= $('#toolPanel');
-  const emojiPanel= $('#emojiPanel');
-  const stickerBox= $('#stickerBox');
+/* ---------- 小工具 ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const isImg = s => typeof s === 'string' && (s.startsWith('data:') || s.startsWith('http'));
+function getJSON(k,df){ try{ return JSON.parse(localStorage.getItem(k)||''); }catch(e){ return df; } }
+function setJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+function nowTs(){ return Date.now(); }
 
-  /* ---------- 布局 ---------- */
-  function layout(){
-    const navHeight = nav.offsetHeight;
-    const inputHeight = inputBar.offsetHeight;
-    chat.style.top = navHeight + 'px';
-    chat.style.bottom = inputHeight + 'px';
+/* ---------- 数据：角色 & 身份 ---------- */
+const urlParams   = new URLSearchParams(location.search);
+const characterId = urlParams.get('id') || sessionStorage.getItem('currentChatId') || 'nash';
+let characters = getJSON('eg_characters_v2', []);
+if (!characters.length){ characters=[{id:'nash',name:'Nash',nickname:'Nash',bio:'天真开朗的小狐狸',avatar:'🦊'}]; setJSON('eg_characters_v2', characters); }
+let current = characters.find(c=>c.id===characterId) || characters[0];
+
+let identities = getJSON('eg_user_identities_v1', []);
+if (!identities.length){ identities=[{id:'u_default',name:'User',nickname:'我',avatar:'👤',bio:'',boundCharIds:[],kind:'identity'}]; setJSON('eg_user_identities_v1',identities); }
+function refreshDefaultBinding(){
+  const def=identities[0]; const all=(characters||[]).map(c=>c.id);
+  const taken=new Set(); identities.slice(1).forEach(u=>(u.boundCharIds||[]).forEach(id=>taken.add(id)));
+  def.boundCharIds = all.filter(id=>!taken.has(id)); setJSON('eg_user_identities_v1',identities);
+}
+function activeIdentityFor(cid){
+  for(let i=1;i<identities.length;i++){ const u=identities[i]; if((u.boundCharIds||[]).includes(cid)) return u; }
+  return identities[0];
+}
+refreshDefaultBinding();
+let activeIdentity = activeIdentityFor(characterId);
+
+/* ---------- 历史消息 ---------- */
+function threads(){ return getJSON('eg_threads_v1', {}); }
+function saveThreads(map){ setJSON('eg_threads_v1', map); }
+const chat = $('#chatList'); const ipt=$('#ipt'); const titleEl=$('#title');
+
+function pushBubble(type, html, isSystem=false){
+  if(isSystem){
+    const tip=document.createElement('div'); tip.className='sys-tip'; tip.innerHTML=html; chat.appendChild(tip);
+  }else{
+    const row=document.createElement('div'); row.className='row '+(type==='me'?'me':'you');
+    const ava=document.createElement('div'); ava.className='avatar';
+    const av= type==='me' ? (activeIdentity.avatar||'👤') : (current.avatar||'👤');
+    if(isImg(av)){ const img=document.createElement('img'); img.src=av; ava.appendChild(img); } else ava.textContent=av;
+    const bubble=document.createElement('div'); bubble.className='bubble'; bubble.innerHTML=html;
+    if(type==='me'){ row.appendChild(bubble); row.appendChild(ava);} else {row.appendChild(ava); row.appendChild(bubble);}
+    chat.appendChild(row);
   }
-  window.addEventListener('resize', layout);
-  window.addEventListener('orientationchange', layout);
+  chat.scrollTop=chat.scrollHeight;
+}
 
-  /* ---------- 工具 ---------- */
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const isImg = s => typeof s === 'string' && (s.startsWith('data:') || s.startsWith('http'));
-
-  const urlParams   = new URLSearchParams(location.search);
-  const characterId = urlParams.get('id') || sessionStorage.getItem('currentChatId') || 'nash';
-
-  function loadJSON(k, df){ try{ const t=localStorage.getItem(k); return t?JSON.parse(t):df; }catch(e){ return df; } }
-  function saveJSON(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
-
-  /* ---------- 数据：角色 / 身份 ---------- */
-  let characters = loadJSON('eg_characters_v2', []);
-  if (!characters.length){
-    characters = [{ id:'nash', name:'Nash', nickname:'Nash', bio:'天真开朗的小狐狸', avatar:'🦊' }];
-    saveJSON('eg_characters_v2', characters);
-  }
-  let current = characters.find(c=>c.id===characterId) || characters[0];
-
-  let identities = loadJSON('eg_user_identities_v1', []);
-  if (!identities.length){
-    identities=[{id:'u_default',kind:'identity',name:'User',nickname:'我',avatar:'👤',bio:'',boundCharIds:[]}];
-    saveJSON('eg_user_identities_v1', identities);
-  }
-  function getActiveIdentityFor(charId){
-    for (let i=1;i<identities.length;i++){
-      const u=identities[i]; if((u.boundCharIds||[]).includes(charId)) return u;
-    }
-    return identities[0];
-  }
-  let activeIdentity = getActiveIdentityFor(characterId);
-
-  /* ---------- 头像 ---------- */
-  function avatarNode(from){
-    const el = document.createElement('div'); el.className='avatar';
-    const av = (from==='me') ? (activeIdentity.avatar||'👤') : (current.avatar||'👤');
-    if (isImg(av)){ const img=document.createElement('img'); img.src=av; el.appendChild(img); } else el.textContent=av;
-    return el;
-  }
-
-  /* ---------- 渲染与消息写入 ---------- */
-  function pushSide(type, content, options={}){
-    // type: 'me' | 'you' | 'center'
-    if(type==='center'){
-      const row=document.createElement('div'); row.className='row center';
-      const span=document.createElement('div'); span.className='center-note'; span.textContent=content;
-      row.appendChild(span); chat.appendChild(row); chat.scrollTop=chat.scrollHeight; return row;
-    }
-    const row=document.createElement('div'); row.className='row '+type;
-    const ava=avatarNode(type);
-    const bubble=document.createElement('div');
-    if(options.kind==='image'){
-      bubble.className='bubble img';
-      const img=new Image(); img.src=content; bubble.appendChild(img);
-    }else if(options.kind==='redpack'){
-      bubble.className='redpack';
-      bubble.innerHTML = `
-        <div class="rp-hd">
-          <div class="rp-icon"></div>
-          <div class="rp-title">${esc(options.title||'红包')}</div>
-        </div>
-        <div class="rp-ft">微信红包</div>`;
+function renderHistory(){
+  chat.innerHTML='';
+  const list=(threads()[characterId]?.messages)||[];
+  list.forEach(m=>{
+    if(m.meta?.sys){
+      pushBubble('you', esc(m.content), true);
+    }else if(m.meta?.red){
+      pushRedPacket(m.role==='user'?'me':'you', m.meta.red);
+    }else if(m.meta?.sticker){
+      pushBubble(m.role==='user'?'me':'you', `<img src="${esc(m.meta.sticker)}" style="max-width:180px;border-radius:6px">`);
     }else{
-      bubble.className='bubble'; bubble.textContent=content;
+      pushBubble(m.role==='user'?'me':'you', esc(m.content));
     }
-    if(type==='me'){ row.appendChild(bubble); row.appendChild(ava); }
-    else{ row.appendChild(ava); row.appendChild(bubble); }
-    chat.appendChild(row); chat.scrollTop=chat.scrollHeight; return row;
-  }
+  });
+  titleEl.textContent = current.nickname||current.name||'聊天';
+}
+renderHistory();
 
-  /* ---------- 历史 ---------- */
-  const threadsKey='eg_threads_v1';
-  function getThreads(){ return loadJSON(threadsKey, {}); }
-  function saveThreads(m){ saveJSON(threadsKey, m); }
-  function loadHistory(){
-    const msgs = (getThreads()[characterId]?.messages) || [];
-    chat.innerHTML='';
-    let lastTs = 0;
-    msgs.forEach(m=>{
-      if(m.role==='center'){ pushSide('center', m.content); }
-      else pushSide(m.role==='user'?'me':'you', m.content, m.meta);
-      lastTs = m.ts||lastTs;
-    });
-    chat.scrollTop=chat.scrollHeight;
-  }
+/* ---------- 输入栏布局 ---------- */
+function layout(){
+  const navH = $('#navBar').offsetHeight;
+  const inH  = $('#inputWrap').offsetHeight;
+  chat.style.top    = navH + 'px';
+  chat.style.bottom = inH + 'px';
+}
+layout(); window.addEventListener('resize', layout);
 
-  /* ---------- 顶部状态 ---------- */
-  function setTitleTyping(isTyping){
-    if(isTyping){
-      titleEl.classList.add('title-typing');
-      titleEl.innerHTML='对方正在输入&nbsp;<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-    }else{
-      titleEl.classList.remove('title-typing');
-      titleEl.textContent = current.nickname || current.name || '聊天';
-    }
-  }
+/* ---------- Sticker 库 ---------- */
+function loadStickers(){ return getJSON('eg_stickers_v1', []); }
+function saveSticker(b64){ const arr=loadStickers(); arr.unshift(b64); setJSON('eg_stickers_v1', arr); }
+function renderStickerPanel(){
+  const grid=$('#stickerGrid'); const arr=loadStickers();
+  grid.innerHTML = arr.length ? arr.map(s=>`<div class="sticker" data-src="${s}"><img src="${s}"></div>`).join('') :
+    `<div style="padding:16px;color:#888;">暂无表情，点“上传表情”添加</div>`;
+  grid.querySelectorAll('.sticker').forEach(el=>{
+    el.onclick=()=>{
+      const src=el.getAttribute('data-src');
+      sendSticker(src);
+      $('#emojiPanel').style.display='none';
+    };
+  });
+}
+$('#uploadSticker').onclick=()=>{
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=e=>{ saveSticker(e.target.result); renderStickerPanel(); }; rd.readAsDataURL(f); };
+  inp.click();
+};
+$('#closeSticker').onclick=()=> $('#emojiPanel').style.display='none';
 
-  /* ---------- LLM ---------- */
-  function buildPersonaSystemPrompt(role){
-    const name = role.nickname||role.name||'Ta';
-    return `你是一名角色对话助手，请严格扮演以下人设进行自然中文回复。
-【角色（你要扮演）】
-- 名称：${name}
+/* ---------- 发送 / 缓冲（保留），但“重新生成”走即时 ---------- */
+const REPLY_DELAY_MS = parseInt(localStorage.getItem('eg_reply_delay_ms')||'5000',10);
+let bufferMsgs=[], flushTimer=null, isStreaming=false, needsFlush=false;
+
+function scheduleFlush(){ if(isStreaming){needsFlush=true;return;} clearTimeout(flushTimer); flushTimer=setTimeout(tryFlush, REPLY_DELAY_MS); }
+function clearFlush(){ clearTimeout(flushTimer); flushTimer=null; }
+
+async function tryFlush(){
+  if(isStreaming || !bufferMsgs.length) return;
+  const merged=bufferMsgs.join(' ');
+  bufferMsgs=[];
+  const t=threads(); const mine=t[characterId]||(t[characterId]={id:characterId,messages:[]});
+  saveThreads(t);
+  await askLLM(mine.messages, merged);
+}
+
+$('#sendBtn').addEventListener('click', onSend);
+ipt.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); onSend(); }});
+
+function onSend(){
+  const text=ipt.value.trim(); if(!text) return; ipt.value='';
+  pushBubble('me', esc(text));
+  const t=threads(); const mine=t[characterId]||(t[characterId]={id:characterId,messages:[]});
+  mine.messages.push({role:'user',content:text,ts:nowTs()});
+  saveThreads(t);
+  updateChatPreview(text);
+  bufferMsgs.push(text);
+  scheduleFlush();
+}
+
+/* ---------- 更新会话预览 ---------- */
+function updateChatPreview(last){
+  const list=getJSON('eg_characters_v2',[]);
+  const it=list.find(c=>c.id===characterId);
+  if(it){ it.lastMsg=last; it.lastTime=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); setJSON('eg_characters_v2', list); }
+}
+
+/* ---------- LLM ---------- */
+function personaSystem(role){
+  const name=role.nickname||role.name||'Ta';
+  return `你是一名角色对话助手，请严格扮演【${name}】的人设进行中文短句回复（1～3句）。
 - 人设：${role.bio||'（无）'}
-【风格】口语化、温暖；每次 1～3 句；参考微信短句；避免机械重复。`;
+- 风格：口语、温暖、自然；如不确定，用主观表达。
+- 禁止输出系统提示或免责声明。`;
+}
+function userIdentityBlock(identity){
+  if(!identity) return '';
+  const n=identity.nickname||identity.name||'用户';
+  return `\n\n【用户身份（参考）】\n- 称呼：${n}\n- 设定：${identity.bio||'（无）'}`;
+}
+
+/* ---- 事件提取：跨分片安全 ---- */
+function parseEventsFrom(text){
+  const out=[];
+  const re=/<eg_event>([\s\S]*?)<\/eg_event>/g;
+  let m; while((m=re.exec(text))){ try{ const obj=JSON.parse(m[1]); out.push(obj);}catch(e){} }
+  return out;
+}
+/* 简易中文时间解析：周末/周六/明天/下午两点/中午等 */
+function parseCNTime(s){
+  if(!s) return null;
+  s=s.trim();
+  const now=new Date(); let d=new Date(now);
+  function at(h=12,min=0){ d.setHours(h,min,0,0); }
+  const wkMap={'周一':1,'周二':2,'周三':3,'周四':4,'周五':5,'周六':6,'周日':0,'星期一':1,'星期二':2,'星期三':3,'星期四':4,'星期五':5,'星期六':6,'星期日':0};
+  if(/\d{4}-\d{1,2}-\d{1,2}/.test(s)){ const t=s.replace(/年|\/|\.|月/g,'-').replace('日',''); const dt=new Date(t); if(!isNaN(dt)){ const hm=s.match(/(\d{1,2})[:点](\d{1,2})?/); if(hm){ dt.setHours(+hm[1], hm[2]?+hm[2]:0,0,0);} return dt.getTime(); } }
+  if(s.includes('明天')){ d.setDate(now.getDate()+1); }
+  if(s.includes('后天')){ d.setDate(now.getDate()+2); }
+  if(s.includes('今天')){ /* 保持今天 */ }
+  if(s.includes('周末')){ // 默认本周六
+    const target=6; // Sat
+    const cur=now.getDay(); const diff=(target - cur + 7)%7; d.setDate(now.getDate()+diff); at(12,0);
   }
-  function buildUserContextPrompt(identity){
-    if(!identity) return ''; const uname=identity.nickname||identity.name||'用户';
-    return `\n\n【用户身份（供参考）】
-- 姓名/昵称：${uname}
-- 设定：${identity.bio||'（无）'}`;
-  }
-  function splitChunks(t){
-    const arr=[]; t.replace(/\s+/g,' ').split(/(?<=[。！？!?…\n])/).forEach(s=>{ s=s.trim(); if(s) arr.push(s); });
-    const out=[]; arr.forEach(s=>{ if(s.length<=60) out.push(s); else (s.match(/.{1,40}/g)||[s]).forEach(x=>out.push(x)); });
-    return out;
-  }
+  const wk = Object.keys(wkMap).find(k=>s.includes(k));
+  if(wk){ const target=wkMap[wk]; const cur=now.getDay(); let diff=(target-cur+7)%7; if(diff===0 && /下|下周/.test(s)) diff=7; d.setDate(now.getDate()+diff); }
+  if(/中午/.test(s)) at(12,0);
+  if(/下午/.test(s)){ const m=s.match(/([0-9一二三四五六七八九十]{1,2})点/); const h=m? (isNaN(+m[1])? '一二三四五六七八九十'.indexOf(m[1])+1 : +m[1]) : 3; at(12 + h%12,0); }
+  if(/晚上/.test(s)){ const m=s.match(/([0-9]{1,2})点/); const h=m?+m[1]:8; at(12 + h%12,0); }
+  if(/(\d{1,2})点半/.test(s)){ const h=+RegExp.$1; at(h,30); }
+  if(/(\d{1,2})点(\d{1,2})?/.test(s)){ const h=+RegExp.$1, m=RegExp.$2?+RegExp.$2:0; at(h,m); }
+  return d.getTime();
+}
 
-  async function askLLM(history, mergedUserText, extraUserHint){
-    const cfg = loadJSON('eg_main_model_cfg', {});
-    const apiKey=(cfg.apiKey||'').trim(); const base=(cfg.base||'').trim().replace(/\/+$/,''); const model=(cfg.model||'').trim();
-    if(!apiKey||!base||!model) return;
+/* 占位事件合并覆盖 */
+function upsertEventFromObj(obj){
+  const LS_EVENTS='eg_events_v1';
+  const events=getJSON(LS_EVENTS,[])||[];
+  const myId=activeIdentity?.id||identities[0]?.id;
+  const myName=activeIdentity?.nickname||activeIdentity?.name||'我';
+  const charId=current.id;
 
-    setTitleTyping(true);
+  const type = obj.type==='note' ? 'note' : 'agreement';
+  const name = (obj.name||obj.title||'').trim() || '（未命名事件）';
+  let  time = obj.time || obj.datetime || '';
+  if(time && !/\d{4}-\d{2}-\d{2}/.test(time)){ const ts=parseCNTime(time); if(ts) time = new Date(ts).toISOString().slice(0,16).replace('T',' '); }
+  if(!time && (obj.natural||obj.when)){ const ts=parseCNTime(obj.natural||obj.when); if(ts) time=new Date(ts).toISOString().slice(0,16).replace('T',' '); }
 
-    const sys = { role:'system', content: buildPersonaSystemPrompt(current)+buildUserContextPrompt(activeIdentity) };
-    const msgs = history.slice(-20).map(m=>({ role:m.role==='user'?'user':'assistant', content:m.content }));
-    if(mergedUserText){ msgs.push({ role:'user', content: mergedUserText + (extraUserHint?('\n\n'+extraUserHint):'') }); }
+  const freq = obj.freq||obj.frequency||'once';
+  const charIds = obj.charIds || obj.charlds || obj.participants || [charId];
+  const visibleCharIds = type==='note' ? (obj.visibleCharIds||charIds) : [];
+  const pending = !time; // 缺时间则占位
 
-    try{
-      const res=await fetch(base+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model, messages:[sys,...msgs], temperature:0.8})});
-      if(!res.ok) throw new Error(await res.text().catch(()=>('HTTP '+res.status)));
-      const data=await res.json();
-      const full=(data?.choices?.[0]?.message?.content||'').trim(); if(!full) return;
-      const chunks=splitChunks(full);
-      const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
+  // 找到相同会话、相同名称、相同类型的未确定记录合并
+  const idx = events.findIndex(e=>e.type===type && (e.name||'')===name && (e.identityId||myId)===myId && (e.pending===true || pending===true) && ((e.charIds||[]).includes(charId) || (e.visibleCharIds||[]).includes(charId)));
+  const base = idx>=0 ? events[idx] : {id:'e_'+Math.random().toString(36).slice(2,10)};
+  const merged = Object.assign(base,{
+    type, name, identityId:myId, identityName:myName,
+    charIds: type==='agreement'? Array.from(new Set([...(base.charIds||[]), ...charIds])) : [],
+    visibleCharIds: type==='note'? Array.from(new Set([...(base.visibleCharIds||[]), ...visibleCharIds])) : [],
+    freq, time: time||base.time||null, lastFireAt:null, pending: pending && !(time)
+  });
+  if(idx>=0) events[idx]=merged; else events.push(merged);
+  setJSON(LS_EVENTS, events);
+  // 通知事件页刷新
+  try{ localStorage.setItem('eg_evt_ping', String(Date.now())); }catch(_){}
+}
+
+/* 让 LLM 在需要时返回事件 JSON（不会被分句切断，因为我们先检索再分块） */
+function injectEventInstruction(){
+  const who=activeIdentity?.nickname||activeIdentity?.name||'用户';
+  const ch = current.nickname||current.name||'角色';
+  return `\n\n【事件抽取指令】当你与用户在聊天中“明确约定了一个可被日历记录的事件”（如：时间/频次/参与者/主题），请在正常回复之后，额外输出一段独立行：
+<eg_event>{"type":"agreement","name":"事件名","time":"yyyy-MM-dd HH:mm 或 自然语句","freq":"once|day|week|month|year","charIds":["${current.id}"]}</eg_event>
+若时间未完全确定，可先用自然语句（如“周六下午两点”），后续用户补充细节时再次输出同一个 name 的 <eg_event> 来补全，系统会合并为同一条。不要拆行，也不要解释。`;
+}
+
+async function askLLM(history, mergedUserText, opts={}){
+  const cfg = JSON.parse(localStorage.getItem('eg_main_model_cfg') || '{}');
+  const apiKey=(cfg.apiKey||'').trim(), base=(cfg.base||'').trim().replace(/\/+$/,''), model=(cfg.model||'').trim();
+  if(!apiKey||!base||!model) return;
+
+  isStreaming=true;
+  titleEl.textContent='对方正在输入…';
+
+  // 系统提示：角色扮演 + 用户身份 + 事件指令
+  const sys={role:'system',content: personaSystem(current) + userIdentityBlock(activeIdentity) + injectEventInstruction()};
+  const msgs = history.slice(-20).map(m=>({role:m.role==='user'?'user':'assistant',content:m.content}));
+  if(mergedUserText && (!msgs.length || msgs[msgs.length-1].role!=='user')) msgs.push({role:'user',content: mergedUserText});
+  if(opts.extraUser) msgs.push({role:'user',content: opts.extraUser});
+
+  try{
+    const res = await fetch(base + '/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body: JSON.stringify({ model, messages:[sys, ...msgs], temperature:0.7 })
+    });
+    if(!res.ok) throw new Error(await res.text().catch(()=>('HTTP '+res.status)));
+
+    const data=await res.json();
+    let full=(data?.choices?.[0]?.message?.content||'').trim();
+    if(full){
+      // 先抽事件，再把剩余文本按短句展示（避免切断事件块）
+      const events = parseEventsFrom(full);
+      if(events.length){ events.forEach(upsertEventFromObj); full = full.replace(/<eg_event>[\s\S]*?<\/eg_event>/g,'').trim(); }
+      const chunks = splitForDisplay(full);
+      const t=threads(); const mine=t[characterId]||(t[characterId]={id:characterId,messages:[]});
       for(const seg of chunks){
-        pushSide('you', seg);
-        mine.messages.push({ role:'assistant', content:seg, ts:Date.now() });
-        saveThreads(threads);
+        if(!seg) continue;
+        pushBubble('you', esc(seg));
+        mine.messages.push({role:'assistant',content:seg,ts:nowTs()});
+        saveThreads(t);
         await new Promise(r=>setTimeout(r, 280));
       }
-      // 更新列表“最后一句”
-      try{
-        const list=loadJSON('eg_characters_v2',[]); const it=list.find(c=>c.id===characterId);
-        if(it){ it.lastMsg=chunks[chunks.length-1]||it.lastMsg||''; it.lastTime=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); saveJSON('eg_characters_v2',list); }
-      }catch(_){}
-    }catch(e){ console.error(e); }
-    finally{ setTitleTyping(false); }
-  }
-
-  /* ---------- 发送/缓冲（默认依旧有延迟，但【重新生成】不走延迟） ---------- */
-  const DELAY_MS = parseInt(localStorage.getItem('eg_reply_delay_ms') || '5000', 10);
-  let bufferMsgs=[]; let flushTimer=null; let isStreaming=false; let needsFlush=false;
-
-  function scheduleFlush(){ if(isStreaming){ needsFlush=true; return; } clearTimeout(flushTimer); flushTimer=setTimeout(tryFlush, DELAY_MS); }
-  function clearFlush(){ clearTimeout(flushTimer); flushTimer=null; }
-  async function tryFlush(){
-    if(isStreaming||!bufferMsgs.length) return;
-    const merged=bufferMsgs.join(' '); bufferMsgs=[];
-    const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-    saveThreads(threads);
-    await askLLM(mine.messages, merged);
-  }
-
-  $('#sendBtn').addEventListener('click', onSend);
-  ipt.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); onSend(); }});
-  ipt.addEventListener('focus', ()=>clearFlush());
-  ipt.addEventListener('blur', ()=>scheduleFlush());
-
-  function onSend(){
-    const text=ipt.value.trim(); if(!text) return; ipt.value='';
-    pushSide('me', text);
-    const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-    mine.messages.push({ role:'user', content:text, ts:Date.now() }); saveThreads(threads);
-    // 更新列表“最后一句”
-    try{ const list=loadJSON('eg_characters_v2',[]); const it=list.find(c=>c.id===characterId); if(it){ it.lastMsg=text; it.lastTime=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); saveJSON('eg_characters_v2',list);} }catch(_){}
-    bufferMsgs.push(text);
-    if (document.activeElement !== ipt) scheduleFlush();
-  }
-
-  /* ---------- 重新生成（立刻执行 + 清理最近一次助手输出） ---------- */
-  function regenNow(){
-    // 1) 删除最近一次 assistant 输出（连续分段一起删）
-    const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-    let i=mine.messages.length-1;
-    // 从尾部回溯，连续 assistant 块删除到上一个 user 为止（但不删 user）
-    while(i>=0 && mine.messages[i].role==='assistant'){ mine.messages.splice(i,1); i--; }
-    saveThreads(threads);
-    // 同步 UI：把尾部连续的 you 泡泡删掉
-    for(let j=chat.children.length-1;j>=0;j--){
-      const row=chat.children[j]; if(row && row.classList && row.classList.contains('row') && row.classList.contains('you')){ chat.removeChild(row); } else if(row.classList.contains('row') && row.classList.contains('me')){ break; }
+      updateChatPreview(chunks[chunks.length-1] || '...');
     }
-    // 2) 立刻发起请求，附加“换一种方式”的提示
-    const lastUser = [...mine.messages].reverse().find(m=>m.role==='user');
-    const userText = lastUser ? lastUser.content : '';
-    const hint = '（请换一种表达方式，避免复述上一版：可调整语气/词汇/节奏，仍保持 1～3 句的微信式短句。）';
-    askLLM(mine.messages, userText, hint);
+  }catch(e){ console.error(e); }
+  finally{
+    isStreaming=false;
+    titleEl.textContent=current.nickname||current.name||'聊天';
+    if(needsFlush){ needsFlush=false; scheduleFlush(); }
   }
+}
+function splitForDisplay(t){
+  if(!t) return [];
+  return t.replace(/\s+/g,' ').split(/(?<=[。！？!?…\n])/).map(s=>s.trim()).filter(Boolean).flatMap(s=> s.length<=60? [s] : (s.match(/.{1,40}/g)||[s]));
+}
 
-  /* ---------- 戳一戳 ---------- */
-  function sendNudge(fromWho='me'){
-    const who = fromWho==='me' ? (current.nickname||current.name||'Ta') : (activeIdentity.nickname||activeIdentity.name||'我');
-    const txt = fromWho==='me' ? `我拍了拍“${who}”` : `${who}拍了拍我`;
-    pushSide('center', txt);
-    const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-    mine.messages.push({ role:'center', content:txt, ts:Date.now() }); saveThreads(threads);
+/* ---------- 顶部按钮 ---------- */
+$('#backBtn').onclick=()=>{ if(window.openAppPage){ window.openAppPage('message.html'); }else if(history.length>1){ history.back(); }else{ location.href='message.html'; } };
+$('#moreBtn').onclick=()=>{
+  $('#nameInput').value=current.name||'';
+  $('#nickInput').value=current.nickname||'';
+  $('#bioInput').value=current.bio||'';
+  $('#allowBgInput').checked = !!current.allowBG;
+  const up=$('#avatarUpload'); if(current.avatar && isImg(current.avatar)){ up.innerHTML='<img src="'+current.avatar+'" style="width:100%;height:100%;object-fit:cover">'; } else { up.innerHTML=current.avatar||'👤'; }
+  $('#editModal').classList.add('show');
+};
+$('#modalClose').onclick=()=>$('#editModal').classList.remove('show');
+$('#cancelEdit').onclick=()=>$('#editModal').classList.remove('show');
+$('#avatarUpload').onclick=()=>$('#avatarInput').click();
+$('#avatarInput').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
+  rd.onload=ev=>{ $('#avatarUpload').innerHTML='<img src="'+ev.target.result+'">'; current.avatar=ev.target.result; };
+  rd.readAsDataURL(f);
+};
+$('#editForm').onsubmit=e=>{
+  e.preventDefault();
+  current.name=$('#nameInput').value.trim()||current.name;
+  current.nickname=$('#nickInput').value.trim()||current.nickname||current.name;
+  current.bio=$('#bioInput').value.trim()||current.bio;
+  current.allowBG = $('#allowBgInput').checked;
+  const list=getJSON('eg_characters_v2',[]); const idx=list.findIndex(c=>c.id===current.id); if(idx>=0) list[idx]=current; setJSON('eg_characters_v2', list);
+  $('#editModal').classList.remove('show');
+  titleEl.textContent=current.nickname||current.name||'聊天';
+};
+
+/* ---------- + 与 表情 ---------- */
+$('#plusBtn').onclick=()=>{ const s=$('#plusSheet'); s.style.display = s.style.display==='block'?'none':'block'; $('#emojiPanel').style.display='none'; };
+$('#emojiBtn').onclick=()=>{ renderStickerPanel(); const p=$('#emojiPanel'); p.style.display = p.style.display==='block'?'none':'block'; $('#plusSheet').style.display='none'; };
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#plusBtn') && !e.target.closest('#plusSheet')) $('#plusSheet').style.display='none';
+  if(!e.target.closest('#emojiBtn') && !e.target.closest('#emojiPanel')) $('#emojiPanel').style.display='none';
+});
+
+/* 重新生成：立即，且抹掉末尾 LLM 连续气泡 */
+$('#actRegenerate').onclick=()=>{
+  $('#plusSheet').style.display='none';
+  const t=threads(); const mine=t[characterId]||(t[characterId]={id:characterId,messages:[]});
+  // 删除末尾 assistant 连续段
+  while(mine.messages.length && mine.messages[mine.messages.length-1].role!=='user'){
+    mine.messages.pop();
   }
+  saveThreads(t);
+  renderHistory(); // 直接刷新，把被截断的几行抹掉
+  askLLM(mine.messages, null, {extraUser:'请基于上一轮用户的信息，换一种说法/视角，生成不同的简短回复（1-3句）。'});
+};
 
-  /* ---------- 红包 ---------- */
-  function sendRedpack(amount, bless){
-    // UI 卡片（自己发）
-    pushSide('me', '', {kind:'redpack', title: bless || '红包'});
-    const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-    mine.messages.push({ role:'user', content:`[红包] ${bless||''}`, ts:Date.now(), meta:{kind:'redpack', amount, bless} });
-    saveThreads(threads);
-    // 触发 LLM：告诉角色收到了红包
-    const uname = activeIdentity.nickname||activeIdentity.name||'用户';
-    const cname = current.nickname||current.name||'你';
-    const prompt = `${uname}给${cname}发了${amount}元红包${bless?('，并说“'+bless+'”'):''}。请以${cname}的语气给${uname}一个简短自然的回应（1～2句）。`;
-    askLLM(mine.messages, '', prompt);
+/* 拍一拍 */
+$('#actPat').onclick=()=>{
+  $('#plusSheet').style.display='none';
+  const my=activeIdentity?.nickname||activeIdentity?.name||'我';
+  pushBubble('you', `我拍了拍“${esc(current.nickname||current.name||'Ta')}”`, true);
+  const t=threads(); const mine=t[characterId]||(t[characterId]={id:characterId,messages:[]});
+  mine.messages.push({role:'user',content:`（系统）${my}拍了拍你`, ts:nowTs(), meta:{sys:true}});
+  saveThreads(t);
+  askLLM(mine.messages, null, {extraUser:'对方拍了拍你，请用不超过1句的轻松幽默回复。'});
+};
+
+/* 红包 */
+$('#actRedPacket').onclick=()=>{ $('#plusSheet').style.display='none'; $('#redModal').classList.add('show'); };
+$('#redClose').onclick=()=>$('#redModal').classList.remove('show');
+$('#redCancel').onclick=()=>$('#redModal').classList.remove('show');
+$('#redSend').onclick=()=>{
+  const amount=($('#redAmount').value||'').trim(); if(!amount){ alert('请输入金额'); return; }
+  const bless = ($('#redBless').value||'').trim();
+  $('#redModal').classList.remove('show');
+  sendRedPacket(amount, bless);
+};
+
+function pushRedPacket(side, meta){
+  const row=document.createElement('div'); row.className='row '+(side==='me'?'me':'you');
+  const ava=document.createElement('div'); ava.className='avatar';
+  const av= side==='me' ? (activeIdentity.avatar||'👤') : (current.avatar||'👤');
+  if(isImg(av)){ const img=document.createElement('img'); img.src=av; ava.appendChild(img);} else ava.textContent=av;
+  const card=document.createElement('div'); card.className='redpkt';
+  card.innerHTML=`<div style="display:flex;align-items:center;gap:12px">
+    <div style="width:42px;height:42px;border-radius:8px;background:#ff6f00;display:flex;align-items:center;justify-content:center;">
+      <svg viewBox="0 0 24 24" style="width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2"><rect x="5" y="4" width="14" height="16" rx="2"/><circle cx="12" cy="10" r="3"/></svg>
+    </div>
+    <div>
+      <div class="redpkt-title">${esc(meta.bless||'恭喜发财')}</div>
+      <div class="redpkt-sub">微信红包</div>
+    </div>
+  </div>`;
+  if(side==='me'){ row.appendChild(card); row.appendChild(ava);} else { row.appendChild(ava); row.appendChild(card);}
+  chat.appendChild(row); chat.scrollTop=chat.scrollHeight;
+}
+function sendRedPacket(amount, bless){
+  const t=threads(); const mine=t[characterId]||(t[characterId]={id:characterId,messages:[]});
+  const meta={amount:amount, bless:bless};
+  // 记录消息
+  mine.messages.push({role:'user',content:`[红包] ${bless||''}`.trim(), ts:nowTs(), meta:{red:meta}});
+  saveThreads(t);
+  pushRedPacket('me', meta);
+  updateChatPreview(bless?(`[红包] ${bless}`):'[红包]');
+  // Prompt 给 LLM
+  const uname=activeIdentity?.nickname||activeIdentity?.name||'用户';
+  askLLM(mine.messages, null, {extraUser:`${uname}给你发送了${amount}元红包${bless?`，并说“${bless}”`:''}。请用1句自然的感谢/互动回复。`});
+}
+
+/* 发送表情 */
+function sendSticker(src){
+  pushBubble('me', `<img src="${esc(src)}" style="max-width:180px;border-radius:6px">`);
+  const t=threads(); const mine=t[characterId]||(t[characterId]={id:characterId,messages:[]});
+  mine.messages.push({role:'user',content:'[表情]',ts:nowTs(),meta:{sticker:src}});
+  saveThreads(t);
+  updateChatPreview('[表情]');
+  scheduleFlush();
+}
+
+/* ---------- 启动时：时间戳系统行（可选） ---------- */
+(function addClockLine(){
+  const t=(new Date()).toTimeString().slice(0,5);
+  pushBubble('you', t, true);
+})();
+
+/* ---------- 身份变更联动 ---------- */
+window.addEventListener('storage', e=>{
+  if(e.key==='eg_user_identities_v1' || e.key==='eg_evt_ping'){
+    identities=getJSON('eg_user_identities_v1',[]); refreshDefaultBinding(); activeIdentity=activeIdentityFor(characterId);
   }
+});
 
-  /* ---------- 贴纸 ---------- */
-  function renderStickers(){
-    const arr=loadJSON('eg_stickers_v1', []);
-    stickerBox.innerHTML = arr.map((src,i)=>`<img src="${src}" data-i="${i}">`).join('') || '<div style="color:#999;padding:8px">暂无贴纸，先上传吧</div>';
-    stickerBox.querySelectorAll('img').forEach(img=>{
-      img.onclick=()=>{
-        const src=img.src;
-        pushSide('me', src, {kind:'image'});
-        const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-        mine.messages.push({ role:'user', content:src, ts:Date.now(), meta:{kind:'image'} }); saveThreads(threads);
-        // 可选择不触发 LLM 或触发简短反应：
-        scheduleFlush();
-      };
-    });
-  }
-
-  /* ---------- 交互 ---------- */
-  // 顶部
-  $('#backBtn').addEventListener('click', ()=>{
-    if (window.openAppPage){ window.openAppPage('message.html'); return; }
-    if (history.length > 1){ history.back(); return; }
-    location.href='message.html';
-  });
-  $('#moreBtn').addEventListener('click', ()=>{
-    $('#nameInput').value=current.name||'';
-    $('#nickInput').value=current.nickname||'';
-    $('#bioInput').value=current.bio||'';
-    const up=$('#avatarUpload');
-    if (isImg(current.avatar)) up.innerHTML='<img src="'+current.avatar+'" style="width:100%;height:100%;object-fit:cover">';
-    else up.innerHTML = current.avatar||'👤';
-    $('#bgSwitch').checked = !!current.allowBG;   // ★ 恢复后台活动
-    $('#editModal').classList.add('show');
-  });
-  $('#avatarUpload').addEventListener('click', ()=>$('#avatarInput').click());
-  $('#avatarInput').addEventListener('change', e=>{
-    const f=e.target.files[0]; if(!f) return;
-    const rd=new FileReader(); rd.onload=ev=>{ $('#avatarUpload').innerHTML='<img src="'+ev.target.result+'">'; current.avatar=ev.target.result; }; rd.readAsDataURL(f);
-  });
-  $('#modalClose').addEventListener('click', ()=>$('#editModal').classList.remove('show'));
-  $('#cancelEdit').addEventListener('click', ()=>$('#editModal').classList.remove('show'));
-  $('#editForm').addEventListener('submit', e=>{
-    e.preventDefault();
-    current.name=$('#nameInput').value.trim()||current.name;
-    current.nickname=$('#nickInput').value.trim()||current.nickname||current.name;
-    current.bio=$('#bioInput').value.trim()||current.bio;
-    current.allowBG = $('#bgSwitch').checked;     // ★ 保存
-    const list=loadJSON('eg_characters_v2',[]); const idx=list.findIndex(c=>c.id===current.id);
-    if(idx>=0) list[idx]=current; saveJSON('eg_characters_v2',list);
-    $('#editModal').classList.remove('show');
-    setTitleTyping(false);
-  });
-
-  // 工具面板
-  function toggleToolPanel(on){ toolPanel.classList.toggle('show', on!==undefined?on:!toolPanel.classList.contains('show')); emojiPanel.classList.remove('show'); }
-  function toggleEmojiPanel(on){ emojiPanel.classList.toggle('show', on!==undefined?on:!emojiPanel.classList.contains('show')); toolPanel.classList.remove('show'); if(emojiPanel.classList.contains('show')) renderStickers(); }
-  $('#toolBtn').addEventListener('click', ()=>toggleToolPanel());
-  $('#emojiBtn').addEventListener('click', ()=>toggleEmojiPanel());
-
-  // 面板 actions
-  $('#actRegen').addEventListener('click', ()=>{ toggleToolPanel(false); regenNow(); });
-  $('#actNudge').addEventListener('click', ()=>{ toggleToolPanel(false); sendNudge('me'); });
-  $('#actRedpack').addEventListener('click', ()=>{ toggleToolPanel(false); $('#rpModal').classList.add('show'); });
-
-  // 贴纸上传
-  $('#btnUploadSticker').addEventListener('click', ()=>$('#stickerInput').click());
-  $('#stickerInput').addEventListener('change', async e=>{
-    const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=ev=>{
-      const arr=loadJSON('eg_stickers_v1',[]); arr.unshift(ev.target.result); saveJSON('eg_stickers_v1',arr); renderStickers();
-    }; rd.readAsDataURL(f);
-  });
-
-  // 红包表单
-  $('#rpClose').addEventListener('click', ()=>$('#rpModal').classList.remove('show'));
-  $('#rpCancel').addEventListener('click', ()=>$('#rpModal').classList.remove('show'));
-  $('#rpForm').addEventListener('submit', e=>{
-    e.preventDefault();
-    const amount=parseFloat($('#rpAmount').value); if(!(amount>0)) return;
-    const bless=$('#rpBless').value.trim();
-    $('#rpModal').classList.remove('show');
-    sendRedpack(amount.toFixed(2), bless);
-    $('#rpAmount').value=''; $('#rpBless').value='';
-  });
-
-  // 点击空白关闭面板
-  document.addEventListener('click', e=>{
-    const inBar = e.target.closest('#inputBar'); const inPanel = e.target.closest('.panel-inner')||e.target.closest('.modal-content')||e.target.closest('#toolBtn')||e.target.closest('#emojiBtn');
-    if(!inBar && !inPanel){ toolPanel.classList.remove('show'); emojiPanel.classList.remove('show'); }
-  });
-
-  /* ---------- 启动 ---------- */
-  layout();
-  setTitleTyping(false);
-  loadHistory();
 })();
 </script>
 </body>
