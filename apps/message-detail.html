@@ -210,24 +210,31 @@ function bindKeyboardFit(){
     const app = $('.chat-app');
     
     const onVV = () => {
+      const offsetTop = vv.offsetTop;
+      const offsetLeft = vv.offsetLeft;
       const viewportHeight = vv.height;
-      const scale = vv.scale || 1;
+      const windowHeight = window.innerHeight;
+      const keyboardHeight = windowHeight - viewportHeight;
       
-      // 关键：设置 app 高度为视口高度，而不是 window.innerHeight
+      // 核心：用 top 和 left 抵消视口偏移
+      app.style.position = 'fixed';
+      app.style.top = `${offsetTop}px`;
+      app.style.left = `${offsetLeft}px`;
+      app.style.right = `${offsetLeft}px`;
       app.style.height = `${viewportHeight}px`;
+      app.style.width = `${vv.width}px`;
       
-      const navHeight = nav.offsetHeight;
-      const inputHeight = inputBar.offsetHeight;
-      
-      // 重新计算聊天区域位置
-      chat.style.top = `${navHeight}px`;
-      chat.style.bottom = `${inputHeight}px`;
-      
-      // 输入框始终固定在视口底部
-      inputBar.style.position = 'fixed';
-      inputBar.style.bottom = '0';
-      inputBar.style.left = '0';
-      inputBar.style.right = '0';
+      if (keyboardHeight > 100) {
+        // 键盘弹起
+        const navHeight = nav.offsetHeight;
+        chat.style.top = `${navHeight}px`;
+        chat.style.bottom = `${inputBar.offsetHeight}px`;
+      } else {
+        // 键盘收起
+        requestAnimationFrame(() => {
+          layout();
+        });
+      }
       
       setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
     };
@@ -236,7 +243,7 @@ function bindKeyboardFit(){
     vv.addEventListener('scroll', onVV);
     window.addEventListener('resize', onVV);
     
-    // 初始化调用
+    // 初始化
     onVV();
   }
 
