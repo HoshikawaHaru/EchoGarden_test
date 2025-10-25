@@ -206,29 +206,37 @@ function layout(){chat.style.top=nav.offsetHeight+'px';chat.style.bottom=inputBa
 function bindKeyboardFit(){
     layout();
     
+    // 持续监控并阻止页面滚动
+    const keepTop = () => {
+      if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0 || document.body.scrollTop !== 0) {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+      requestAnimationFrame(keepTop);
+    };
+    requestAnimationFrame(keepTop);
+    
     // 禁止整个文档滚动
     document.body.addEventListener('touchmove', (e) => {
       if (e.target === chat || chat.contains(e.target)) {
-        // 允许聊天区域内部滚动
         return;
       }
       e.preventDefault();
     }, { passive: false });
     
-    // 监听输入框焦点
+    // 监听输入框焦点 - 立即执行
     ipt.addEventListener('focus', () => {
-      setTimeout(() => {
-        // 强制滚动页面到顶部
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      }, 100);
-      
-      setTimeout(() => {
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      }, 300);
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
+    
+    // 监听输入框即将获得焦点（更早触发）
+    ipt.addEventListener('touchstart', () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
     });
     
     let lastHeight = window.innerHeight;
