@@ -203,7 +203,49 @@ const to2=n=>(n<10?'0':'')+n;
 const chat=$('#chatList'), ipt=$('#ipt'), titleEl=$('#title'), nav=$('#navBar'), inputBar=$('#inputBar');
 
 function layout(){chat.style.top=nav.offsetHeight+'px';chat.style.bottom=inputBar.offsetHeight+'px'}
-function bindKeyboardFit(){layout();if(!window.visualViewport)return;const vv=visualViewport;const onVV=()=>{const wh=innerHeight,vh=vv.height,kh=wh-vh;document.body.style.position='fixed';document.body.style.width='100%';document.body.style.height='100%';if(kh>100){inputBar.style.bottom=`${kh}px`;chat.style.top=nav.offsetHeight+'px';chat.style.bottom=(wh-inputBar.getBoundingClientRect().top)+'px'}else{inputBar.style.bottom='0';requestAnimationFrame(layout)}setTimeout(()=>{chat.scrollTop=chat.scrollHeight},80)};vv.addEventListener('resize',onVV);vv.addEventListener('scroll',onVV);addEventListener('resize',onVV)}
+function bindKeyboardFit(){
+    layout();
+    if (!window.visualViewport) return;
+    const vv = window.visualViewport;
+    const app = $('.chat-app');
+    
+    const onVV = () => {
+      const offsetY = vv.offsetTop || 0;
+      const windowHeight = window.innerHeight;
+      const viewportHeight = vv.height;
+      const keyboardHeight = windowHeight - viewportHeight;
+      
+      // 使用 transform 抵消视口偏移
+      if (offsetY !== 0) {
+        app.style.transform = `translateY(${-offsetY}px)`;
+      } else {
+        app.style.transform = 'translateY(0)';
+      }
+      
+      if (keyboardHeight > 100) {
+        // 键盘弹起
+        inputBar.style.position = 'fixed';
+        inputBar.style.bottom = `${keyboardHeight}px`;
+        const navHeight = nav.offsetHeight;
+        const inputRect = inputBar.getBoundingClientRect();
+        chat.style.top = `${navHeight}px`;
+        chat.style.bottom = `${windowHeight - inputRect.top}px`;
+      } else {
+        // 键盘收起
+        inputBar.style.position = 'fixed';
+        inputBar.style.bottom = '0';
+        // 重新计算布局，确保没有空隙
+        requestAnimationFrame(() => {
+          layout();
+        });
+      }
+      setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
+    };
+    
+    vv.addEventListener('resize', onVV);
+    vv.addEventListener('scroll', onVV);
+    window.addEventListener('resize', onVV);
+  }
 
 const urlParams=new URLSearchParams(location.search);const characterId=urlParams.get('id')||sessionStorage.getItem('currentChatId')||'nash';
 let characters=[],current=null,identities=[],activeIdentity=null;
