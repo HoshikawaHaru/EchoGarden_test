@@ -207,30 +207,25 @@ function bindKeyboardFit(){
     layout();
     if (!window.visualViewport) return;
     const vv = window.visualViewport;
-    const app = $('.chat-app');
     
     const onVV = () => {
-      const offsetTop = vv.offsetTop;
-      const offsetLeft = vv.offsetLeft;
       const viewportHeight = vv.height;
       const windowHeight = window.innerHeight;
       const keyboardHeight = windowHeight - viewportHeight;
       
-      // 核心：用 top 和 left 抵消视口偏移
-      app.style.position = 'fixed';
-      app.style.top = `${offsetTop}px`;
-      app.style.left = `${offsetLeft}px`;
-      app.style.right = `${offsetLeft}px`;
-      app.style.height = `${viewportHeight}px`;
-      app.style.width = `${vv.width}px`;
-      
       if (keyboardHeight > 100) {
-        // 键盘弹起
+        // 键盘弹起 - 调整输入框位置
+        inputBar.style.position = 'absolute';
+        inputBar.style.bottom = `${keyboardHeight}px`;
+        
         const navHeight = nav.offsetHeight;
+        const inputRect = inputBar.getBoundingClientRect();
         chat.style.top = `${navHeight}px`;
-        chat.style.bottom = `${inputBar.offsetHeight}px`;
+        chat.style.bottom = `${windowHeight - inputRect.top}px`;
       } else {
         // 键盘收起
+        inputBar.style.position = 'absolute';
+        inputBar.style.bottom = '0';
         requestAnimationFrame(() => {
           layout();
         });
@@ -243,7 +238,6 @@ function bindKeyboardFit(){
     vv.addEventListener('scroll', onVV);
     window.addEventListener('resize', onVV);
     
-    // 初始化
     onVV();
   }
 
