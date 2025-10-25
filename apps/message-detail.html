@@ -206,6 +206,8 @@ function layout(){chat.style.top=nav.offsetHeight+'px';chat.style.bottom=inputBa
 function bindKeyboardFit(){
     layout();
     
+    let isKeyboardShowing = false;
+    
     // 持续监控并阻止页面滚动
     const keepTop = () => {
       if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0 || document.body.scrollTop !== 0) {
@@ -225,18 +227,30 @@ function bindKeyboardFit(){
       e.preventDefault();
     }, { passive: false });
     
-    // 监听输入框焦点 - 立即执行
+    // 监听输入框即将获得焦点 - 显示遮罩
+    ipt.addEventListener('touchstart', () => {
+      if (!isKeyboardShowing) {
+        keyboardMask.style.opacity = '1';
+      }
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
+    
+    // 监听输入框焦点
     ipt.addEventListener('focus', () => {
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
     });
     
-    // 监听输入框即将获得焦点（更早触发）
-    ipt.addEventListener('touchstart', () => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
+    // 失去焦点时隐藏遮罩
+    ipt.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (!isKeyboardShowing) {
+          keyboardMask.style.opacity = '0';
+        }
+      }, 100);
     });
     
     let lastHeight = window.innerHeight;
@@ -252,17 +266,41 @@ function bindKeyboardFit(){
       
       if (diff > 150) {
         // 键盘弹起
+        isKeyboardShowing = true;
         const keyboardHeight = diff;
         inputBar.style.transform = `translateY(-${keyboardHeight}px)`;
         chat.style.paddingBottom = `${keyboardHeight + inputBar.offsetHeight}px`;
+        
+        // 键盘完全弹起后，淡出遮罩
+        setTimeout(() => {
+          keyboardMask.style.opacity = '0';
+        }, 200);
       } else if (diff < -150) {
         // 键盘收起
+        isKeyboardShowing = false;
         inputBar.style.transform = 'translateY(0)';
         chat.style.paddingBottom = '0';
+        keyboardMask.style.opacity = '0';
         requestAnimationFrame(() => {
           layout();
         });
       }
+      
+      lastHeight = currentHeight;
+      setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 100);
+    };
+    
+    window.addEventListener('resize', onResize);
+    
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onResize);
+      window.visualViewport.addEventListener('scroll', () => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
+    }
+  }
       
       lastHeight = currentHeight;
       setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 100);
