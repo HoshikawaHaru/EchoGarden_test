@@ -205,43 +205,38 @@ const chat=$('#chatList'), ipt=$('#ipt'), titleEl=$('#title'), nav=$('#navBar'),
 function layout(){chat.style.top=nav.offsetHeight+'px';chat.style.bottom=inputBar.offsetHeight+'px'}
 function bindKeyboardFit(){
     layout();
-    if (!window.visualViewport) return;
-    const vv = window.visualViewport;
     
-    const onVV = () => {
-      const viewportHeight = vv.height;
-      const windowHeight = window.innerHeight;
-      const keyboardHeight = windowHeight - viewportHeight;
+    // iOS PWA 模式特殊处理
+    let lastHeight = window.innerHeight;
+    
+    const onResize = () => {
+      const currentHeight = window.innerHeight;
+      const diff = lastHeight - currentHeight;
       
-      // 更新 CSS 变量为实际可见高度
-      document.documentElement.style.setProperty('--viewport-height', `${viewportHeight}px`);
-      
-      if (keyboardHeight > 100) {
-        // 键盘弹起
-        inputBar.style.position = 'absolute';
-        inputBar.style.bottom = '0';
-        
-        const navHeight = nav.offsetHeight;
-        const inputHeight = inputBar.offsetHeight;
-        chat.style.top = `${navHeight}px`;
-        chat.style.bottom = `${inputHeight}px`;
-      } else {
-        // 键盘收起
-        inputBar.style.position = 'absolute';
-        inputBar.style.bottom = '0';
+      if (diff > 150) {
+        // 键盘弹起（高度减少超过150px）
+        const keyboardHeight = diff;
+        inputBar.style.transform = `translateY(-${keyboardHeight}px)`;
+        chat.style.paddingBottom = `${keyboardHeight + inputBar.offsetHeight}px`;
+      } else if (diff < -150) {
+        // 键盘收起（高度增加超过150px）
+        inputBar.style.transform = 'translateY(0)';
+        chat.style.paddingBottom = '0';
         requestAnimationFrame(() => {
           layout();
         });
       }
       
-      setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
+      lastHeight = currentHeight;
+      setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 100);
     };
     
-    vv.addEventListener('resize', onVV);
-    vv.addEventListener('scroll', onVV);
-    window.addEventListener('resize', onVV);
+    window.addEventListener('resize', onResize);
     
-    onVV();
+    // 如果支持 visualViewport，也监听它
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onResize);
+    }
   }
 
 const urlParams=new URLSearchParams(location.search);const characterId=urlParams.get('id')||sessionStorage.getItem('currentChatId')||'nash';
