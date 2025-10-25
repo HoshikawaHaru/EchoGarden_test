@@ -206,20 +206,49 @@ function layout(){chat.style.top=nav.offsetHeight+'px';chat.style.bottom=inputBa
 function bindKeyboardFit(){
     layout();
     
-    // iOS PWA 模式特殊处理
+    // 禁止整个文档滚动
+    document.body.addEventListener('touchmove', (e) => {
+      if (e.target === chat || chat.contains(e.target)) {
+        // 允许聊天区域内部滚动
+        return;
+      }
+      e.preventDefault();
+    }, { passive: false });
+    
+    // 监听输入框焦点
+    ipt.addEventListener('focus', () => {
+      setTimeout(() => {
+        // 强制滚动页面到顶部
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 100);
+      
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 300);
+    });
+    
     let lastHeight = window.innerHeight;
     
     const onResize = () => {
       const currentHeight = window.innerHeight;
       const diff = lastHeight - currentHeight;
       
+      // 立即阻止页面滚动
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      
       if (diff > 150) {
-        // 键盘弹起（高度减少超过150px）
+        // 键盘弹起
         const keyboardHeight = diff;
         inputBar.style.transform = `translateY(-${keyboardHeight}px)`;
         chat.style.paddingBottom = `${keyboardHeight + inputBar.offsetHeight}px`;
       } else if (diff < -150) {
-        // 键盘收起（高度增加超过150px）
+        // 键盘收起
         inputBar.style.transform = 'translateY(0)';
         chat.style.paddingBottom = '0';
         requestAnimationFrame(() => {
@@ -233,9 +262,13 @@ function bindKeyboardFit(){
     
     window.addEventListener('resize', onResize);
     
-    // 如果支持 visualViewport，也监听它
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', onResize);
+      window.visualViewport.addEventListener('scroll', () => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
     }
   }
 
