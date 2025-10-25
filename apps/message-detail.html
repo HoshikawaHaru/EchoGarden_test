@@ -213,15 +213,18 @@ function bindKeyboardFit(){
       const windowHeight = window.innerHeight;
       const keyboardHeight = windowHeight - viewportHeight;
       
+      // 更新 CSS 变量为实际可见高度
+      document.documentElement.style.setProperty('--viewport-height', `${viewportHeight}px`);
+      
       if (keyboardHeight > 100) {
-        // 键盘弹起 - 调整输入框位置
+        // 键盘弹起
         inputBar.style.position = 'absolute';
-        inputBar.style.bottom = `${keyboardHeight}px`;
+        inputBar.style.bottom = '0';
         
         const navHeight = nav.offsetHeight;
-        const inputRect = inputBar.getBoundingClientRect();
+        const inputHeight = inputBar.offsetHeight;
         chat.style.top = `${navHeight}px`;
-        chat.style.bottom = `${windowHeight - inputRect.top}px`;
+        chat.style.bottom = `${inputHeight}px`;
       } else {
         // 键盘收起
         inputBar.style.position = 'absolute';
