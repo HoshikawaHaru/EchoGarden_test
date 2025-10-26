@@ -8,16 +8,31 @@
 <link rel="icon" href="../assets/icons/icon512.png" type="image/png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+:root{
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-h: 56px;                 /* JS 会在启动时重写 */
+  --input-h: calc(52px + var(--safe-bottom));
+}
+
+/* 弹层层级提高，确保不被 header/footer 遮住 */
+.modal{ z-index: 3000; }                /* 遮住一切 */
+.panel,.emoji-panel{ z-index: 2100; }    /* 高于 input-bar(1999) 与 navbar(2000) */
+/* 顶部/底部高度变量：由 JS 实时写入 */
+:root{
+  --nav-h: 56px;                 /* 实际由 JS 写入 */
+  --input-h: calc(52px + var(--safe-bottom));
+}
 html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ededed;color:#111}
 .chat-app{position:fixed;inset:0;overflow:hidden}
 
 /* 顶栏（sticky，键盘不会顶走） */
 .chat-navbar{
-  position:sticky;top:0;z-index:20;
-  height:calc(44px + var(--safe-top));padding-top:var(--safe-top);
-  background:#f7f7f7;border-bottom:.5px solid #d9d9d9;
-  display:flex;align-items:center;justify-content:space-between;padding:0 12px
+  position:fixed; left:0; right:0; top:0; z-index:2000;
+  height:calc(44px + var(--safe-top)); padding-top:var(--safe-top);
+  background:#f7f7f7; border-bottom:.5px solid #d9d9d9;
+  display:flex; align-items:center; justify-content:space-between; padding:0 12px;
+  will-change: transform; /* iOS 命中测试更稳定 */
 }
 .chat-back,.chat-more,.chat-sum{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:#000}
 .chat-back::before{content:"‹";font-weight:700;transform:translateY(-1px)}
@@ -26,7 +41,14 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .chat-title{position:absolute;left:50%;transform:translateX(-50%);top:calc(10px + var(--safe-top));height:24px;display:flex;align-items:center;font-weight:600;color:#000}
 
 /* 列表 */
-.chat-list{position:absolute;left:0;right:0;top:calc(44px + var(--safe-top));overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px 0 12px;bottom:calc(52px + var(--safe-bottom))}
+/* 列表用变量计算上下留白，不再在 JS 里直接改 top/bottom */
+.chat-list{
+  position:absolute; left:0; right:0;
+  top:var(--nav-h);
+  bottom:var(--input-h);
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:10px 12px 0 12px;
+}
 .ts{display:flex;justify-content:center;color:#9b9b9b;font-size:12px;margin:8px 0}
 
 /* 行、勾选 */
@@ -51,12 +73,12 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .hb-title{font-size:18px;font-weight:700;margin-bottom:12px}
 .hb-sub{font-size:12px;opacity:.9;border-top:1px solid rgba(255,255,255,.35);padding-top:8px}
 
-/* 输入区：仅抬升底栏 */
+/* 底栏固定，只抬升底部位移 */
 .input-bar{
-  position:fixed;left:0;right:0;bottom:0;z-index:30;
-  background:#f7f7f7;border-top:.5px solid #d9d9d9;
-  padding:8px 10px;padding-bottom:calc(8px + var(--safe-bottom));
-  display:flex;gap:8px;align-items:center;min-height:calc(52px + var(--safe-bottom))
+  position:fixed; left:0; right:0; bottom:0; z-index:1999;
+  background:#f7f7f7; border-top:.5px solid #d9d9d9;
+  padding:8px 10px; padding-bottom:calc(8px + var(--safe-bottom));
+  display:flex; gap:8px; align-items:center; min-height:calc(52px + var(--safe-bottom));
 }
 .tool-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .tool-btn svg{width:26px;height:26px;stroke:#111;fill:none;stroke-width:2}
@@ -244,24 +266,37 @@ function setTitleTyping(on){
   else { titleEl.classList.remove('title-typing'); titleEl.textContent=current.nickname||current.name||'聊天'; }
 }
 
-/* ---------- 视口键盘适配：只抬升底栏，不动顶部 ---------- */
+/* ---------- 视口适配：用 CSS 变量，不再改元素定位 ---------- */
 (function(){
-  const inputBar=document.getElementById('inputBar');
+  const nav = document.getElementById('navBar');
+  const inputBar = document.getElementById('inputBar');
+  const root = document.documentElement;
+
+  function setVar(name, val){ root.style.setProperty(name, val); }
+
+  function layoutBase(){
+    // 写入真实高度（含安全区）
+    setVar('--nav-h', nav.offsetHeight + 'px');
+    setVar('--input-h', inputBar.offsetHeight + 'px');
+  }
+
   function onVV(){
-    if(!window.visualViewport) return;
-    const vv=visualViewport;
-    const wh=window.innerHeight, vh=vv.height, kh=wh-vh;
-    if(kh>80){ inputBar.style.bottom = `${kh}px`; }
-    else { inputBar.style.bottom = '0'; }
-    // 列表底部跟随
-    chat.style.bottom = `calc(${inputBar.offsetHeight}px + ${kh>80?kh+'px':'0px'})`;
+    if(!window.visualViewport){ layoutBase(); return; }
+    const vv = visualViewport;
+    const kh = Math.max(0, window.innerHeight - vv.height);  // 认为是键盘高度
+    // 仅抬升“底部可视高度”：把底栏高度临时加上键盘高度
+    setVar('--input-h', `calc(${inputBar.offsetHeight}px + ${kh>80 ? kh+'px' : '0px'})`);
+    // 顶栏不动；列表底部跟随变量自然重算
     setTimeout(()=>{ chat.scrollTop = chat.scrollHeight; }, 60);
   }
+
+  // 初始化 & 监听
+  layoutBase();
+  window.addEventListener('resize', ()=>{ layoutBase(); onVV(); });
   if(window.visualViewport){
     visualViewport.addEventListener('resize', onVV);
     visualViewport.addEventListener('scroll', onVV);
   }
-  window.addEventListener('resize', onVV);
   onVV();
 })();
 
@@ -518,27 +553,61 @@ async function askLLM(history, mergedUserText){
 }
 
 /* ---------- 副模型：自动总结 ---------- */
-function sideCfg(){ try{return JSON.parse(localStorage.getItem('eg_side_model_cfg')||'{}')}catch{return{}} }
-async function summarizeNow(){
-  const cfg=sideCfg(); const {apiKey='',base='',model=''}=cfg;
-  if(!apiKey||!base||!model){ alert('副模型未配置'); return; }
-  const threads=getThreads(); const msgs=(threads[characterId]?.messages)||[];
-  const recent = msgs.map(m=>`${m.role==='user'?'用户':'角色'}：${m.content}`).join('\n');
-  const sys={role:'system',content:'你是对话整理助手，请用不超过200字的中文，总结对话中的重要事实与偏好（作为长期记忆放入主模型提示），避免复述口水话。输出纯文本。'}
-  const user={role:'user',content:recent||'（空）'}
+function sideCfg(){
+  try { return JSON.parse(localStorage.getItem('eg_side_model_cfg')||'{}') }
+  catch { return {} }
+}
+
+async function summarizeNow(showDialog=true){
+  const cfg = sideCfg();
+  const apiKey = (cfg.apiKey||'').trim();
+  const base   = (cfg.base||'').trim().replace(/\/+$/,'');
+  const model  = (cfg.model||'').trim();
+
+  if(!apiKey || !base || !model){
+    alert('副模型未配置：请在设置中填入 side model 的 base / apiKey / model');
+    return;
+  }
+
+  const threads = getThreads();
+  const msgs = (threads[characterId]?.messages)||[];
+  const recent = msgs.map(m=>`${m.role==='user'?'用户':'角色'}：${m.content}`).join('\n').slice(-8000); // 防超长
+
+  const sys  = { role:'system', content:'你是对话整理助手，请用不超过200字中文总结“稳定事实与偏好（长期记忆）”。避免重复口水话。输出纯文本。' };
+  const user = { role:'user', content: recent || '（空）' };
+
   try{
-    const res=await fetch(base.replace(/\/+$/,'')+'/chat/completions',{
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model,messages:[sys,user],temperature:0.2})
+    const res = await fetch(base + '/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body: JSON.stringify({ model, messages:[sys,user], temperature:0.2 })
     });
     if(!res.ok) throw new Error(await res.text().catch(()=>('HTTP '+res.status)));
-    const data=await res.json(); const text=(data?.choices?.[0]?.message?.content||'').trim();
-    const LM=JSON.parse(localStorage.getItem('eg_long_memory_v1')||'{}'); LM[characterId]={summary:text,ts:Date.now()};
+
+    const data = await res.json();
+    const text = (data?.choices?.[0]?.message?.content || '').trim();
+
+    const LM = JSON.parse(localStorage.getItem('eg_long_memory_v1')||'{}');
+    LM[characterId] = { summary:text, ts:Date.now() };
     localStorage.setItem('eg_long_memory_v1', JSON.stringify(LM));
-  }catch(e){ console.error(e); }
+
+    if(showDialog){
+      // 直接用“心声”弹窗显示结果，便于你确认
+      document.getElementById('innerText').textContent = text || '（空）';
+      document.getElementById('innerModal').classList.add('show');
+    }
+  }catch(e){
+    console.error(e);
+    alert('总结失败：' + e.message);
+  }
 }
-function autoSummarize(){ summarizeNow(); }
-$('#sumBtn').onclick=()=>{ summarizeNow(); alert('已手动触发总结'); };
+
+// 右上角“✎”按钮：立即总结并弹窗显示
+document.getElementById('sumBtn').onclick = () => summarizeNow(true);
+
+// 自动总结仍由 askLLM 里： if(times % 20 === 0) autoSummarize();
+function autoSummarize(){ summarizeNow(false); }
+
 
 /* ---------- 事件识别（不负责触发） ---------- */
 const LS_EVENTS='eg_events_v1', LS_IDS='eg_user_identities_v1';
