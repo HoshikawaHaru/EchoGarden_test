@@ -4,59 +4,55 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>聊天</title>
+
+<!-- iOS PWA 全屏与透明状态栏 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="rgba(0,0,0,0)">
+
 <link rel="apple-touch-icon" sizes="512x512" href="../assets/icons/icon512.png">
 <link rel="icon" href="../assets/icons/icon512.png" type="image/png">
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
 :root{
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --nav-h: 56px;                 /* JS 会在启动时重写 */
+  --nav-h: 56px;                 /* 运行时由 JS 写入 */
   --input-h: calc(52px + var(--safe-bottom));
 }
 
-/* 弹层层级提高，确保不被 header/footer 遮住 */
-.modal{ z-index: 3000; }                /* 遮住一切 */
-.panel,.emoji-panel{ z-index: 2100; }    /* 高于 input-bar(1999) 与 navbar(2000) */
+/* 顶层容器用 100dvh，旧 webkit 回退到 --vh 方案 */
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ededed;color:#111;overflow:hidden}
+.chat-app{position:fixed;inset:0;height:100%;overflow:hidden;}
+@supports (height: 100dvh){ .chat-app{height:100dvh;} }
+@supports not (height: 100dvh){ .chat-app{height:calc(var(--vh, 1vh) * 100);} }
 
-/* 顶部/底部高度变量：由 JS 实时写入 */
-:root{
-  --nav-h: 56px;                 /* 实际由 JS 写入 */
-  --input-h: calc(52px + var(--safe-bottom));
-}
-html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ededed;color:#111}
-/* 让根容器跟随 100dvh/自定义 --vh，高度不被键盘改写 */
-.chat-app{
-  position: fixed;
-  inset: 0;
-  height: 100%;
-}
-@supports (height: 100dvh){
-  .chat-app{ height: 100dvh; }  /* iOS 16+ 支持，最稳 */
-}
-@supports not (height: 100dvh){
-  .chat-app{ height: calc(var(--vh, 1vh) * 100); } /* 旧 fallback */
-}
-
-/* 关键：避免 fixed 元素受合成层影响产生“上浮” */
+/* 顶栏（两侧定宽，中间自适应，永不被键盘顶走） */
 .chat-navbar{
-  will-change: auto !important;  /* 移除 transform 预告 */
-  transform: none !important;    /* 防止外部代码改它 */
+  position:fixed; left:0; right:0; top:0; z-index:2000;
+  height:calc(44px + var(--safe-top)); padding-top:var(--safe-top);
+  background:#f7f7f7; border-bottom:.5px solid #d9d9d9;
+  display:flex; align-items:center;
+  padding-left:calc(12px + env(safe-area-inset-left,0px));
+  padding-right:calc(12px + env(safe-area-inset-right,0px));
 }
-.chat-navbar *{
-  /* 子元素允许 translateX 定位，但不创建新合成层 */
-  will-change: auto !important;
-}
+.nav-left,.nav-right{ display:flex; align-items:center; gap:4px; min-width:40px; }
+.nav-left{ justify-content:flex-start; }
+.nav-right{ justify-content:flex-end; }
+.nav-center{ flex:1; display:flex; align-items:center; justify-content:center; min-width:0; }
+.chat-title{ font-weight:600; color:#000; font-size:17px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-.chat-back,.chat-more,.chat-sum{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:#000}
+.chat-back,.chat-more,.chat-sum{
+  width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:22px;color:#000
+}
 .chat-back::before{content:"‹";font-weight:700;transform:translateY(-1px)}
 .chat-more::before{content:"⋯";font-weight:700}
 .chat-sum::before{content:"✎";font-size:18px}
-.chat-title{position:absolute;left:50%;transform:translateX(-50%);top:calc(10px + var(--safe-top));height:24px;display:flex;align-items:center;font-weight:600;color:#000}
 
-/* 列表 */
-/* 列表用变量计算上下留白，不再在 JS 里直接改 top/bottom */
+/* 列表区：上下用变量留白，不手改 top/bottom */
 .chat-list{
   position:absolute; left:0; right:0;
   top:var(--nav-h);
@@ -83,7 +79,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .center-tip{display:flex;justify-content:center;color:#9b9b9b;font-size:12px;margin:14px 0}
 .stk{max-width:60vw;border-radius:10px;overflow:hidden;border:1px solid #ececec}
 
-/* 红包 */
+/* 红包 UI */
 .hongbao{width:250px;background:#ff9f3f;border-radius:12px 12px 12px 0;padding:14px;color:#fff;box-shadow:0 1px 0 rgba(0,0,0,.06)}
 .hb-title{font-size:18px;font-weight:700;margin-bottom:12px}
 .hb-sub{font-size:12px;opacity:.9;border-top:1px solid rgba(255,255,255,.35);padding-top:8px}
@@ -101,14 +97,14 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .send{background:#07c160;color:#fff;border:none;border-radius:18px;padding:10px 14px;font-size:15px;cursor:pointer}
 .send:active{background:#06ad56}
 
-/* 输入提示 */
+/* “对方输入中”动画 */
 .title-typing .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#666;margin:0 1px;opacity:.5;animation:blink 1.2s infinite}
 .title-typing .dot:nth-child(2){animation-delay:.2s}
 .title-typing .dot:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
 
-/* 通用弹窗 */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:60}
+/* 通用弹窗（层级拉满，避免遮挡） */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:3000}
 .modal.show{display:flex}
 .modal-content{background:#fff;width:90%;max-width:420px;border-radius:12px;overflow:hidden}
 .modal-header{padding:16px;border-bottom:.5px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center}
@@ -126,14 +122,15 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .btn.primary{background:#07c160;color:#fff}
 .btn.ghost{background:#f2f2f2;color:#111}
 
-/* 面板们（z-index 提升，防止点不开） */
-.panel,.emoji-panel{position:absolute;left:10px;right:10px;bottom:calc(56px + var(--safe-bottom));display:none;z-index:80}
+/* 面板们（工具栏上方） */
+.panel,.emoji-panel{position:absolute;left:10px;right:10px;bottom:calc(56px + var(--safe-bottom));display:none;z-index:2100}
 .panel.show,.emoji-panel.show{display:block}
 .panel-box{background:#fff;border:1px solid #e6e6e6;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.12);padding:10px;display:flex;gap:12px}
 .panel-item{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
 .panel-item svg{width:28px;height:28px;stroke:#111;fill:none;stroke-width:2}
 .panel-item span{font-size:12px;color:#333}
 
+/* 表情/表情包 */
 .emoji-tabs{display:flex;border-bottom:1px solid #eee;background:#fff;border-radius:12px 12px 0 0;overflow:hidden}
 .emoji-tab{flex:1;text-align:center;padding:10px 0;font-size:14px;color:#666;cursor:pointer}
 .emoji-tab.on{color:#111;font-weight:600;border-bottom:2px solid #07c160}
@@ -144,15 +141,21 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 </head>
 <body>
 <div class="chat-app">
+  <!-- 顶部导航 -->
   <div class="chat-navbar" id="navBar">
-    <div class="chat-back" id="backBtn" aria-label="返回"></div>
-    <div class="chat-title" id="title">聊天</div>
-    <div style="display:flex;gap:4px;align-items:center">
+    <div class="nav-left">
+      <div class="chat-back" id="backBtn" aria-label="返回"></div>
+    </div>
+    <div class="nav-center">
+      <div class="chat-title" id="title">聊天</div>
+    </div>
+    <div class="nav-right">
       <div class="chat-sum" id="sumBtn" title="测试总结"></div>
       <div class="chat-more" id="moreBtn" aria-label="编辑"></div>
     </div>
   </div>
 
+  <!-- 聊天列表 -->
   <div class="chat-list" id="chatList"></div>
 
   <!-- 左下加号面板 -->
@@ -186,6 +189,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <div class="emoji-box" id="emojiBox"></div>
   </div>
 
+  <!-- 底部输入栏 -->
   <div class="input-bar" id="inputBar">
     <div class="tool-btn" id="plusBtn" aria-label="更多">
       <!-- 单层圆环加号 -->
@@ -193,7 +197,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     </div>
     <input id="ipt" class="ipt" placeholder="发消息..." />
     <div class="tool-btn" id="emojiBtn" aria-label="表情">
-      <!-- 有眼睛笑脸（双圆眼） -->
+      <!-- 有眼睛笑脸 -->
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="9" cy="10" r="1.2"/><circle cx="15" cy="10" r="1.2"/><path d="M8 15c1.7 1.2 4.3 1.2 6 0"/></svg>
     </div>
     <button id="sendBtn" class="send">发送</button>
@@ -232,7 +236,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
   </div>
 </div>
 
-<!-- 心声查看 -->
+<!-- 心声查看（点对方头像时显示） -->
 <div class="modal" id="innerModal">
   <div class="modal-content">
     <div class="modal-header"><div class="modal-title">心声</div><div class="modal-close" id="innerClose">×</div></div>
@@ -242,27 +246,43 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 
 <script>
 (()=>{'use strict';
-/* ---------- 基础 ---------- */
+/* ---------- 小工具 ---------- */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const isImg=s=>typeof s==='string'&&(s.startsWith('data:')||s.startsWith('http'));
 const to2=n=>(n<10?'0':'')+n;
 
+/* ---------- 100vh 回退，写入 --vh ---------- */
+function writeVH(){
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+writeVH();
+window.addEventListener('resize', writeVH);
+
+/* ---------- 元素引用 ---------- */
 const chat=$('#chatList'), ipt=$('#ipt'), titleEl=$('#title');
 const urlParams=new URLSearchParams(location.search);
 const characterId=urlParams.get('id')||sessionStorage.getItem('currentChatId')||'nash';
 
 let characters=[],current=null,identities=[],activeIdentity=null;
 
+/* ---------- 角色/身份 ---------- */
 function loadCharacters(){
   try{characters=JSON.parse(localStorage.getItem('eg_characters_v2')||'[]')}catch{characters=[]}
-  if(!characters.length){characters=[{id:'nash',name:'Nash',nickname:'Nash',bio:'天真开朗的小狐狸',avatar:'🦊',allowBG:true,lastMsg:''}];localStorage.setItem('eg_characters_v2',JSON.stringify(characters))}
+  if(!characters.length){
+    characters=[{id:'nash',name:'Nash',nickname:'Nash',bio:'天真开朗的小狐狸',avatar:'🦊',allowBG:true,lastMsg:''}];
+    localStorage.setItem('eg_characters_v2',JSON.stringify(characters));
+  }
   current=characters.find(c=>c.id===characterId)||characters[0];
   setTitleTyping(false);
 }
 function loadIdentities(){
   try{identities=JSON.parse(localStorage.getItem('eg_user_identities_v1')||'[]')||[]}catch{identities=[]}
-  if(!identities.length){identities=[{id:'u_default',name:'User',nickname:'我',avatar:'👤',bio:'',boundCharIds:[],kind:'identity'}];localStorage.setItem('eg_user_identities_v1',JSON.stringify(identities))}
+  if(!identities.length){
+    identities=[{id:'u_default',name:'User',nickname:'我',avatar:'👤',bio:'',boundCharIds:[],kind:'identity'}];
+    localStorage.setItem('eg_user_identities_v1',JSON.stringify(identities));
+  }
   refreshDefaultBinding(); activeIdentity=getActiveIdentityFor(characterId);
 }
 function refreshDefaultBinding(){
@@ -275,54 +295,41 @@ function refreshDefaultBinding(){
 function getActiveIdentityFor(cid){for(let i=1;i<identities.length;i++){const u=identities[i];if((u.boundCharIds||[]).includes(cid))return u}return identities[0]}
 
 /* ---------- 顶部输入状态 ---------- */
-let typingTicker=null;
 function setTitleTyping(on){
   if(on){ titleEl.classList.add('title-typing'); titleEl.innerHTML='对方正在输入&nbsp;<span class="dot"></span><span class="dot"></span><span class="dot"></span>'; }
   else { titleEl.classList.remove('title-typing'); titleEl.textContent=current.nickname||current.name||'聊天'; }
 }
 
-/* ---------- 视口适配：用 CSS 变量，不再改元素定位 ---------- */
+/* ---------- 视口/键盘：仅抬底部，不顶走顶栏 ---------- */
 (function(){
   const nav = document.getElementById('navBar');
   const inputBar = document.getElementById('inputBar');
   const root = document.documentElement;
+  const setVar=(k,v)=>root.style.setProperty(k,v);
 
-  const setVar = (k,v)=>root.style.setProperty(k, v);
-
-  function setBaseHeights(){
+  function layoutBase(){
     setVar('--nav-h', nav.offsetHeight + 'px');
     setVar('--input-h', inputBar.offsetHeight + 'px');
   }
 
-  // ① 写入 --vh：旧机型用它模拟 100dvh
-  function writeVH(){
-    const h = window.visualViewport ? visualViewport.height : window.innerHeight;
-    root.style.setProperty('--vh', h + 'px');
-  }
-
-  // ② 键盘出现时，只抬升底部（列表用 bottom: var(--input-h) 自然让开）
   function onVV(){
-    const vv = window.visualViewport;
-    const kh = vv ? Math.max(0, window.innerHeight - vv.height) : 0; // 估算键盘高
-    const extra = kh > 80 ? kh : 0;  // 小抖动不处理
-    setVar('--input-h', `calc(${inputBar.offsetHeight}px + ${extra}px)`);
-    // 顶栏不动；滚到最底
-    requestAnimationFrame(()=>{ document.getElementById('chatList').scrollTop = 1e9; });
+    if(!window.visualViewport){ layoutBase(); return; }
+    const vv = visualViewport;
+    const kh = Math.max(0, window.innerHeight - vv.height);  // 近似键盘高度
+    setVar('--input-h', `calc(${inputBar.offsetHeight}px + ${kh>80 ? kh+'px' : '0px'})`);
+    setTimeout(()=>{ chat.scrollTop = chat.scrollHeight; }, 60);
   }
 
-  // 初始化 & 监听
-  setBaseHeights();
-  writeVH(); onVV();
-
-  window.addEventListener('resize', ()=>{ setBaseHeights(); writeVH(); onVV(); }, {passive:true});
-
+  layoutBase();
+  window.addEventListener('resize', ()=>{ layoutBase(); onVV(); });
   if(window.visualViewport){
-    visualViewport.addEventListener('resize', ()=>{ writeVH(); onVV(); }, {passive:true});
-    visualViewport.addEventListener('scroll',  ()=>{ writeVH(); onVV(); }, {passive:true});
+    visualViewport.addEventListener('resize', onVV);
+    visualViewport.addEventListener('scroll', onVV);
   }
+  onVV();
 })();
 
-/* ---------- 历史 / 渲染 ---------- */
+/* ---------- 历史/渲染 ---------- */
 function getThreads(){ try{return JSON.parse(localStorage.getItem('eg_threads_v1')||'{}')}catch{return{}} }
 function saveThreads(m){ localStorage.setItem('eg_threads_v1', JSON.stringify(m)) }
 function truncate(s){ s=(s||'').replace(/\s+/g,' '); return s.length>22 ? s.slice(0,22)+'…' : s; }
@@ -431,7 +438,7 @@ function onSend(){
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
   mine.messages.push({role:'user',content:text,ts:now}); saveThreads(threads);
   updateLastMsgPreview(text);
-  tryExtractEventFromText(text); /* detail 侧仍负责识别/补录事件，但不负责触发 */
+  tryExtractEventFromText(text); /* 只识别补录，不把系统提示插入聊天 */
   bufferMsgs.push(text); if(document.activeElement!==ipt) scheduleFlush();
 }
 
@@ -472,18 +479,18 @@ function sendAsText(t){
   updateLastMsgPreview(t);
   bufferMsgs.push(t); scheduleFlush();
 }
-
 function sendSticker(s){
   const now=Date.now();
-  pushSticker('me', s.img, now);
+  pushSticker('me', s.img, now);                 // 页面显示图片
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-  // 给 LLM 的“可读版本”（界面不显示）
-  mine.messages.push({role:'user',content:`【表情包：${s.name||'表情'}】`,ts:now,meta:{sticker:{name:s.name,img:s.img}}}); saveThreads(threads);
+  // 给 LLM 的“可读版本”（界面不显示名字）
+  mine.messages.push({role:'user',content:`【表情包：${s.name||'表情'}】`,ts:now,meta:{sticker:{name:s.name,img:s.img}}});
+  saveThreads(threads);
   updateLastMsgPreview('[表情]');
   bufferMsgs.push({__sticker__:true,name:s.name,img:s.img}); scheduleFlush();
 }
 
-/* ---------- 主模型：扮演 + 心声 + 多模态支持 ---------- */
+/* ---------- 主模型：扮演 + 心声 + 多模态 ---------- */
 function longMemoryText(){ try{const LM=JSON.parse(localStorage.getItem('eg_long_memory_v1')||'{}'); const t=LM[characterId]?.summary||''; return t?`\n【长期记忆】\n${t}\n`:'' }catch{return ''} }
 function buildPersonaSystemPrompt(role){
   const name=role.nickname||role.name||'Ta';
@@ -563,7 +570,7 @@ async function askLLM(history, mergedUserText){
           await new Promise(r=>setTimeout(r,320));
         }
       }
-      // 每次调用主模型+1，用于自动总结
+      // 自动总结（每 20 次 prompt）
       const times = incPromptCount();
       if(times % 20 === 0) autoSummarize();
     }
@@ -579,7 +586,6 @@ function sideCfg(){
   try { return JSON.parse(localStorage.getItem('eg_side_model_cfg')||'{}') }
   catch { return {} }
 }
-
 async function summarizeNow(showDialog=true){
   const cfg = sideCfg();
   const apiKey = (cfg.apiKey||'').trim();
@@ -593,7 +599,7 @@ async function summarizeNow(showDialog=true){
 
   const threads = getThreads();
   const msgs = (threads[characterId]?.messages)||[];
-  const recent = msgs.map(m=>`${m.role==='user'?'用户':'角色'}：${m.content}`).join('\n').slice(-8000); // 防超长
+  const recent = msgs.map(m=>`${m.role==='user'?'用户':'角色'}：${m.content}`).join('\n').slice(-8000);
 
   const sys  = { role:'system', content:'你是对话整理助手，请用不超过200字中文总结“稳定事实与偏好（长期记忆）”。避免重复口水话。输出纯文本。' };
   const user = { role:'user', content: recent || '（空）' };
@@ -614,7 +620,6 @@ async function summarizeNow(showDialog=true){
     localStorage.setItem('eg_long_memory_v1', JSON.stringify(LM));
 
     if(showDialog){
-      // 直接用“心声”弹窗显示结果，便于你确认
       document.getElementById('innerText').textContent = text || '（空）';
       document.getElementById('innerModal').classList.add('show');
     }
@@ -623,19 +628,14 @@ async function summarizeNow(showDialog=true){
     alert('总结失败：' + e.message);
   }
 }
-
-// 右上角“✎”按钮：立即总结并弹窗显示
 document.getElementById('sumBtn').onclick = () => summarizeNow(true);
-
-// 自动总结仍由 askLLM 里： if(times % 20 === 0) autoSummarize();
 function autoSummarize(){ summarizeNow(false); }
 
-
-/* ---------- 事件识别（不负责触发） ---------- */
+/* ---------- 事件识别（upsert，不在聊天里露出） ---------- */
 const LS_EVENTS='eg_events_v1', LS_IDS='eg_user_identities_v1';
-function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)) }
+const saveJSON=(k,v)=>localStorage.setItem(k, JSON.stringify(v));
 function loadJSON(k,d){ try{return JSON.parse(localStorage.getItem(k)||'')}catch{return d} }
-function uid(){ return 'e_'+Math.random().toString(36).slice(2,10) }
+const uid=()=>('e_'+Math.random().toString(36).slice(2,10));
 function setLocalDate(h,m,add=0){const d=new Date();d.setSeconds(0,0);d.setDate(d.getDate()+add);d.setHours(h,m,0,0);return d.getTime()}
 function nextWeekendNoon(){const now=new Date();const day=now.getDay();const sat=new Date(now);sat.setDate(now.getDate()+((6-day+7)%7));sat.setHours(12,0,0,0);if(sat.getTime()<=Date.now()){sat.setDate(sat.getDate()+1);sat.setHours(12,0,0,0);if(sat.getTime()<=Date.now())sat.setDate(sat.getDate()+6)}return sat.getTime()}
 function parseChineseTimePhrase(text){
@@ -668,8 +668,7 @@ function tryExtractEventFromText(text){
   const ts=parseChineseTimePhrase(text); upsertEvent(name,ts);
 }
 
-/* ---------- 左侧功能：重生/拍一拍/红包/批量删除（与之前一致） ---------- */
-const LS_ST='eg_stickers_v1';
+/* ---------- 左侧功能：重生/拍一拍/红包/批量删除 ---------- */
 $('#act-regen').onclick=()=>{
   $('#morePanel').classList.remove('show');
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
@@ -677,15 +676,15 @@ $('#act-regen').onclick=()=>{
   saveThreads(threads); loadHistory();
   const merged=(mine.messages.slice(-1)[0]?.role==='user'?mine.messages.slice(-1)[0].content:'')+'\n（请换一种说法/角度重述，不要重复上一版）';
   askLLM(mine.messages, merged); // 立即，不等待缓冲
-}
+};
 $('#act-pap').onclick=()=>{
   $('#morePanel').classList.remove('show');
   const now=Date.now(); pushCenter(`我拍了拍 "${current.nickname||current.name||'Ta'}"`, now);
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
   mine.messages.push({role:'user',content:'（用户拍了拍你）',ts:now,meta:{pap:true}}); saveThreads(threads);
   bufferMsgs.push('（用户拍了拍你）'); scheduleFlush();
-}
-$('#act-hb').onclick=()=>{ $('#hbModal').classList.add('show'); $('#morePanel').classList.remove('show'); }
+};
+$('#act-hb').onclick=()=>{ $('#hbModal').classList.add('show'); $('#morePanel').classList.remove('show'); };
 $('#hbClose').onclick=()=>$('#hbModal').classList.remove('show');
 $('#hbSend').onclick=()=>{
   const amt=parseFloat($('#hbAmount').value||''); if(!(amt>0)){ alert('请输入正确金额'); return; }
@@ -696,15 +695,15 @@ $('#hbSend').onclick=()=>{
   const tip=`【红包】${idName}给你发送了 ${amt} 元红包${bless?`，并说“${bless}”`:''}。请以角色语气自然回应（不超过2句）。`;
   mine.messages.push({role:'user',content:tip,ts:Date.now(),meta:{hongbao:hb}}); saveThreads(threads);
   askLLM(mine.messages, tip); // 立即
-}
+};
 
-/* 批量删除 */
+/* 批量删除（不推给副模型） */
 let selecting=false;
 $('#act-del').onclick=()=>{
   $('#morePanel').classList.remove('show');
   selecting=!selecting; Array.from(chat.children).forEach(row=>{ if(row.classList?.contains('row')) row.classList.add('selecting') });
   if(selecting) pushCenter('已进入批量删除，点消息左上角选择，再点此提示退出并删除', Date.now());
-}
+};
 chat.addEventListener('click',e=>{
   if(!selecting) return;
   const row=e.target.closest('.row'); if(!row) return;
