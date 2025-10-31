@@ -26,16 +26,29 @@
   --input-h: calc(52px + var(--safe-bottom));
 }
 html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ededed;color:#111}
-.chat-app{position:fixed;inset:0;overflow:hidden}
-
-/* 顶栏（sticky，键盘不会顶走） */
-.chat-navbar{
-  position:fixed; left:0; right:0; top:0; z-index:2000;
-  height:calc(44px + var(--safe-top)); padding-top:var(--safe-top);
-  background:#f7f7f7; border-bottom:.5px solid #d9d9d9;
-  display:flex; align-items:center; justify-content:space-between; padding:0 12px;
-  will-change: transform; /* iOS 命中测试更稳定 */
+/* 让根容器跟随 100dvh/自定义 --vh，高度不被键盘改写 */
+.chat-app{
+  position: fixed;
+  inset: 0;
+  height: 100%;
 }
+@supports (height: 100dvh){
+  .chat-app{ height: 100dvh; }  /* iOS 16+ 支持，最稳 */
+}
+@supports not (height: 100dvh){
+  .chat-app{ height: calc(var(--vh, 1vh) * 100); } /* 旧 fallback */
+}
+
+/* 关键：避免 fixed 元素受合成层影响产生“上浮” */
+.chat-navbar{
+  will-change: auto !important;  /* 移除 transform 预告 */
+  transform: none !important;    /* 防止外部代码改它 */
+}
+.chat-navbar *{
+  /* 子元素允许 translateX 定位，但不创建新合成层 */
+  will-change: auto !important;
+}
+
 .chat-back,.chat-more,.chat-sum{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:#000}
 .chat-back::before{content:"‹";font-weight:700;transform:translateY(-1px)}
 .chat-more::before{content:"⋯";font-weight:700}
@@ -274,32 +287,39 @@ function setTitleTyping(on){
   const inputBar = document.getElementById('inputBar');
   const root = document.documentElement;
 
-  function setVar(name, val){ root.style.setProperty(name, val); }
+  const setVar = (k,v)=>root.style.setProperty(k, v);
 
-  function layoutBase(){
-    // 写入真实高度（含安全区）
+  function setBaseHeights(){
     setVar('--nav-h', nav.offsetHeight + 'px');
     setVar('--input-h', inputBar.offsetHeight + 'px');
   }
 
+  // ① 写入 --vh：旧机型用它模拟 100dvh
+  function writeVH(){
+    const h = window.visualViewport ? visualViewport.height : window.innerHeight;
+    root.style.setProperty('--vh', h + 'px');
+  }
+
+  // ② 键盘出现时，只抬升底部（列表用 bottom: var(--input-h) 自然让开）
   function onVV(){
-    if(!window.visualViewport){ layoutBase(); return; }
-    const vv = visualViewport;
-    const kh = Math.max(0, window.innerHeight - vv.height);  // 认为是键盘高度
-    // 仅抬升“底部可视高度”：把底栏高度临时加上键盘高度
-    setVar('--input-h', `calc(${inputBar.offsetHeight}px + ${kh>80 ? kh+'px' : '0px'})`);
-    // 顶栏不动；列表底部跟随变量自然重算
-    setTimeout(()=>{ chat.scrollTop = chat.scrollHeight; }, 60);
+    const vv = window.visualViewport;
+    const kh = vv ? Math.max(0, window.innerHeight - vv.height) : 0; // 估算键盘高
+    const extra = kh > 80 ? kh : 0;  // 小抖动不处理
+    setVar('--input-h', `calc(${inputBar.offsetHeight}px + ${extra}px)`);
+    // 顶栏不动；滚到最底
+    requestAnimationFrame(()=>{ document.getElementById('chatList').scrollTop = 1e9; });
   }
 
   // 初始化 & 监听
-  layoutBase();
-  window.addEventListener('resize', ()=>{ layoutBase(); onVV(); });
+  setBaseHeights();
+  writeVH(); onVV();
+
+  window.addEventListener('resize', ()=>{ setBaseHeights(); writeVH(); onVV(); }, {passive:true});
+
   if(window.visualViewport){
-    visualViewport.addEventListener('resize', onVV);
-    visualViewport.addEventListener('scroll', onVV);
+    visualViewport.addEventListener('resize', ()=>{ writeVH(); onVV(); }, {passive:true});
+    visualViewport.addEventListener('scroll',  ()=>{ writeVH(); onVV(); }, {passive:true});
   }
-  onVV();
 })();
 
 /* ---------- 历史 / 渲染 ---------- */
