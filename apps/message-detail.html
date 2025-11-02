@@ -29,6 +29,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Ro
 @supports (height: 100dvh){ .chat-app{height:100dvh;} }
 @supports not (height: 100dvh){ .chat-app{height:calc(var(--vh, 1vh) * 100);} }
 
+/* 顶部位移补偿 */
+:root{ --ios-vv-fix: 0px; }             
+.chat-navbar{ transform: translateY(var(--ios-vv-fix)); }
+
 /* 顶栏（两侧定宽，中间自适应，永不被键盘顶走） */
 .chat-navbar{
   position:fixed; left:0; right:0; top:0; z-index:2000;
@@ -310,22 +314,52 @@ function setTitleTyping(on){
   function layoutBase(){
     setVar('--nav-h', nav.offsetHeight + 'px');
     setVar('--input-h', inputBar.offsetHeight + 'px');
+    // 防止文档被系统滚动
+    document.scrollingElement.scrollTop = 0;
+    window.scrollTo(0,0);
   }
 
   function onVV(){
-    if(!window.visualViewport){ layoutBase(); return; }
-    const vv = visualViewport;
-    const kh = Math.max(0, window.innerHeight - vv.height);  // 近似键盘高度
-    setVar('--input-h', `calc(${inputBar.offsetHeight}px + ${kh>80 ? kh+'px' : '0px'})`);
-    setTimeout(()=>{ chat.scrollTop = chat.scrollHeight; }, 60);
+    const vv = window.visualViewport;
+    if(!vv){ layoutBase(); return; }
+
+    // 键盘高度估算
+    const kh = Math.max(0, window.innerHeight - vv.height);
+    // 关键：抵消 iOS 把可视窗口整体上移的 offsetTop
+    const yFix = -(vv.offsetTop || 0);
+
+    // 仅抬升底部可视高度；顶栏保持不动
+    setVar('--input-h', `calc(${inputBar.offsetHeight}px + ${kh>60 ? kh+'px' : '0px'})`);
+    setVar('--ios-vv-fix', yFix + 'px');
+
+    // 某些版本会把文档滚到 >0，强制拉回
+    if (document.scrollingElement.scrollTop !== 0) document.scrollingElement.scrollTop = 0;
+
+    // 保持聊天底部可见
+    setTimeout(()=>{ const list=document.getElementById('chatList'); if(list) list.scrollTop = list.scrollHeight; }, 60);
+  }
+
+  // 聚焦输入期间锁定页面滚动（只让列表滚）
+  let lock=false;
+  function pinTop(){
+    if(!lock) return;
+    if (window.pageYOffset !== 0) window.scrollTo(0,0);
+    const se = document.scrollingElement;
+    if (se && se.scrollTop !== 0) se.scrollTop = 0;
+  }
+  const ipt = document.getElementById('ipt');
+  ipt.addEventListener('focus', ()=>{ lock=true; pinTop(); });
+  ipt.addEventListener('blur',  ()=>{ lock=false; });
+
+  window.addEventListener('scroll', pinTop, {passive:true});
+  if (window.visualViewport) {
+    visualViewport.addEventListener('scroll', onVV);
+    visualViewport.addEventListener('resize', onVV);
+    visualViewport.addEventListener('scroll', pinTop);
   }
 
   layoutBase();
   window.addEventListener('resize', ()=>{ layoutBase(); onVV(); });
-  if(window.visualViewport){
-    visualViewport.addEventListener('resize', onVV);
-    visualViewport.addEventListener('scroll', onVV);
-  }
   onVV();
 })();
 
