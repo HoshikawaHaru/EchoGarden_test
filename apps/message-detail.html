@@ -267,6 +267,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const isImg=s=>typeof s==='string'&&(s.startsWith('data:')||s.startsWith('http'));
 const to2=n=>(n<10?'0':'')+n;
+const genMsgId=()=>('m_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
 
 /* ---------- 100vh 回退，写入 --vh ---------- */
 function writeVH(){ const vh = window.innerHeight * 0.01; document.documentElement.style.setProperty('--vh', `${vh}px`); }
@@ -392,16 +393,17 @@ function avatarNode(who){
       if(row.dataset.innerUnread!=='0'){
         row.dataset.innerUnread='0';
         const dot=el.querySelector('.inner-dot'); if(dot) dot.remove();
+        const msgId=row.dataset.msgId;
         const ts=row.dataset.ts;
-        if(ts){
-          const threads=getThreads();
-          const list=threads[characterId]?.messages||[];
-          const target=list.find(msg=>String(msg.ts)===ts);
-          if(target){
-            target.meta=target.meta||{};
-            target.meta.innerViewed=true;
-            saveThreads(threads);
-          }
+        const threads=getThreads();
+        const list=threads[characterId]?.messages||[];
+        let target=null;
+        if(msgId) target=list.find(msg=>msg.id===msgId);
+        if(!target && ts) target=list.find(msg=>String(msg.ts)===ts);
+        if(target){
+          target.meta=target.meta||{};
+          target.meta.innerViewed=true;
+          saveThreads(threads);
         }
       }
     }
@@ -425,6 +427,7 @@ function pushText(who,text,ts,meta){
   if(!meta?.system) maybeTS(ts||Date.now());
   const row=document.createElement('div'); row.className='row '+(who==='me'?'me':'you');
   if(ts) row.dataset.ts=String(ts);
+  if(meta?.msgId) row.dataset.msgId=meta.msgId;
   if(meta?.inner){
     row.dataset.inner=meta.inner;
     if(!meta.innerViewed) row.dataset.innerUnread='1';
@@ -438,6 +441,8 @@ function pushText(who,text,ts,meta){
 function pushSticker(who,imgSrc,ts,meta){
   if(!imgSrc) return; if(!meta?.system) maybeTS(ts||Date.now());
   const row=document.createElement('div'); row.className='row '+(who==='me'?'me':'you');
+  if(ts) row.dataset.ts=String(ts);
+  if(meta?.msgId) row.dataset.msgId=meta.msgId;
   const ck=document.createElement('div'); ck.className='check'; row.appendChild(ck);
   const ava=avatarNode(who);
   const img=document.createElement('img'); img.src=imgSrc; img.className='stk';
@@ -445,9 +450,11 @@ function pushSticker(who,imgSrc,ts,meta){
   chat.appendChild(row); chat.scrollTop=chat.scrollHeight;
 }
 function pushCenter(text,ts){ maybeTS(ts||Date.now()); const d=document.createElement('div'); d.className='center-tip'; d.textContent=text; chat.appendChild(d) }
-function pushHongbao(hb,who,ts){
+function pushHongbao(hb,who,ts,meta){
   maybeTS(ts||Date.now());
   const row=document.createElement('div'); row.className='row '+(who==='me'?'me':'you');
+  if(ts) row.dataset.ts=String(ts);
+  if(meta?.msgId) row.dataset.msgId=meta.msgId;
   const ava=avatarNode(who);
   const box=document.createElement('div'); box.className='hongbao';
   const t=document.createElement('div'); t.className='hb-title'; t.textContent=hb.bless||'红包';
@@ -458,7 +465,18 @@ function pushHongbao(hb,who,ts){
 }
 
 function loadHistory(){
-  const msgs=(getThreads()[characterId]?.messages)||[]; chat.innerHTML='';
+  const threads=getThreads();
+  const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
+  const msgs=mine.messages||[];
+  let needSave=false;
+  msgs.forEach((m,i)=>{
+    if(!m.id){
+      m.id='m_'+(m.ts||Date.now())+'_'+i;
+      needSave=true;
+    }
+  });
+  if(needSave) saveThreads(threads);
+  chat.innerHTML='';
   let prev=0;
   msgs.forEach(m=>{
     if(!m.meta?.system && m.ts && (m.ts-prev)>=5*60*1000){
@@ -466,11 +484,11 @@ function loadHistory(){
       const dt=new Date(m.ts); d.textContent=`${to2(dt.getHours())}:${to2(dt.getMinutes())}`; chat.appendChild(d);
     }
     prev=m.ts||prev;
-    if(m.meta?.hongbao){ pushHongbao(m.meta.hongbao, m.role==='user'?'me':'you', m.ts); }
+    if(m.meta?.hongbao){ pushHongbao(m.meta.hongbao, m.role==='user'?'me':'you', m.ts, {msgId:m.id}); }
     else if(m.meta?.pap){ pushCenter(`我拍了拍 "${current.nickname||current.name||'Ta'}"`, m.ts); }
-    else if(m.meta?.sticker?.img){ const who = m.role==='user'?'me':'you'; pushSticker(who, m.meta.sticker.img, m.ts, m.meta); }
-    else if(m.role==='assistant'){ pushText('you', m.content, m.ts, {inner:m.meta?.inner, innerViewed:m.meta?.innerViewed}); }
-    else if(!m.meta?.system){ pushText('me', m.content, m.ts); }
+    else if(m.meta?.sticker?.img){ const who = m.role==='user'?'me':'you'; pushSticker(who, m.meta.sticker.img, m.ts, Object.assign({}, m.meta, {msgId:m.id})); }
+    else if(m.role==='assistant'){ pushText('you', m.content, m.ts, {inner:m.meta?.inner, innerViewed:m.meta?.innerViewed, msgId:m.id}); }
+    else if(!m.meta?.system){ pushText('me', m.content, m.ts, {msgId:m.id}); }
   });
   chat.scrollTop=chat.scrollHeight;
 }
@@ -507,9 +525,10 @@ function updateLastMsgPreview(text){
 function onSend(){
   const text=ipt.value.trim(); if(!text) return; ipt.value='';
   const now=Date.now();
-  pushText('me', text, now);
+  const msgId=genMsgId();
+  pushText('me', text, now, {msgId});
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-  mine.messages.push({role:'user',content:text,ts:now}); saveThreads(threads);
+  mine.messages.push({id:msgId,role:'user',content:text,ts:now}); saveThreads(threads);
   updateLastMsgPreview(text);
   tryExtractEventFromText(text);
   bufferMsgs.push(text); if(document.activeElement!==ipt) scheduleFlush();
@@ -546,17 +565,19 @@ renderEmoji();
 
 function sendAsText(t){
   const now=Date.now();
-  pushText('me', t, now);
+  const msgId=genMsgId();
+  pushText('me', t, now, {msgId});
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-  mine.messages.push({role:'user',content:t,ts:now}); saveThreads(threads);
+  mine.messages.push({id:msgId,role:'user',content:t,ts:now}); saveThreads(threads);
   updateLastMsgPreview(t);
   bufferMsgs.push(t); scheduleFlush();
 }
 function sendSticker(s){
   const now=Date.now();
-  pushSticker('me', s.img, now);
+  const msgId=genMsgId();
+  pushSticker('me', s.img, now, {msgId});
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-  mine.messages.push({role:'user',content:`【表情包：${s.name||'表情'}】`,ts:now,meta:{sticker:{name:s.name,img:s.img}}}); saveThreads(threads);
+  mine.messages.push({id:msgId,role:'user',content:`【表情包：${s.name||'表情'}】`,ts:now,meta:{sticker:{name:s.name,img:s.img}}}); saveThreads(threads);
   updateLastMsgPreview('[表情]');
   bufferMsgs.push({__sticker__:true,name:s.name,img:s.img}); scheduleFlush();
 }
@@ -632,10 +653,11 @@ async function askLLM(history, mergedUserText){
       for(const seg of (chunks.length?chunks:[visible])){
         const now=Date.now();
         if(seg){
-          pushText('you', seg, now, {inner, innerViewed:false});
+          const msgId=genMsgId();
+          pushText('you', seg, now, {inner, innerViewed:false, msgId});
           const meta={};
           if(inner){ meta.inner=inner; meta.innerViewed=false; }
-          mine.messages.push({role:'assistant',content:seg,ts:now,meta});
+          mine.messages.push({id:msgId,role:'assistant',content:seg,ts:now,meta});
           saveThreads(threads);
           updateLastMsgPreview(seg);
           await new Promise(r=>setTimeout(r,320));
@@ -679,7 +701,7 @@ async function summarizeNow(showDialog=true){
   const msgs = (threads[characterId]?.messages)||[];
   const recent = msgs.map(m=>`${m.role==='user'?'用户':'角色'}：${m.content}`).join('\n').slice(-8000);
 
-  const sys  = { role:'system', content:'你是对话整理助手，请用不超过200字中文总结“稳定事实与偏好（长期记忆）”。避免重复口水话。输出纯文本。' };
+  const sys  = { role:'system', content:'你是一名对话总结助手。请阅读以下用户与虚拟角色的历史聊天，只提炼能长期复用的背景、身份、性格、偏好、关系氛围与互动方式，用于帮助后续模型理解他们的交流风格。不要生成待办、提醒或 EchoGarden 相关功能指令，也不要编造事件时间。用不超过200字中文，分句或列点输出。' };
   const user = { role:'user', content: recent || '（空）' };
 
   try{
@@ -759,7 +781,7 @@ document.getElementById('act-pap').onclick=()=>{
   document.getElementById('morePanel').classList.remove('show');
   const now=Date.now(); pushCenter(`我拍了拍 "${current.nickname||current.name||'Ta'}"`, now);
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-  mine.messages.push({role:'user',content:'（用户拍了拍你）',ts:now,meta:{pap:true}}); saveThreads(threads);
+  mine.messages.push({id:genMsgId(),role:'user',content:'（用户拍了拍你）',ts:now,meta:{pap:true}}); saveThreads(threads);
   bufferMsgs.push('（用户拍了拍你）'); scheduleFlush();
 };
 document.getElementById('act-hb').onclick=()=>{ document.getElementById('hbModal').classList.add('show'); document.getElementById('morePanel').classList.remove('show'); };
@@ -771,7 +793,7 @@ document.getElementById('hbSend').onclick=()=>{
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
   const idName=activeIdentity?.nickname||activeIdentity?.name||'用户';
   const tip=`【红包】${idName}给你发送了 ${amt} 元红包${bless?`，并说“${bless}”`:''}。请以角色语气自然回应（不超过2句）。`;
-  mine.messages.push({role:'user',content:tip,ts:Date.now(),meta:{hongbao:hb}}); saveThreads(threads);
+  mine.messages.push({id:genMsgId(),role:'user',content:tip,ts:Date.now(),meta:{hongbao:hb}}); saveThreads(threads);
   askLLM(mine.messages, tip);
 };
 
