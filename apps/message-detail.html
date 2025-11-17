@@ -384,15 +384,35 @@ function avatarNode(who){
   // 点击对方头像查看“心声”
   el.onclick=()=>{
     if(who!=='you') return;
-    const inner=el.parentElement?.dataset?.inner;
-    if(inner){ document.getElementById('innerText').textContent=inner; document.getElementById('innerModal').classList.add('show'); }
+    const row=el.parentElement;
+    const inner=row?.dataset?.inner;
+    if(inner){
+      document.getElementById('innerText').textContent=inner;
+      document.getElementById('innerModal').classList.add('show');
+      if(row.dataset.innerUnread!=='0'){
+        row.dataset.innerUnread='0';
+        const dot=el.querySelector('.inner-dot'); if(dot) dot.remove();
+        const ts=row.dataset.ts;
+        if(ts){
+          const threads=getThreads();
+          const list=threads[characterId]?.messages||[];
+          const target=list.find(msg=>String(msg.ts)===ts);
+          if(target){
+            target.meta=target.meta||{};
+            target.meta.innerViewed=true;
+            saveThreads(threads);
+          }
+        }
+      }
+    }
   };
 
   // 若该条消息有心声，加一个小红点提示
   setTimeout(()=>{
-    const hasInner = el.parentElement?.dataset?.inner;
-    if(hasInner){
+    const row=el.parentElement;
+    if(row?.dataset?.inner && row.dataset.innerUnread!=='0'){
       const dot=document.createElement('span');
+      dot.className='inner-dot';
       dot.style.cssText='position:absolute;right:-2px;top:-2px;width:8px;height:8px;background:#ff4d4f;border-radius:50%';
       el.appendChild(dot);
     }
@@ -404,7 +424,11 @@ function pushText(who,text,ts,meta){
   if(!text) return;
   if(!meta?.system) maybeTS(ts||Date.now());
   const row=document.createElement('div'); row.className='row '+(who==='me'?'me':'you');
-  if(meta?.inner) row.dataset.inner=meta.inner;
+  if(ts) row.dataset.ts=String(ts);
+  if(meta?.inner){
+    row.dataset.inner=meta.inner;
+    if(!meta.innerViewed) row.dataset.innerUnread='1';
+  }
   const ck=document.createElement('div'); ck.className='check'; row.appendChild(ck);
   const ava=avatarNode(who);
   const bub=document.createElement('div'); bub.className='bubble'; bub.textContent=text;
@@ -445,7 +469,7 @@ function loadHistory(){
     if(m.meta?.hongbao){ pushHongbao(m.meta.hongbao, m.role==='user'?'me':'you', m.ts); }
     else if(m.meta?.pap){ pushCenter(`我拍了拍 "${current.nickname||current.name||'Ta'}"`, m.ts); }
     else if(m.meta?.sticker?.img){ const who = m.role==='user'?'me':'you'; pushSticker(who, m.meta.sticker.img, m.ts, m.meta); }
-    else if(m.role==='assistant'){ pushText('you', m.content, m.ts, {inner:m.meta?.inner}); }
+    else if(m.role==='assistant'){ pushText('you', m.content, m.ts, {inner:m.meta?.inner, innerViewed:m.meta?.innerViewed}); }
     else if(!m.meta?.system){ pushText('me', m.content, m.ts); }
   });
   chat.scrollTop=chat.scrollHeight;
@@ -608,8 +632,10 @@ async function askLLM(history, mergedUserText){
       for(const seg of (chunks.length?chunks:[visible])){
         const now=Date.now();
         if(seg){
-          pushText('you', seg, now, {inner});
-          mine.messages.push({role:'assistant',content:seg,ts:now,meta:{inner}});
+          pushText('you', seg, now, {inner, innerViewed:false});
+          const meta={};
+          if(inner){ meta.inner=inner; meta.innerViewed=false; }
+          mine.messages.push({role:'assistant',content:seg,ts:now,meta});
           saveThreads(threads);
           updateLastMsgPreview(seg);
           await new Promise(r=>setTimeout(r,320));
@@ -627,10 +653,11 @@ async function askLLM(history, mergedUserText){
 /* ---------- 副模型：自动总结 ---------- */
 function sideCfg(){
   try{
-    const a = JSON.parse(localStorage.getItem('eg_side_model_cfg')||'{}');
-    const b = JSON.parse(localStorage.getItem('eg_side_model')||'{}');
-    const c = JSON.parse(localStorage.getItem('eg_side_model_cfg_v1')||'{}');
-    const cfg = Object.assign({}, c, b, a);
+    const legacyV1 = JSON.parse(localStorage.getItem('eg_side_model_cfg_v1')||'{}');
+    const legacy   = JSON.parse(localStorage.getItem('eg_side_model_cfg')||'{}');
+    const fallback = JSON.parse(localStorage.getItem('eg_side_model')||'{}');
+    const modern   = JSON.parse(localStorage.getItem('eg_sub_model_cfg')||'{}');
+    const cfg = Object.assign({}, fallback, legacyV1, legacy, modern);
     if(cfg.base) cfg.base = String(cfg.base).replace(/\/+$/,'');
     return cfg;
   }catch{return {}}
@@ -644,7 +671,7 @@ async function summarizeNow(showDialog=true){
   if(!apiKey || !base || !model){
     alert('副模型未配置：\n当前读取到 => '+
       JSON.stringify({base, model, hasKey: !!apiKey}, null, 2)+
-      '\n请在设置中填写 side model 的 base / apiKey / model');
+      '\n请在设置页的“副模型”中填写 base / apiKey / model');
     return;
   }
 
