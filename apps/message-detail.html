@@ -99,10 +99,20 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Ro
   transform:translateY(calc(-1 * var(--kb)));
   will-change:transform;
 }
-.tool-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.tool-btn{
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0
+}
 .tool-btn svg{width:26px;height:26px;stroke:#111;fill:none;stroke-width:2}
-.ipt{flex:1;background:#fff;border:1px solid #e1e1e1;border-radius:18px;padding:10px 14px;font-size:16px;outline:none}
-.send{background:#07c160;color:#fff;border:none;border-radius:18px;padding:10px 14px;font-size:15px;cursor:pointer}
+.ipt{
+  flex:1 1 auto; min-width:0; max-width:100%;
+  background:#fff;border:1px solid #e1e1e1;border-radius:18px;
+  padding:10px 14px;font-size:16px;outline:none;
+}
+.send{
+  flex-shrink:0;
+  background:#07c160;color:#fff;border:none;border-radius:18px;
+  padding:10px 14px;font-size:15px;cursor:pointer;white-space:nowrap;
+}
 .send:active{background:#06ad56}
 
 /* “对方输入中”动画 */
