@@ -155,6 +155,67 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Ro
 .emoji-box{background:#fff;border:1px solid #e6e6e6;border-top:none;border-radius:0 0 12px 12px;box-shadow:0 6px 18px rgba(0,0,0,.12);padding:10px;display:grid;grid-template-columns:repeat(6,1fr);gap:10px;max-height:40vh;overflow:auto}
 .emoji-item{width:44px;height:44px;border:1px solid #eee;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;overflow:hidden}
 .stk-add{grid-column:1/-1;border:1px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;height:44px;cursor:pointer;color:#666;font-size:13px}
+.form-hint{font-size:13px;color:#909090;margin-top:6px;line-height:1.4}
+
+/* 长记忆面板 */
+.memory-panel{
+  position:fixed;
+  top:calc(var(--nav-h) + 10px);
+  left:12px; right:12px;
+  z-index:2200;
+  background:#fff;
+  border:1px solid #e8e8e8;
+  border-radius:16px;
+  box-shadow:0 18px 40px rgba(0,0,0,.18);
+  display:none;
+  flex-direction:column;
+  max-height:calc(100vh - 140px);
+}
+.memory-panel{ max-height:calc(100dvh - 140px); }
+.memory-panel.show{display:flex;}
+.memory-panel-header{
+  padding:14px 18px;
+  border-bottom:1px solid #f2f2f2;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.memory-title{font-size:16px;font-weight:600;color:#111}
+.memory-sub{font-size:13px;color:#888;margin-top:4px}
+.memory-close{border:none;background:none;font-size:24px;cursor:pointer;color:#888}
+.memory-close:active{transform:scale(.95)}
+.memory-panel-actions{
+  padding:12px 18px;
+  border-bottom:1px solid #f5f5f5;
+  display:flex;gap:10px;flex-wrap:wrap;
+}
+.mem-btn{
+  border:none;border-radius:10px;
+  padding:8px 14px;
+  font-size:14px;
+  cursor:pointer;
+  background:#f2f2f2;
+  color:#333;
+}
+.mem-btn:disabled{opacity:.6;cursor:not-allowed}
+.mem-btn.primary{background:#07c160;color:#fff}
+.mem-btn.ghost{background:#f5f5f5;color:#111}
+.mem-btn.danger{background:#ffecec;color:#ff4d4f}
+.memory-list{
+  padding:14px 18px;
+  overflow-y:auto;
+  flex:1;
+  min-height:140px;
+}
+.memory-item{
+  border:1px solid #f0f0f0;
+  border-radius:12px;
+  padding:10px 12px;
+  background:#fafafa;
+  margin-bottom:10px;
+}
+.memory-meta{font-size:12px;color:#999}
+.memory-text{white-space:pre-wrap;line-height:1.5;color:#333;margin:8px 0}
+.memory-item-actions{display:flex;gap:8px;flex-wrap:wrap}
+.memory-empty{color:#999;text-align:center;font-size:14px;padding:24px 0}
 </style>
 </head>
 <body>
@@ -207,6 +268,22 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Ro
     <div class="emoji-box" id="emojiBox"></div>
   </div>
 
+  <!-- 长记忆面板 -->
+  <div class="memory-panel" id="memoryPanel" aria-modal="true" role="dialog">
+    <div class="memory-panel-header">
+      <div>
+        <div class="memory-title">长记忆总结</div>
+        <div class="memory-sub">整理角色与用户的互动关系</div>
+      </div>
+      <button class="memory-close" id="memoryClose" aria-label="关闭">×</button>
+    </div>
+    <div class="memory-panel-actions">
+      <button class="mem-btn primary" id="memorySummBtn">手动总结</button>
+      <button class="mem-btn ghost" id="memoryRefreshBtn">刷新列表</button>
+    </div>
+    <div class="memory-list" id="memoryList"></div>
+  </div>
+
   <!-- 底部输入栏 -->
   <div class="input-bar" id="inputBar">
     <div class="tool-btn" id="plusBtn" aria-label="更多">
@@ -233,6 +310,11 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Ro
         <div class="form-group">
           <label class="form-label">允许后台活动</label>
           <label style="display:flex;align-items:center;gap:8px;color:#666;"><input type="checkbox" id="allowBgChk"><span>到事件时间时，系统可代表该角色后台行动</span></label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">总结参考消息数</label>
+          <input type="number" id="summaryLimitInput" class="form-input" min="5" max="200" step="1" placeholder="20">
+          <div class="form-hint">副模型每次总结时读取的最近消息条数，默认 20</div>
         </div>
         <div class="btns"><button type="button" class="btn ghost" id="cancelEdit">取消</button><button type="submit" class="btn primary">保存</button></div>
       </form>
@@ -267,7 +349,11 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const isImg=s=>typeof s==='string'&&(s.startsWith('data:')||s.startsWith('http'));
 const to2=n=>(n<10?'0':'')+n;
-const genMsgId=()=>('m_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
+const SUMMARY_LIMIT_KEY='eg_summary_msg_limit';
+const DEFAULT_SUMMARY_LIMIT=20;
+const LONG_MEMORY_KEY='eg_long_memory_v1';
+const MAX_PROMPT_SUMMARY=5;
+const memoryId=()=>('lm_'+Math.random().toString(36).slice(2,10));
 
 /* ---------- 100vh 回退，写入 --vh ---------- */
 function writeVH(){ const vh = window.innerHeight * 0.01; document.documentElement.style.setProperty('--vh', `${vh}px`); }
@@ -366,6 +452,59 @@ function setTitleTyping(on){
 function getThreads(){ try{return JSON.parse(localStorage.getItem('eg_threads_v1')||'{}')}catch{return{}} }
 function saveThreads(m){ localStorage.setItem('eg_threads_v1', JSON.stringify(m)) }
 function truncate(s){ s=(s||'').replace(/\s+/g,' '); return s.length>22 ? s.slice(0,22)+'…' : s; }
+function clampSummaryLimit(n){
+  const num=parseInt(n,10);
+  if(isNaN(num)) return DEFAULT_SUMMARY_LIMIT;
+  return Math.max(5, Math.min(200, num));
+}
+function getSummaryLimit(){ return clampSummaryLimit(localStorage.getItem(SUMMARY_LIMIT_KEY)??DEFAULT_SUMMARY_LIMIT); }
+function setSummaryLimit(n){ localStorage.setItem(SUMMARY_LIMIT_KEY, String(clampSummaryLimit(n))); }
+function readLongMemoryMap(){ try{return JSON.parse(localStorage.getItem(LONG_MEMORY_KEY)||'{}')}catch{return{}} }
+function normalizeLongMemoryEntries(raw){
+  if(Array.isArray(raw)) return raw;
+  if(raw && raw.summary){
+    return [{id:raw.id||memoryId(), text:raw.summary, ts:raw.ts||Date.now()}];
+  }
+  return [];
+}
+function getLongMemoryEntries(){
+  const map=readLongMemoryMap();
+  const data=map[characterId];
+  return normalizeLongMemoryEntries(data?.entries||data);
+}
+function saveLongMemoryEntries(entries){
+  const map=readLongMemoryMap();
+  map[characterId]={entries};
+  localStorage.setItem(LONG_MEMORY_KEY, JSON.stringify(map));
+}
+function addLongMemoryEntry(text){
+  const value=(text||'').trim();
+  if(!value) return null;
+  const list=getLongMemoryEntries();
+  const entry={id:memoryId(), text:value, ts:Date.now()};
+  list.push(entry);
+  saveLongMemoryEntries(list);
+  return entry;
+}
+function updateLongMemoryEntry(id,newText){
+  const value=(newText||'').trim();
+  if(!value) return false;
+  const list=getLongMemoryEntries();
+  const target=list.find(e=>e.id===id);
+  if(!target) return false;
+  target.text=value;
+  saveLongMemoryEntries(list);
+  return true;
+}
+function deleteLongMemoryEntry(id){
+  const list=getLongMemoryEntries();
+  const next=list.filter(e=>e.id!==id);
+  saveLongMemoryEntries(next);
+}
+function formatMemoryTime(ts){
+  const d=new Date(ts||Date.now());
+  return `${d.getFullYear()}-${to2(d.getMonth()+1)}-${to2(d.getDate())} ${to2(d.getHours())}:${to2(d.getMinutes())}`;
+}
 
 function maybeTS(ts){
   const msgs=(getThreads()[characterId]?.messages)||[];
@@ -385,40 +524,12 @@ function avatarNode(who){
   // 点击对方头像查看“心声”
   el.onclick=()=>{
     if(who!=='you') return;
-    const row=el.parentElement;
-    const inner=row?.dataset?.inner;
+    const inner=el.parentElement?.dataset?.inner;
     if(inner){
       document.getElementById('innerText').textContent=inner;
       document.getElementById('innerModal').classList.add('show');
-      if(row.dataset.innerUnread!=='0'){
-        row.dataset.innerUnread='0';
-        const dot=el.querySelector('.inner-dot'); if(dot) dot.remove();
-        const msgId=row.dataset.msgId;
-        const ts=row.dataset.ts;
-        const threads=getThreads();
-        const list=threads[characterId]?.messages||[];
-        let target=null;
-        if(msgId) target=list.find(msg=>msg.id===msgId);
-        if(!target && ts) target=list.find(msg=>String(msg.ts)===ts);
-        if(target){
-          target.meta=target.meta||{};
-          target.meta.innerViewed=true;
-          saveThreads(threads);
-        }
-      }
     }
   };
-
-  // 若该条消息有心声，加一个小红点提示
-  setTimeout(()=>{
-    const row=el.parentElement;
-    if(row?.dataset?.inner && row.dataset.innerUnread!=='0'){
-      const dot=document.createElement('span');
-      dot.className='inner-dot';
-      dot.style.cssText='position:absolute;right:-2px;top:-2px;width:8px;height:8px;background:#ff4d4f;border-radius:50%';
-      el.appendChild(dot);
-    }
-  });
 
   return el;
 }
@@ -426,11 +537,8 @@ function pushText(who,text,ts,meta){
   if(!text) return;
   if(!meta?.system) maybeTS(ts||Date.now());
   const row=document.createElement('div'); row.className='row '+(who==='me'?'me':'you');
-  if(ts) row.dataset.ts=String(ts);
-  if(meta?.msgId) row.dataset.msgId=meta.msgId;
   if(meta?.inner){
     row.dataset.inner=meta.inner;
-    if(!meta.innerViewed) row.dataset.innerUnread='1';
   }
   const ck=document.createElement('div'); ck.className='check'; row.appendChild(ck);
   const ava=avatarNode(who);
@@ -441,8 +549,6 @@ function pushText(who,text,ts,meta){
 function pushSticker(who,imgSrc,ts,meta){
   if(!imgSrc) return; if(!meta?.system) maybeTS(ts||Date.now());
   const row=document.createElement('div'); row.className='row '+(who==='me'?'me':'you');
-  if(ts) row.dataset.ts=String(ts);
-  if(meta?.msgId) row.dataset.msgId=meta.msgId;
   const ck=document.createElement('div'); ck.className='check'; row.appendChild(ck);
   const ava=avatarNode(who);
   const img=document.createElement('img'); img.src=imgSrc; img.className='stk';
@@ -453,8 +559,6 @@ function pushCenter(text,ts){ maybeTS(ts||Date.now()); const d=document.createEl
 function pushHongbao(hb,who,ts,meta){
   maybeTS(ts||Date.now());
   const row=document.createElement('div'); row.className='row '+(who==='me'?'me':'you');
-  if(ts) row.dataset.ts=String(ts);
-  if(meta?.msgId) row.dataset.msgId=meta.msgId;
   const ava=avatarNode(who);
   const box=document.createElement('div'); box.className='hongbao';
   const t=document.createElement('div'); t.className='hb-title'; t.textContent=hb.bless||'红包';
@@ -465,18 +569,7 @@ function pushHongbao(hb,who,ts,meta){
 }
 
 function loadHistory(){
-  const threads=getThreads();
-  const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-  const msgs=mine.messages||[];
-  let needSave=false;
-  msgs.forEach((m,i)=>{
-    if(!m.id){
-      m.id='m_'+(m.ts||Date.now())+'_'+i;
-      needSave=true;
-    }
-  });
-  if(needSave) saveThreads(threads);
-  chat.innerHTML='';
+  const msgs=(getThreads()[characterId]?.messages)||[]; chat.innerHTML='';
   let prev=0;
   msgs.forEach(m=>{
     if(!m.meta?.system && m.ts && (m.ts-prev)>=5*60*1000){
@@ -484,14 +577,101 @@ function loadHistory(){
       const dt=new Date(m.ts); d.textContent=`${to2(dt.getHours())}:${to2(dt.getMinutes())}`; chat.appendChild(d);
     }
     prev=m.ts||prev;
-    if(m.meta?.hongbao){ pushHongbao(m.meta.hongbao, m.role==='user'?'me':'you', m.ts, {msgId:m.id}); }
+    if(m.meta?.hongbao){ pushHongbao(m.meta.hongbao, m.role==='user'?'me':'you', m.ts); }
     else if(m.meta?.pap){ pushCenter(`我拍了拍 "${current.nickname||current.name||'Ta'}"`, m.ts); }
-    else if(m.meta?.sticker?.img){ const who = m.role==='user'?'me':'you'; pushSticker(who, m.meta.sticker.img, m.ts, Object.assign({}, m.meta, {msgId:m.id})); }
-    else if(m.role==='assistant'){ pushText('you', m.content, m.ts, {inner:m.meta?.inner, innerViewed:m.meta?.innerViewed, msgId:m.id}); }
-    else if(!m.meta?.system){ pushText('me', m.content, m.ts, {msgId:m.id}); }
+    else if(m.meta?.sticker?.img){ const who = m.role==='user'?'me':'you'; pushSticker(who, m.meta.sticker.img, m.ts, m.meta); }
+    else if(m.role==='assistant'){ pushText('you', m.content, m.ts, {inner:m.meta?.inner}); }
+    else if(!m.meta?.system){ pushText('me', m.content, m.ts); }
   });
   chat.scrollTop=chat.scrollHeight;
 }
+
+/* ---------- 长记忆面板 ---------- */
+const memoryPanel=$('#memoryPanel');
+const memoryListEl=$('#memoryList');
+const memorySummBtn=$('#memorySummBtn');
+const memoryRefreshBtn=$('#memoryRefreshBtn');
+const memoryCloseBtn=$('#memoryClose');
+const sumBtn=$('#sumBtn');
+
+function renderMemoryList(){
+  if(!memoryListEl) return;
+  const list=getLongMemoryEntries();
+  if(!list.length){
+    memoryListEl.innerHTML='<div class="memory-empty">暂无总结</div>';
+    return;
+  }
+  const html=list.slice().sort((a,b)=>b.ts-a.ts).map(entry=>`
+    <div class="memory-item" data-id="${entry.id}">
+      <div class="memory-meta">${formatMemoryTime(entry.ts)}</div>
+      <div class="memory-text">${esc(entry.text)}</div>
+      <div class="memory-item-actions">
+        <button class="mem-btn ghost" data-act="edit">编辑</button>
+        <button class="mem-btn danger" data-act="delete">删除</button>
+      </div>
+    </div>
+  `).join('');
+  memoryListEl.innerHTML=html;
+}
+function openMemoryPanel(){
+  if(!memoryPanel) return;
+  memoryPanel.classList.add('show');
+  renderMemoryList();
+}
+function closeMemoryPanel(){
+  if(!memoryPanel) return;
+  memoryPanel.classList.remove('show');
+}
+if(sumBtn){
+  sumBtn.title='长记忆总结';
+  sumBtn.onclick=()=>{
+    if(memoryPanel?.classList.contains('show')) closeMemoryPanel();
+    else openMemoryPanel();
+  };
+}
+memoryCloseBtn?.addEventListener('click', closeMemoryPanel);
+memoryRefreshBtn?.addEventListener('click', renderMemoryList);
+if(memoryListEl){
+  memoryListEl.addEventListener('click',e=>{
+    const btn=e.target.closest('[data-act]');
+    if(!btn) return;
+    const item=btn.closest('.memory-item');
+    if(!item) return;
+    const id=item.dataset.id;
+    if(btn.dataset.act==='edit'){
+      const list=getLongMemoryEntries();
+      const target=list.find(x=>x.id===id);
+      const next=prompt('编辑总结', target?.text||'');
+      if(next!=null && updateLongMemoryEntry(id,next)) renderMemoryList();
+    }else if(btn.dataset.act==='delete'){
+      if(confirm('删除该总结记录？')){
+        deleteLongMemoryEntry(id);
+        renderMemoryList();
+      }
+    }
+  });
+}
+if(memorySummBtn){
+  memorySummBtn.addEventListener('click', async ()=>{
+    if(memorySummBtn.dataset.loading==='1') return;
+    memorySummBtn.dataset.loading='1';
+    const prevText=memorySummBtn.textContent;
+    memorySummBtn.textContent='总结中…';
+    memorySummBtn.disabled=true;
+    try{
+      await summarizeNow(true);
+    }finally{
+      memorySummBtn.disabled=false;
+      memorySummBtn.textContent=prevText;
+      delete memorySummBtn.dataset.loading;
+    }
+  });
+}
+document.addEventListener('click',e=>{
+  if(!memoryPanel?.classList.contains('show')) return;
+  if(e.target.closest('#memoryPanel') || e.target.closest('#sumBtn')) return;
+  closeMemoryPanel();
+});
 
 /* ---------- 输入/发送 ---------- */
 const DELAY_MS=parseInt(localStorage.getItem('eg_reply_delay_ms')||'5000',10);
@@ -525,10 +705,9 @@ function updateLastMsgPreview(text){
 function onSend(){
   const text=ipt.value.trim(); if(!text) return; ipt.value='';
   const now=Date.now();
-  const msgId=genMsgId();
-  pushText('me', text, now, {msgId});
+  pushText('me', text, now);
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-  mine.messages.push({id:msgId,role:'user',content:text,ts:now}); saveThreads(threads);
+  mine.messages.push({role:'user',content:text,ts:now}); saveThreads(threads);
   updateLastMsgPreview(text);
   tryExtractEventFromText(text);
   bufferMsgs.push(text); if(document.activeElement!==ipt) scheduleFlush();
@@ -565,25 +744,30 @@ renderEmoji();
 
 function sendAsText(t){
   const now=Date.now();
-  const msgId=genMsgId();
-  pushText('me', t, now, {msgId});
+  pushText('me', t, now);
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-  mine.messages.push({id:msgId,role:'user',content:t,ts:now}); saveThreads(threads);
+  mine.messages.push({role:'user',content:t,ts:now}); saveThreads(threads);
   updateLastMsgPreview(t);
   bufferMsgs.push(t); scheduleFlush();
 }
 function sendSticker(s){
   const now=Date.now();
-  const msgId=genMsgId();
-  pushSticker('me', s.img, now, {msgId});
+  pushSticker('me', s.img, now);
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-  mine.messages.push({id:msgId,role:'user',content:`【表情包：${s.name||'表情'}】`,ts:now,meta:{sticker:{name:s.name,img:s.img}}}); saveThreads(threads);
+  mine.messages.push({role:'user',content:`【表情包：${s.name||'表情'}】`,ts:now,meta:{sticker:{name:s.name,img:s.img}}}); saveThreads(threads);
   updateLastMsgPreview('[表情]');
   bufferMsgs.push({__sticker__:true,name:s.name,img:s.img}); scheduleFlush();
 }
 
 /* ---------- 主模型：扮演 + 心声 + 多模态 ---------- */
-function longMemoryText(){ try{const LM=JSON.parse(localStorage.getItem('eg_long_memory_v1')||'{}'); const t=LM[characterId]?.summary||''; return t?`\n【长期记忆】\n${t}\n`:'' }catch{return ''} }
+function longMemoryText(){
+  try{
+    const entries=getLongMemoryEntries().slice(-MAX_PROMPT_SUMMARY);
+    if(!entries.length) return '';
+    const lines=entries.map(e=>`- ${e.text}`);
+    return `\n【近期总结】\n${lines.join('\n')}\n`;
+  }catch{return '';}
+}
 function buildPersonaSystemPrompt(role){
   const name=role.nickname||role.name||'Ta';
   return `你是一名角色对话助手，请严格扮演以下人设以中文短句回复。
@@ -653,11 +837,9 @@ async function askLLM(history, mergedUserText){
       for(const seg of (chunks.length?chunks:[visible])){
         const now=Date.now();
         if(seg){
-          const msgId=genMsgId();
-          pushText('you', seg, now, {inner, innerViewed:false, msgId});
-          const meta={};
-          if(inner){ meta.inner=inner; meta.innerViewed=false; }
-          mine.messages.push({id:msgId,role:'assistant',content:seg,ts:now,meta});
+          pushText('you', seg, now, {inner});
+          const meta = inner ? {inner} : undefined;
+          mine.messages.push({role:'assistant',content:seg,ts:now,meta});
           saveThreads(threads);
           updateLastMsgPreview(seg);
           await new Promise(r=>setTimeout(r,320));
@@ -684,7 +866,7 @@ function sideCfg(){
     return cfg;
   }catch{return {}}
 }
-async function summarizeNow(showDialog=true){
+async function summarizeNow(openPanel=false){
   const cfg = sideCfg();
   const apiKey = (cfg.apiKey||'').trim();
   const base   = (cfg.base||'').trim();
@@ -694,15 +876,21 @@ async function summarizeNow(showDialog=true){
     alert('副模型未配置：\n当前读取到 => '+
       JSON.stringify({base, model, hasKey: !!apiKey}, null, 2)+
       '\n请在设置页的“副模型”中填写 base / apiKey / model');
-    return;
+    return null;
   }
 
   const threads = getThreads();
   const msgs = (threads[characterId]?.messages)||[];
-  const recent = msgs.map(m=>`${m.role==='user'?'用户':'角色'}：${m.content}`).join('\n').slice(-8000);
+  const limit = getSummaryLimit();
+  const recentMsgs = msgs.filter(m=>!m.meta?.system).slice(-limit);
+  if(!recentMsgs.length){
+    alert('暂无可总结的聊天内容');
+    return null;
+  }
+  const recent = recentMsgs.map(m=>`${m.role==='user'?'用户':'角色'}：${m.content}`).join('\n');
 
   const sys  = { role:'system', content:'你是一名对话总结助手。请阅读以下用户与虚拟角色的历史聊天，只提炼能长期复用的背景、身份、性格、偏好、关系氛围与互动方式，用于帮助后续模型理解他们的交流风格。不要生成待办、提醒或 EchoGarden 相关功能指令，也不要编造事件时间。用不超过200字中文，分句或列点输出。' };
-  const user = { role:'user', content: recent || '（空）' };
+  const user = { role:'user', content: recent };
 
   try{
     const res = await fetch(base + '/chat/completions', {
@@ -715,20 +903,17 @@ async function summarizeNow(showDialog=true){
     const data = await res.json();
     const text = (data?.choices?.[0]?.message?.content || '').trim();
 
-    const LM = JSON.parse(localStorage.getItem('eg_long_memory_v1')||'{}');
-    LM[characterId] = { summary:text, ts:Date.now() };
-    localStorage.setItem('eg_long_memory_v1', JSON.stringify(LM));
-
-    if(showDialog){
-      document.getElementById('innerText').textContent = text || '（空）';
-      document.getElementById('innerModal').classList.add('show');
+    if(text){
+      addLongMemoryEntry(text);
+      if(openPanel) openMemoryPanel(); else renderMemoryList();
+      return text;
     }
   }catch(e){
     console.error(e);
     alert('总结失败：' + e.message);
   }
+  return null;
 }
-document.getElementById('sumBtn').onclick = () => summarizeNow(true);
 function autoSummarize(){ summarizeNow(false); }
 
 /* ---------- 事件识别（upsert，不在聊天里露出） ---------- */
@@ -781,7 +966,7 @@ document.getElementById('act-pap').onclick=()=>{
   document.getElementById('morePanel').classList.remove('show');
   const now=Date.now(); pushCenter(`我拍了拍 "${current.nickname||current.name||'Ta'}"`, now);
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
-  mine.messages.push({id:genMsgId(),role:'user',content:'（用户拍了拍你）',ts:now,meta:{pap:true}}); saveThreads(threads);
+  mine.messages.push({role:'user',content:'（用户拍了拍你）',ts:now,meta:{pap:true}}); saveThreads(threads);
   bufferMsgs.push('（用户拍了拍你）'); scheduleFlush();
 };
 document.getElementById('act-hb').onclick=()=>{ document.getElementById('hbModal').classList.add('show'); document.getElementById('morePanel').classList.remove('show'); };
@@ -793,7 +978,7 @@ document.getElementById('hbSend').onclick=()=>{
   const threads=getThreads(); const mine=threads[characterId]||(threads[characterId]={id:characterId,messages:[]});
   const idName=activeIdentity?.nickname||activeIdentity?.name||'用户';
   const tip=`【红包】${idName}给你发送了 ${amt} 元红包${bless?`，并说“${bless}”`:''}。请以角色语气自然回应（不超过2句）。`;
-  mine.messages.push({id:genMsgId(),role:'user',content:tip,ts:Date.now(),meta:{hongbao:hb}}); saveThreads(threads);
+  mine.messages.push({role:'user',content:tip,ts:Date.now(),meta:{hongbao:hb}}); saveThreads(threads);
   askLLM(mine.messages, tip);
 };
 
@@ -824,6 +1009,8 @@ document.getElementById('moreBtn').onclick=()=>{
   document.getElementById('nickInput').value=current.nickname||'';
   document.getElementById('bioInput').value=current.bio||'';
   document.getElementById('allowBgChk').checked=!!current.allowBG;
+  const limitInput=document.getElementById('summaryLimitInput');
+  if(limitInput) limitInput.value=getSummaryLimit();
   const up=document.getElementById('avatarUpload');
   if(current.avatar&&isImg(current.avatar)) up.innerHTML='<img src="'+current.avatar+'">'; else up.innerHTML=current.avatar||'👤';
   document.getElementById('editModal').classList.add('show');
@@ -842,6 +1029,8 @@ document.getElementById('editForm').onsubmit=e=>{
   current.nickname=document.getElementById('nickInput').value.trim()||current.nickname||current.name;
   current.bio=document.getElementById('bioInput').value.trim()||current.bio;
   current.allowBG=!!document.getElementById('allowBgChk').checked;
+  const limitInput=document.getElementById('summaryLimitInput');
+  if(limitInput) setSummaryLimit(limitInput.value);
   const list=JSON.parse(localStorage.getItem('eg_characters_v2')||'[]');
   const idx=list.findIndex(c=>c.id===current.id); if(idx>=0) list[idx]=current;
   localStorage.setItem('eg_characters_v2', JSON.stringify(list));
@@ -861,7 +1050,7 @@ window.addEventListener('storage', e=>{
 });
 
 /* ---------- 启动 ---------- */
-loadCharacters(); loadIdentities(); loadHistory();
+loadCharacters(); loadIdentities(); loadHistory(); renderMemoryList();
 })();
 </script>
 </body>
